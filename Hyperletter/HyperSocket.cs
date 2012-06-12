@@ -130,7 +130,10 @@ namespace Hyperletter {
             ILetter letter;
             while((letter = GetNextLetter()) != null) {
                 foreach (var channel in _channels) {
-                    channel.Value.Enqueue(letter);
+                    if(channel.Value.IsConnected)
+                        channel.Value.Enqueue(letter);
+                    else
+                        ChannelFailedToSend(channel.Value, letter);
                 }
             }
         }

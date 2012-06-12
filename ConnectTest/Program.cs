@@ -8,7 +8,7 @@ namespace ConnectTest
     {
         public static object SyncRoot = new object();
         static void Main(string[] args) {
-            var hs = new HyperSocket(SocketMode.Unicast);
+            var hs = new HyperSocket(SocketMode.Multicast);
             //hs.Received += letter => Console.WriteLine(DateTime.Now + " ACTUALY RECEIVED: " + letter.Parts[0].Data);
             int y = 0;
             hs.Sent += letter => {
@@ -29,7 +29,7 @@ namespace ConnectTest
             hs.Requeued += letter => Console.WriteLine("REQUEUED");
 
             hs.Connect(IPAddress.Parse("127.0.0.1"), 8001);
-            //hs.Connect(IPAddress.Parse("127.0.0.1"), 8002);
+            hs.Connect(IPAddress.Parse("127.0.0.1"), 8002);
             string line;
             while ((line = Console.ReadLine()) != null) {
                 if (line == "exit")

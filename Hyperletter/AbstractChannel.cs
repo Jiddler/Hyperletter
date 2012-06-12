@@ -27,13 +27,16 @@ namespace Hyperletter {
         private readonly ManualResetEventSlim _receiveSynchronization = new ManualResetEventSlim(false);
         private readonly Task _receiveTask;
 
+        private readonly ManualResetEventSlim _cleanUpLock = new ManualResetEventSlim(true);
+
         public event Action<AbstractChannel> CanSend;
         public event Action<AbstractChannel, ILetter> Received;
         public event Action<AbstractChannel, ILetter> Sent;
         public event Action<AbstractChannel, ILetter> FailedToSend;
 
         private IPart _talkingTo;
-        private bool _connected;
+        public bool IsConnected { get; private set; }
+        private bool _userLetterOnDeliveryQueue;
 
         protected AbstractChannel(HyperSocket hyperSocket, Binding binding) {
             _letterSerializer = new LetterSerializer();
@@ -50,9 +53,9 @@ namespace Hyperletter {
 
         protected virtual void Disconnected() {
             Log("MIGHT DISCONNECTED");
-            if (!_connected)
+            if (!IsConnected)
                 return;
-            _connected = false;
+            IsConnected = false;
 
             Log("DISCONNECTED");
             _deliverSynchronization.Reset();
@@ -69,7 +72,7 @@ namespace Hyperletter {
             _receiveSynchronization.Set();
             BeginSend();
 
-            _connected = true;
+            IsConnected = true;
             Log("CONNECTED");
         }
 
@@ -82,25 +85,30 @@ namespace Hyperletter {
         }
 
         public void HealthCheck() {
-            if (!_connected)
+            if (!IsConnected)
                 return;
 
             bool healty;
             try {
-                healty = TcpClient.Connected && !(TcpClient.Client.Poll(100, SelectMode.SelectRead) && TcpClient.Client.Available == 0);
+                healty = TcpClient.Connected && !(TcpClient.Client.Poll(1, SelectMode.SelectRead) && TcpClient.Client.Available == 0);
             } catch (SocketException) {
                 healty = false;
             }
 
             if (!healty) {
-                FailQueuedLetters();
-                Disconnected();
+                Failure();
             }
         }
 
         public void Enqueue(ILetter letter) {
+            _cleanUpLock.Wait();
+
             _letterQueue.Enqueue(letter);
-            QueueForDelivery(letter, letter);
+
+            if(!_userLetterOnDeliveryQueue) {
+                _userLetterOnDeliveryQueue = true;
+                QueueForDelivery(letter, letter);
+            }
         }
         
         private void QueueForDelivery(ILetter letter, ILetter context) {
@@ -188,7 +196,17 @@ namespace Hyperletter {
                     if (sentLetter.LetterType == LetterType.User) 
                         Sent(this, sentLetter);
 
-                    CanSend(this);
+                    if (_hyperSocket.SocketMode == SocketMode.Unicast) {
+                        _userLetterOnDeliveryQueue = false;
+                        CanSend(this);
+                    } else if (_hyperSocket.SocketMode == SocketMode.Multicast) {
+                        ILetter nextLetter;
+                        if (_letterQueue.TryPeek(out nextLetter)) {
+                            QueueForDelivery(nextLetter, nextLetter);
+                        } else {
+                            _userLetterOnDeliveryQueue = false;
+                        }
+                    }
                 } else {
                     if (letter.LetterType == LetterType.Initialize)
                         _talkingTo = letter.Parts[0];
@@ -200,8 +218,10 @@ namespace Hyperletter {
         }
 
         private void Failure() {
+            _cleanUpLock.Reset();
             FailQueuedLetters();
             Disconnected();
+            _cleanUpLock.Set();
         }
 
         private void FailQueuedLetters() {
@@ -210,6 +230,11 @@ namespace Hyperletter {
                 if (letter.LetterType == LetterType.User)
                     FailedToSend(this, letter);
             }
+
+            DeliveryContext deliveryContext;
+            while (_deliveryQueye.TryDequeue(out deliveryContext)) {}
+
+            _userLetterOnDeliveryQueue = false;
         }
 
         private bool ReceivedFullLetter() {
