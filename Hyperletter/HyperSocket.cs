@@ -102,7 +102,7 @@ namespace Hyperletter {
 
         private void ChannelFailedToSend(AbstractChannel abstractChannel, ILetter letter) {
             if (SocketMode == SocketMode.Unicast) {
-                if (letter.Options.IsSet(LetterOptions.DontRetry)) {
+                if (letter.Options.IsSet(LetterOptions.NoRequeue)) {
                     Discard(abstractChannel, letter);
                 } else {
                     _prioritySendQueue.Enqueue(letter);
