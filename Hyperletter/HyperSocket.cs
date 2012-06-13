@@ -2,6 +2,7 @@
 using System.Collections.Concurrent;
 using System.Net;
 using System.Threading;
+using Hyperletter.Extension;
 
 namespace Hyperletter {
     public class HyperSocket {
@@ -101,15 +102,23 @@ namespace Hyperletter {
 
         private void ChannelFailedToSend(AbstractChannel abstractChannel, ILetter letter) {
             if (SocketMode == SocketMode.Unicast) {
-                _prioritySendQueue.Enqueue(letter);
-                if (Requeued != null)
-                    Requeued(letter);
+                if (letter.Options.IsSet(LetterOptions.DontRetry)) {
+                    Discard(abstractChannel, letter);
+                } else {
+                    _prioritySendQueue.Enqueue(letter);
+                    if (Requeued != null)
+                        Requeued(letter);
 
-                TrySend();
+                    TrySend();
+                }
             } else if (SocketMode == SocketMode.Multicast) {
-                if (Discarded != null)
-                    Discarded(abstractChannel.Binding, letter);
+                Discard(abstractChannel, letter);
             }
+        }
+
+        private void Discard(AbstractChannel abstractChannel, ILetter letter) {
+            if (Discarded != null && letter.Options.IsSet(LetterOptions.SilentDiscard))
+                Discarded(abstractChannel.Binding, letter);
         }
 
         public void Send(ILetter letter) {

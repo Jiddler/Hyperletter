@@ -13,6 +13,7 @@ namespace Hyperletter {
         }
 
         public LetterType LetterType { get; set; }
+        public LetterOptions Options { get; set; }
         public IPart[] Parts { get; set; }
     }
 }

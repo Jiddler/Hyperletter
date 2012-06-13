@@ -8,15 +8,15 @@ namespace ConnectTest
     {
         public static object SyncRoot = new object();
         static void Main(string[] args) {
-            var hs = new HyperSocket(SocketMode.Multicast);
+            var hs = new HyperSocket(SocketMode.Unicast);
             //hs.Received += letter => Console.WriteLine(DateTime.Now + " ACTUALY RECEIVED: " + letter.Parts[0].Data);
             int y = 0;
             hs.Sent += letter => {
                 lock (SyncRoot) {
                     y++;
-                    if (y%500 == 0) {
+                    //if (y%500 == 0) {
                         Console.WriteLine("->" + y);
-                    }
+                    //}
                 }
             };
             int z = 0;
@@ -37,8 +37,8 @@ namespace ConnectTest
                 if(line == "s")
                     Console.WriteLine(y);
                 else 
-                    for (int i = 0; i < 1000; i++ )
-                        hs.Send(new Letter() { LetterType = LetterType.User, Parts = new IPart[] { new Part { PartType = PartType.User, Data = new[] { (byte)'A' } } } });
+                    for (int i = 0; i < 10; i++ )
+                        hs.Send(new Letter() { Options = LetterOptions.NoAck, LetterType = LetterType.User, Parts = new IPart[] { new Part { PartType = PartType.User, Data = new[] { (byte)'A' } } } });
             }
         }
 

@@ -1,11 +1,11 @@
 using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
+using Hyperletter.Extension;
 
 namespace Hyperletter {
     public abstract class AbstractChannel {
@@ -15,7 +15,6 @@ namespace Hyperletter {
         
         private readonly LetterSerializer _letterSerializer;
         private readonly HyperSocket _hyperSocket;
-        private readonly object _syncRoot = new object();
 
         private readonly ConcurrentQueue<DeliveryContext> _deliveryQueye = new ConcurrentQueue<DeliveryContext>(); 
         private readonly ConcurrentQueue<ILetter> _letterQueue = new ConcurrentQueue<ILetter>();
@@ -67,7 +66,7 @@ namespace Hyperletter {
 
         protected void Connected() {
             _receiveBuffer.SetLength(0);
-            _letterQueue.Select(s => s).ToList();
+            _letterQueue.Clear();
             
             _receiveSynchronization.Set();
             BeginSend();
@@ -140,13 +139,19 @@ namespace Hyperletter {
         }
 
         private void HandleLetterSent(DeliveryContext deliveryContext) {
+            if(deliveryContext.Send.Options.IsSet(LetterOptions.NoAck)) {
+                ILetter sentLetter;
+                _letterQueue.TryDequeue(out sentLetter);
+
+                SignalCanSendMoreUserLetter();
+            }
         }
 
         private void HandleAckSent(DeliveryContext deliveryContext) {
             var receivedLetter = deliveryContext.Context;
 
             if(receivedLetter.LetterType == LetterType.User)
-                Received(this, receivedLetter);
+                TriggerReceived(receivedLetter);
             else if(receivedLetter.LetterType == LetterType.Initialize)
                 _talkingTo = receivedLetter.Parts[0];
         }
@@ -196,23 +201,34 @@ namespace Hyperletter {
                     if (sentLetter.LetterType == LetterType.User) 
                         Sent(this, sentLetter);
 
-                    if (_hyperSocket.SocketMode == SocketMode.Unicast) {
-                        _userLetterOnDeliveryQueue = false;
-                        CanSend(this);
-                    } else if (_hyperSocket.SocketMode == SocketMode.Multicast) {
-                        ILetter nextLetter;
-                        if (_letterQueue.TryPeek(out nextLetter)) {
-                            QueueForDelivery(nextLetter, nextLetter);
-                        } else {
-                            _userLetterOnDeliveryQueue = false;
-                        }
-                    }
+                    SignalCanSendMoreUserLetter();
                 } else {
                     if (letter.LetterType == LetterType.Initialize)
                         _talkingTo = letter.Parts[0];
 
-                    var ack = new Letter { LetterType = LetterType.Ack };
-                    QueueForDelivery(ack, letter);
+                    if (letter.Options.IsSet(LetterOptions.NoAck))
+                        TriggerReceived(letter);
+                    else
+                        QueueAck(letter);
+                }
+            }
+        }
+
+        private void QueueAck(ILetter letter) {
+            var ack = new Letter {LetterType = LetterType.Ack};
+            QueueForDelivery(ack, letter);
+        }
+
+        private void SignalCanSendMoreUserLetter() {
+            if (_hyperSocket.SocketMode == SocketMode.Unicast) {
+                _userLetterOnDeliveryQueue = false;
+                CanSend(this);
+            } else if (_hyperSocket.SocketMode == SocketMode.Multicast) {
+                ILetter nextLetter;
+                if (_letterQueue.TryPeek(out nextLetter)) {
+                    QueueForDelivery(nextLetter, nextLetter);
+                } else {
+                    _userLetterOnDeliveryQueue = false;
                 }
             }
         }
@@ -231,9 +247,7 @@ namespace Hyperletter {
                     FailedToSend(this, letter);
             }
 
-            DeliveryContext deliveryContext;
-            while (_deliveryQueye.TryDequeue(out deliveryContext)) {}
-
+            _deliveryQueye.Clear();
             _userLetterOnDeliveryQueue = false;
         }
 
@@ -243,6 +257,10 @@ namespace Hyperletter {
 
         private bool IsNewMessage() {
             return _receiveBuffer.Length == 0;
+        }
+
+        private void TriggerReceived(ILetter receivedLetter) {
+            Received(this, receivedLetter);
         }
     }
 }

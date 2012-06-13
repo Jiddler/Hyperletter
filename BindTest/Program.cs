@@ -12,19 +12,6 @@ namespace BindTest
             var hs = new HyperSocket();
             int i = 0;
             Stopwatch sw = new Stopwatch();
-            hs.Received += letter => {
-                if(i == 0)
-                    sw.Restart();
-                i++;
-                if (i % 500 == 0) {
-                    i = 0;
-                    Console.WriteLine(sw.ElapsedMilliseconds);
-                }
-
-                //Console.WriteLine(DateTime.Now + " ACTUALY RECEIVED: " + letter.Parts[0].Data);
-
-            };
-
             int y = 0;
             hs.Sent += letter => {
                 lock (SyncRoot) {
@@ -35,9 +22,13 @@ namespace BindTest
             };
             int z = 0;
             hs.Received += letter => {
+                if(z == 0)
+                    sw.Start();
                 z++;
-                if (z % 500 == 0)
+                //if (z % 10000 == 0)
                     Console.WriteLine("<-" + z);
+                //if(z == 100000)
+                  //  Console.WriteLine("Received: " + z + " in " + sw.ElapsedMilliseconds + " ms");
             };
 
             int port = int.Parse(args[0]);

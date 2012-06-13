@@ -20,10 +20,11 @@ namespace Hyperletter {
             ms.Position = 4;
             ms.WriteByte((byte) letter.LetterType);
             ms.Write(letter.Id.ToByteArray(), 0, 16);
-            ms.Write(BitConverter.GetBytes(letter.Parts == null ? 0x000000 : letter.Parts.Length), 0, 4);
+            ms.WriteByte((byte)letter.Options);
         }
 
         private static void WriteParts(ILetter letter, MemoryStream ms) {
+            ms.Write(BitConverter.GetBytes(letter.Parts == null ? 0x000000 : letter.Parts.Length), 0, 4);
             for (int i = 0; letter.Parts != null && i < letter.Parts.Length; i++)
                 WritePart(letter.Parts[i].PartType, letter.Parts[i].Data, ms);
         }
@@ -38,12 +39,13 @@ namespace Hyperletter {
             var letter = new Letter();
             letter.LetterType = (LetterType) serializedLetter[4];
             letter.Id = new Guid(GetByteRange(serializedLetter, 5, 16));
+            letter.Options = (LetterOptions) serializedLetter[21];
             letter.Parts = GetParts(serializedLetter);
             return letter;
         }
 
         private IPart[] GetParts(byte[] serializedLetter) {
-            int position = 21;
+            int position = 22;
             
             var partCount = BitConverter.ToInt32(serializedLetter, position);
             var parts = new IPart[partCount];
@@ -51,7 +53,7 @@ namespace Hyperletter {
             if (partCount == 0)
                 return parts;
 
-            position = 25;
+            position = 26;
             int i = 0;
             while (position < serializedLetter.Length) {
                 Part part = new Part();

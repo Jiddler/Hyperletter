@@ -42,10 +42,13 @@
     <Compile Include="AbstractChannel.cs" />
     <Compile Include="Binding.cs" />
     <Compile Include="DeliveryContext.cs" />
+    <Compile Include="Extension\ConcurrentQueueExtensions.cs" />
+    <Compile Include="Extension\FlagsEnumExtensions.cs" />
     <Compile Include="ILetter.cs" />
     <Compile Include="InboundChannel.cs" />
     <Compile Include="IPart.cs" />
     <Compile Include="Letter.cs" />
+    <Compile Include="LetterOptions.cs" />
     <Compile Include="LetterSerializer.cs" />
     <Compile Include="LetterType.cs" />
     <Compile Include="OutboundChannel.cs" />
