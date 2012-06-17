@@ -1,8 +1,9 @@
 using System;
 using System.Net;
 using System.Net.Sockets;
+using Hyperletter.Abstraction;
 
-namespace Hyperletter {
+namespace Hyperletter.Core {
     internal class SocketListener {
         private readonly HyperSocket _hyperSocket;
         private readonly Binding _binding;

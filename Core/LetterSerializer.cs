@@ -1,7 +1,8 @@
-﻿using System;
+using System;
 using System.IO;
+using Hyperletter.Abstraction;
 
-namespace Hyperletter {
+namespace Hyperletter.Core {
     internal class LetterSerializer {
         public byte[] Serialize(ILetter letter) {
             var ms = new MemoryStream();
@@ -18,13 +19,13 @@ namespace Hyperletter {
 
         private static void WriteMetadata(ILetter letter, MemoryStream ms) {
             ms.Position = 4;
-            ms.WriteByte((byte) letter.LetterType);
+            ms.WriteByte((byte) letter.Type);
             ms.Write(letter.Id.ToByteArray(), 0, 16);
             ms.WriteByte((byte)letter.Options);
         }
 
         private static void WriteParts(ILetter letter, MemoryStream ms) {
-            ms.Write(BitConverter.GetBytes(letter.Parts == null ? 0x000000 : letter.Parts.Length), 0, 4);
+            ms.Write(BitConverter.GetBytes((int) (letter.Parts == null ? 0x000000 : letter.Parts.Length)), 0, 4);
             for (int i = 0; letter.Parts != null && i < letter.Parts.Length; i++)
                 WritePart(letter.Parts[i].PartType, letter.Parts[i].Data, ms);
         }
@@ -37,7 +38,7 @@ namespace Hyperletter {
 
         public ILetter Deserialize(byte[] serializedLetter) {
             var letter = new Letter();
-            letter.LetterType = (LetterType) serializedLetter[4];
+            letter.Type = (LetterType) serializedLetter[4];
             letter.Id = new Guid(GetByteRange(serializedLetter, 5, 16));
             letter.Options = (LetterOptions) serializedLetter[21];
             letter.Parts = GetParts(serializedLetter);

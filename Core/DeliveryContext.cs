@@ -1,4 +1,6 @@
-namespace Hyperletter {
+using Hyperletter.Abstraction;
+
+namespace Hyperletter.Core {
     internal class DeliveryContext {
         public ILetter Send { get; private set; }
         public ILetter Context { get; private set; }

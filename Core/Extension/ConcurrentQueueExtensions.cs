@@ -1,6 +1,6 @@
-﻿using System.Collections.Concurrent;
+using System.Collections.Concurrent;
 
-namespace Hyperletter.Extension {
+namespace Hyperletter.Core.Extension {
     public static class ConcurrentQueueExtensions {
         public static void Clear<T>(this ConcurrentQueue<T> dictionary) {
             T entry;

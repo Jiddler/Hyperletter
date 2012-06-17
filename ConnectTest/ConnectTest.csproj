@@ -48,6 +48,14 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\Abstraction\Abstraction.csproj">
+      <Project>{3EC2DAA6-C05B-4897-BEAD-CEE486BF66C9}</Project>
+      <Name>Abstraction</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Core\Core.csproj">
+      <Project>{3CABACB8-0FB8-49F8-B2DE-5C1283C92441}</Project>
+      <Name>Core</Name>
+    </ProjectReference>
     <ProjectReference Include="..\Hyperletter\Hyperletter.csproj">
       <Project>{2F5F841F-4BDA-415F-8BAA-AAF09EDAE68E}</Project>
       <Name>Hyperletter</Name>

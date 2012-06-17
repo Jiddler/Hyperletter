@@ -1,13 +1,13 @@
 using System;
 using System.Collections.Concurrent;
 using System.IO;
-using System.Linq;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
-using Hyperletter.Extension;
+using Hyperletter.Abstraction;
+using Hyperletter.Core.Extension;
 
-namespace Hyperletter {
+namespace Hyperletter.Core {
     public abstract class AbstractChannel {
         protected TcpClient TcpClient;
 
@@ -28,6 +28,8 @@ namespace Hyperletter {
 
         private readonly ManualResetEventSlim _cleanUpLock = new ManualResetEventSlim(true);
 
+        private readonly byte[] _tcpReceiveBuffer = new byte[512];
+
         public event Action<AbstractChannel> CanSend;
         public event Action<AbstractChannel, ILetter> Received;
         public event Action<AbstractChannel, ILetter> Sent;
@@ -36,6 +38,7 @@ namespace Hyperletter {
         private IPart _talkingTo;
         public bool IsConnected { get; private set; }
         private bool _userLetterOnDeliveryQueue;
+        private int _currentLength;
 
         protected AbstractChannel(HyperSocket hyperSocket, Binding binding) {
             _letterSerializer = new LetterSerializer();
@@ -51,17 +54,14 @@ namespace Hyperletter {
         }
 
         protected virtual void Disconnected() {
-            Log("MIGHT DISCONNECTED");
             if (!IsConnected)
                 return;
             IsConnected = false;
 
-            Log("DISCONNECTED");
             _deliverSynchronization.Reset();
             _receiveSynchronization.Reset();
 
             TcpClient.Client.Disconnect(false);
-            
         }
 
         protected void Connected() {
@@ -72,11 +72,10 @@ namespace Hyperletter {
             BeginSend();
 
             IsConnected = true;
-            Log("CONNECTED");
         }
 
         private void BeginSend() {
-            var letter = new Letter {LetterType = LetterType.Initialize, Parts = new IPart[] {new Part {Data = _hyperSocket.Id.ToByteArray()}}};
+            var letter = new Letter {Type = LetterType.Initialize, Parts = new IPart[] {new Part {Data = _hyperSocket.Id.ToByteArray()}}};
             Enqueue(letter);
         }
 
@@ -89,7 +88,7 @@ namespace Hyperletter {
 
             bool healty;
             try {
-                healty = TcpClient.Connected && !(TcpClient.Client.Poll(1, SelectMode.SelectRead) && TcpClient.Client.Available == 0);
+                healty = TcpClient.Connected; // && !(TcpClient.Client.Poll(1, SelectMode.SelectRead) && TcpClient.Client.Available == 0);
             } catch (SocketException) {
                 healty = false;
             }
@@ -127,7 +126,7 @@ namespace Hyperletter {
                             
                         if(status != SocketError.Success)
                             Failure();
-                        else if(deliveryContext.Send.LetterType == LetterType.Ack)
+                        else if(deliveryContext.Send.Type == LetterType.Ack)
                             HandleAckSent(deliveryContext);
                         else
                             HandleLetterSent(deliveryContext);
@@ -142,7 +141,7 @@ namespace Hyperletter {
             if(deliveryContext.Send.Options.IsSet(LetterOptions.NoAck)) {
                 ILetter sentLetter;
                 _letterQueue.TryDequeue(out sentLetter);
-
+                Sent(this, deliveryContext.Send);
                 SignalCanSendMoreUserLetter();
             }
         }
@@ -150,27 +149,23 @@ namespace Hyperletter {
         private void HandleAckSent(DeliveryContext deliveryContext) {
             var receivedLetter = deliveryContext.Context;
 
-            if(receivedLetter.LetterType == LetterType.User)
+            if(receivedLetter.Type == LetterType.User)
                 TriggerReceived(receivedLetter);
-            else if(receivedLetter.LetterType == LetterType.Initialize)
+            else if(receivedLetter.Type == LetterType.Initialize)
                 _talkingTo = receivedLetter.Parts[0];
         }
-
-        public static void Log(string message) {
-            Console.WriteLine(DateTime.Now.Ticks + " " + message);
-        }
-
+      
         private void Receive() {
             while(true) {
                 _receiveSynchronization.Wait();
-                var receiveBuffer = new byte[512];
+                
                 try {
                     SocketError status;
-                    var read = TcpClient.Client.Receive(receiveBuffer, 0, receiveBuffer.Length, SocketFlags.None, out status);
+                    var read = TcpClient.Client.Receive(_tcpReceiveBuffer, 0, _tcpReceiveBuffer.Length, SocketFlags.None, out status);
                     if(status != SocketError.Success || read == 0)
                         Failure();
                     else
-                        HandleReceived(receiveBuffer, read);
+                        HandleReceived(_tcpReceiveBuffer, read);
                 } catch (SocketException ex) {
                     Failure();
                 }
@@ -181,29 +176,29 @@ namespace Hyperletter {
             int bufferPosition = 0;
             while (bufferPosition < length) {
                 if (IsNewMessage()) {
-                    _receiveBuffer.Capacity = BitConverter.ToInt32(buffer, bufferPosition);
+                    _currentLength = BitConverter.ToInt32(buffer, bufferPosition);
                 }
 
-                var write = (int)Math.Min(_receiveBuffer.Capacity - _receiveBuffer.Length, length - bufferPosition);
+                var write = (int)Math.Min(_currentLength - _receiveBuffer.Length, length - bufferPosition);
                 _receiveBuffer.Write(buffer, bufferPosition, write);
                 bufferPosition += write;
 
                 if (!ReceivedFullLetter())
                     return;
-                int l = (int)_receiveBuffer.Length;
+
                 var letter = _letterSerializer.Deserialize(_receiveBuffer.ToArray());
                 _receiveBuffer.SetLength(0);
 
-                if (letter.LetterType == LetterType.Ack) {
+                if (letter.Type == LetterType.Ack) {
                     ILetter sentLetter;
                     _letterQueue.TryDequeue(out sentLetter);
 
-                    if (sentLetter.LetterType == LetterType.User) 
+                    if (sentLetter.Type == LetterType.User) 
                         Sent(this, sentLetter);
 
                     SignalCanSendMoreUserLetter();
                 } else {
-                    if (letter.LetterType == LetterType.Initialize)
+                    if (letter.Type == LetterType.Initialize)
                         _talkingTo = letter.Parts[0];
 
                     if (letter.Options.IsSet(LetterOptions.NoAck))
@@ -215,7 +210,7 @@ namespace Hyperletter {
         }
 
         private void QueueAck(ILetter letter) {
-            var ack = new Letter {LetterType = LetterType.Ack};
+            var ack = new Letter {Type = LetterType.Ack};
             QueueForDelivery(ack, letter);
         }
 
@@ -243,7 +238,7 @@ namespace Hyperletter {
         private void FailQueuedLetters() {
             ILetter letter;
             while(_letterQueue.TryDequeue(out letter)) {
-                if (letter.LetterType == LetterType.User)
+                if (letter.Type == LetterType.User)
                     FailedToSend(this, letter);
             }
 
@@ -252,7 +247,7 @@ namespace Hyperletter {
         }
 
         private bool ReceivedFullLetter() {
-            return _receiveBuffer.Length == _receiveBuffer.Capacity;
+            return _receiveBuffer.Length == _currentLength;
         }
 
         private bool IsNewMessage() {

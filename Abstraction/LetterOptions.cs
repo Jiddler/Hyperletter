@@ -1,6 +1,6 @@
-﻿using System;
+using System;
 
-namespace Hyperletter {
+namespace Hyperletter.Abstraction {
     [Flags]
     public enum LetterOptions : byte {
         SilentDiscard,

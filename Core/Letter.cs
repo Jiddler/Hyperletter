@@ -1,6 +1,7 @@
 using System;
+using Hyperletter.Abstraction;
 
-namespace Hyperletter {
+namespace Hyperletter.Core {
     public class Letter : ILetter {
         private Guid? _id;
         public Guid Id {
@@ -12,7 +13,7 @@ namespace Hyperletter {
             set { _id = value; }
         }
 
-        public LetterType LetterType { get; set; }
+        public LetterType Type { get; set; }
         public LetterOptions Options { get; set; }
         public IPart[] Parts { get; set; }
     }

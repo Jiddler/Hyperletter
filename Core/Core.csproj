@@ -4,16 +4,15 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{42C8CAA6-3A1D-4EED-961D-449D5139ED7A}</ProjectGuid>
-    <OutputType>Exe</OutputType>
+    <ProjectGuid>{3CABACB8-0FB8-49F8-B2DE-5C1283C92441}</ProjectGuid>
+    <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>BindTest</RootNamespace>
-    <AssemblyName>BindTest</AssemblyName>
+    <RootNamespace>Hyperletter.Core</RootNamespace>
+    <AssemblyName>Hyperletter.Core</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <PlatformTarget>AnyCPU</PlatformTarget>
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
@@ -23,7 +22,6 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <PlatformTarget>AnyCPU</PlatformTarget>
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>bin\Release\</OutputPath>
@@ -41,24 +39,23 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Program.cs" />
+    <Compile Include="AbstractChannel.cs" />
+    <Compile Include="DeliveryContext.cs" />
+    <Compile Include="Extension\ConcurrentQueueExtensions.cs" />
+    <Compile Include="Extension\FlagsEnumExtensions.cs" />
+    <Compile Include="HyperSocket.cs" />
+    <Compile Include="InboundChannel.cs" />
+    <Compile Include="Letter.cs" />
+    <Compile Include="LetterSerializer.cs" />
+    <Compile Include="OutboundChannel.cs" />
+    <Compile Include="Part.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="App.config" />
+    <Compile Include="SocketListener.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Abstraction\Abstraction.csproj">
       <Project>{3EC2DAA6-C05B-4897-BEAD-CEE486BF66C9}</Project>
       <Name>Abstraction</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\Core\Core.csproj">
-      <Project>{3CABACB8-0FB8-49F8-B2DE-5C1283C92441}</Project>
-      <Name>Core</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\Hyperletter\Hyperletter.csproj">
-      <Project>{2F5F841F-4BDA-415F-8BAA-AAF09EDAE68E}</Project>
-      <Name>Hyperletter</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

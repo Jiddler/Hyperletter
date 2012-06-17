@@ -1,7 +1,8 @@
 using System;
 using System.Net.Sockets;
+using Hyperletter.Abstraction;
 
-namespace Hyperletter {
+namespace Hyperletter.Core {
     public class InboundChannel : AbstractChannel {
         public event Action<AbstractChannel, Binding> Disconnect;
 

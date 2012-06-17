@@ -1,4 +1,4 @@
-namespace Hyperletter {
+namespace Hyperletter.Abstraction {
     public enum LetterType : byte {
         Ack = 0x01,
         User = 0x02,

@@ -1,8 +1,9 @@
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
+using Hyperletter.Abstraction;
 
-namespace Hyperletter {
+namespace Hyperletter.Core {
     public class OutboundChannel : AbstractChannel {
         private bool _connected;
         private bool _connecting;

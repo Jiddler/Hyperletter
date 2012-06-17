@@ -1,11 +1,12 @@
-﻿using System;
+using System;
 using System.Collections.Concurrent;
 using System.Net;
 using System.Threading;
-using Hyperletter.Extension;
+using Hyperletter.Abstraction;
+using Hyperletter.Core.Extension;
 
-namespace Hyperletter {
-    public class HyperSocket {
+namespace Hyperletter.Core {
+    public class HyperSocket : IHyperSocket {
         public event Action<ILetter> Sent;
         public event Action<ILetter> Received;
         public event Action<ILetter> Requeued;

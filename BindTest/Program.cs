@@ -2,6 +2,8 @@
 using System.Diagnostics;
 using System.Net;
 using Hyperletter;
+using Hyperletter.Abstraction;
+using Hyperletter.Core;
 
 namespace BindTest
 {
@@ -23,12 +25,14 @@ namespace BindTest
             int z = 0;
             hs.Received += letter => {
                 if(z == 0)
-                    sw.Start();
+                    sw.Restart();
                 z++;
-                //if (z % 10000 == 0)
+                if (z % 10000 == 0)
                     Console.WriteLine("<-" + z);
-                //if(z == 100000)
-                  //  Console.WriteLine("Received: " + z + " in " + sw.ElapsedMilliseconds + " ms");
+                if (z % 100000 == 0) {
+                    Console.WriteLine("Received: " + z + " in " + sw.ElapsedMilliseconds + " ms" + ". " + (z/sw.ElapsedMilliseconds) + " letter/millisecond");
+                    z = 0;
+                }
             };
 
             int port = int.Parse(args[0]);
@@ -40,7 +44,7 @@ namespace BindTest
                     continue;
                 
                 for (int m = 0; m < 1000; m++ )
-                    hs.Send(new Letter() { LetterType = LetterType.User, Parts = new IPart[] { new Part { PartType = PartType.User, Data = new[] { (byte)'A' } } } });
+                    hs.Send(new Letter() { Type = LetterType.User, Parts = new IPart[] { new Part { PartType = PartType.User, Data = new[] { (byte)'A' } } } });
             }
         }
     }

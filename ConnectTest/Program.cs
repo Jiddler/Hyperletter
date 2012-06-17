@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Net;
 using Hyperletter;
+using Hyperletter.Abstraction;
+using Hyperletter.Core;
 
 namespace ConnectTest
 {
@@ -14,15 +16,15 @@ namespace ConnectTest
             hs.Sent += letter => {
                 lock (SyncRoot) {
                     y++;
-                    //if (y%500 == 0) {
+                    if (y%5000 == 0) {
                         Console.WriteLine("->" + y);
-                    //}
+                    }
                 }
             };
             int z = 0;
             hs.Received += letter => {
                 z++;
-                if(z % 500 == 0)
+                if(z % 5000 == 0)
                     Console.WriteLine("<-" + z);
             };
             hs.Discarded += hs_Discarded;
@@ -37,8 +39,9 @@ namespace ConnectTest
                 if(line == "s")
                     Console.WriteLine(y);
                 else 
-                    for (int i = 0; i < 10; i++ )
-                        hs.Send(new Letter() { Options = LetterOptions.NoAck, LetterType = LetterType.User, Parts = new IPart[] { new Part { PartType = PartType.User, Data = new[] { (byte)'A' } } } });
+                    for (int i = 0; i < 100000; i++ )
+                        hs.Send(new Letter() { Options = LetterOptions.NoAck, Type = LetterType.User, Parts = new IPart[] { new Part { PartType = PartType.User, Data = new[] { (byte)'A' } } } });
+                        //hs.Send(new Letter() { Type = Type.User, Parts = new IPart[] { new Part { PartType = PartType.User, Data = new[] { (byte)'A' } } } });
             }
         }
 
