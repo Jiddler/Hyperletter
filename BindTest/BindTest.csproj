@@ -56,10 +56,6 @@
       <Project>{3CABACB8-0FB8-49F8-B2DE-5C1283C92441}</Project>
       <Name>Core</Name>
     </ProjectReference>
-    <ProjectReference Include="..\Hyperletter\Hyperletter.csproj">
-      <Project>{2F5F841F-4BDA-415F-8BAA-AAF09EDAE68E}</Project>
-      <Name>Hyperletter</Name>
-    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

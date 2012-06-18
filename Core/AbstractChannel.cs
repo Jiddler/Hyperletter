@@ -30,6 +30,9 @@ namespace Hyperletter.Core {
 
         private readonly byte[] _tcpReceiveBuffer = new byte[512];
 
+        public event Action<AbstractChannel> ChannelConnected;
+        public event Action<AbstractChannel> ChannelDisconnected;
+
         public event Action<AbstractChannel> CanSend;
         public event Action<AbstractChannel, ILetter> Received;
         public event Action<AbstractChannel, ILetter> Sent;
@@ -53,7 +56,7 @@ namespace Hyperletter.Core {
             _deliverTask.Start();
         }
 
-        protected virtual void Disconnected() {
+        protected void Disconnected() {
             if (!IsConnected)
                 return;
             IsConnected = false;
@@ -62,7 +65,13 @@ namespace Hyperletter.Core {
             _receiveSynchronization.Reset();
 
             TcpClient.Client.Disconnect(false);
+
+            ChannelDisconnected(this);
+            
+            AfterDisconnected();
         }
+
+        protected virtual void AfterDisconnected() { }
 
         protected void Connected() {
             _receiveBuffer.SetLength(0);
@@ -72,6 +81,8 @@ namespace Hyperletter.Core {
             BeginSend();
 
             IsConnected = true;
+
+            ChannelConnected(this);
         }
 
         private void BeginSend() {

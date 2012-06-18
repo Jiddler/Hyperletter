@@ -9,7 +9,7 @@ namespace Hyperletter.Core {
         private readonly Binding _binding;
         private TcpListener _listener;
 
-        public event Action<Binding, InboundChannel> Connection;
+        public event Action<InboundChannel> IncomingChannel;
 
         public SocketListener(HyperSocket hyperSocket, Binding binding) {
             _hyperSocket = hyperSocket;
@@ -32,12 +32,11 @@ namespace Hyperletter.Core {
             var tcpClient = _listener.EndAcceptTcpClient(res);
             var binding = GetBinding(tcpClient.Client.RemoteEndPoint);
             var boundChannel = new InboundChannel(_hyperSocket, tcpClient, binding);
-            Connection(binding, boundChannel);
+            IncomingChannel(boundChannel);
         }
 
         private Binding GetBinding(EndPoint endPoint) {
             var ipEndpoint = ((IPEndPoint) endPoint);
-            Console.WriteLine("INCOMMING CONNECTION: " + ipEndpoint.Address + ":" + ipEndpoint.Port);
             return new Binding(ipEndpoint.Address, ipEndpoint.Port);
         }
     }

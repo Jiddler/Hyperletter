@@ -5,7 +5,6 @@ using Hyperletter.Abstraction;
 
 namespace Hyperletter.Core {
     public class OutboundChannel : AbstractChannel {
-        private bool _connected;
         private bool _connecting;
 
         public OutboundChannel(HyperSocket hyperSocket, Binding binding) : base(hyperSocket, binding) {
@@ -16,7 +15,7 @@ namespace Hyperletter.Core {
         }
 
         private void TryConnect() {
-            if (_connected || _connecting)
+            if (IsConnected || _connecting)
                 return;
 
             _connecting = true;
@@ -27,8 +26,6 @@ namespace Hyperletter.Core {
                     try {
                         TcpClient.Connect(Binding.IpAddress, Binding.Port);
                         _connecting = false;
-                        _connected = true;
-                        
                         Connected();
                     } catch(SocketException) {
                         Thread.Sleep(1000);
@@ -38,11 +35,8 @@ namespace Hyperletter.Core {
 
             task.Start();
         }
-
-        protected override void Disconnected() {
-            base.Disconnected();
-            
-            _connected = false;
+        
+        protected override void AfterDisconnected() {
             TryConnect();
         }
     }

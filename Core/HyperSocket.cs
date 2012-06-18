@@ -12,6 +12,9 @@ namespace Hyperletter.Core {
         public event Action<ILetter> Requeued;
         public event Action<Binding, ILetter> Discarded;
 
+        public event Action<Binding> Connected;
+        public event Action<Binding> Disconnected;
+
         private readonly ConcurrentQueue<ILetter> _sendQueue = new ConcurrentQueue<ILetter>();
         private readonly ConcurrentQueue<ILetter> _prioritySendQueue = new ConcurrentQueue<ILetter>();
 
@@ -55,10 +58,7 @@ namespace Hyperletter.Core {
             
             var listener = new SocketListener(this, binding);
             _listeners[binding] = listener;
-            listener.Connection += (incomingBinding, channel) => {
-                channel.Disconnect += ClientOnDisconnect;
-                HookupChannel(incomingBinding, channel);
-            };
+            listener.IncomingChannel += HookupChannel;
    
             listener.Start();
         }
@@ -68,27 +68,39 @@ namespace Hyperletter.Core {
             TrySend();
         }
 
-        private void ClientOnDisconnect(AbstractChannel abstractChannel, Binding binding) {
-            AbstractChannel value;
-            _channels.TryRemove(binding, out value);
-        }
-
         public void Connect(IPAddress ipAddress, int port) {
             var bindingKey = new Binding(ipAddress, port);
             var channel = new OutboundChannel(this, bindingKey);
-            HookupChannel(bindingKey, channel);
+            HookupChannel(channel);
 
             channel.Connect();
         }
 
-        private void HookupChannel(Binding binding, AbstractChannel channel) {
+        private void HookupChannel(AbstractChannel channel) {
             channel.CanSend += ChannelCanSend;
             channel.Received += ChannelReceived;
             channel.FailedToSend += ChannelFailedToSend;
             channel.Sent += ChannelSent;
+            channel.ChannelDisconnected += ChannelDisconnected;
+            channel.ChannelConnected += ChannelConnected;
 
-            _channels[binding] = channel;
+            _channels[channel.Binding] = channel;
             channel.Initialize();
+        }
+
+        private void ChannelConnected(AbstractChannel obj) {
+            if (Connected != null)
+                Connected(obj.Binding);
+        }
+
+        private void ChannelDisconnected(AbstractChannel obj) {
+            if(obj is InboundChannel) {
+                AbstractChannel value;
+                _channels.TryRemove(obj.Binding, out value);
+            }
+
+            if (Disconnected != null)
+                Disconnected(obj.Binding);
         }
 
         private void ChannelReceived(AbstractChannel channel, ILetter letter) {

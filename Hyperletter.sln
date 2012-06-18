@@ -1,8 +1,6 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 11
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Hyperletter", "Hyperletter\Hyperletter.csproj", "{2F5F841F-4BDA-415F-8BAA-AAF09EDAE68E}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BindTest", "BindTest\BindTest.csproj", "{42C8CAA6-3A1D-4EED-961D-449D5139ED7A}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ConnectTest", "ConnectTest\ConnectTest.csproj", "{1A6EE45B-71F0-4907-A9C2-70FD8C10465B}"
@@ -21,10 +19,6 @@ Global
 		{1A6EE45B-71F0-4907-A9C2-70FD8C10465B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1A6EE45B-71F0-4907-A9C2-70FD8C10465B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{1A6EE45B-71F0-4907-A9C2-70FD8C10465B}.Release|Any CPU.Build.0 = Release|Any CPU
-		{2F5F841F-4BDA-415F-8BAA-AAF09EDAE68E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{2F5F841F-4BDA-415F-8BAA-AAF09EDAE68E}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{2F5F841F-4BDA-415F-8BAA-AAF09EDAE68E}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{2F5F841F-4BDA-415F-8BAA-AAF09EDAE68E}.Release|Any CPU.Build.0 = Release|Any CPU
 		{3CABACB8-0FB8-49F8-B2DE-5C1283C92441}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{3CABACB8-0FB8-49F8-B2DE-5C1283C92441}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3CABACB8-0FB8-49F8-B2DE-5C1283C92441}.Release|Any CPU.ActiveCfg = Release|Any CPU
