@@ -11,8 +11,8 @@ namespace Hyperletter.Core.Channel {
         private readonly LetterSerializer _letterSerializer;
         private readonly CancellationTokenSource _cancellationTokenSource;
 
-        private readonly ConcurrentQueue<TransmitContext> _queue = new ConcurrentQueue<TransmitContext>();  
-        private readonly ManualResetEventSlim _resetEvent = new ManualResetEventSlim(false);
+        private readonly ConcurrentQueue<TransmitContext> _queue = new ConcurrentQueue<TransmitContext>();
+        private readonly AutoResetEvent _resetEvent = new AutoResetEvent(false);
         
         private Task _transmitTask;
 
@@ -42,13 +42,12 @@ namespace Hyperletter.Core.Channel {
         }
 
         private void Transmit() {
-            try {
-                while(true) {
-                    _resetEvent.Wait(_cancellationTokenSource.Token);
-                    TransmitAllQueued();
-                    _resetEvent.Reset();
-                }
-            } catch (OperationCanceledException) {
+            while(true) {
+                _resetEvent.WaitOne();
+                if (_cancellationTokenSource.IsCancellationRequested)
+                    return;
+
+                TransmitAllQueued();
             }
         }
 

@@ -12,7 +12,7 @@ namespace Hyperletter.Core.Channel {
         private readonly LetterSerializer _letterSerializer;
 
         private readonly byte[] _tcpReceiveBuffer = new byte[512];
-        private readonly MemoryStream _receiveBuffer = new MemoryStream(512);
+        private readonly MemoryStream _receiveBuffer = new MemoryStream();
 
         private Task _receiveTask;
         private int _currentLength;
