@@ -40,7 +40,9 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AbstractChannel.cs" />
-    <Compile Include="DeliveryContext.cs" />
+    <Compile Include="Channel\LetterReceiver.cs" />
+    <Compile Include="Channel\LetterTransmitter.cs" />
+    <Compile Include="Channel\TransmitContext.cs" />
     <Compile Include="Extension\ConcurrentQueueExtensions.cs" />
     <Compile Include="Extension\FlagsEnumExtensions.cs" />
     <Compile Include="HyperSocket.cs" />
@@ -58,6 +60,7 @@
       <Name>Abstraction</Name>
     </ProjectReference>
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

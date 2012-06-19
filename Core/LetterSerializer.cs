@@ -76,9 +76,9 @@ namespace Hyperletter.Core {
             return BitConverter.ToInt32(buffer, position);
         }
 
-        private byte[] GetByteRange(byte[] buffer, int i, int length) {
+        private byte[] GetByteRange(byte[] buffer, int startIndex, int length) {
             var result = new byte[length];
-            Buffer.BlockCopy(buffer, i, result, 0, length);
+            Buffer.BlockCopy(buffer, startIndex, result, 0, length);
             return result;
         }
     }

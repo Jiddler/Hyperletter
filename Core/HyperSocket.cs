@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Concurrent;
 using System.Net;
-using System.Threading;
 using Hyperletter.Abstraction;
 using Hyperletter.Core.Extension;
 
@@ -21,9 +20,8 @@ namespace Hyperletter.Core {
         private readonly ConcurrentQueue<AbstractChannel> _channelQueue = new ConcurrentQueue<AbstractChannel>();
         private readonly ConcurrentDictionary<Binding, AbstractChannel> _channels = new ConcurrentDictionary<Binding, AbstractChannel>();
         private readonly ConcurrentDictionary<Binding, SocketListener> _listeners = new ConcurrentDictionary<Binding, SocketListener>();
-        private readonly Timer _timer;
 
-        protected object SyncRoot = new object();
+        private readonly object _syncRoot = new object();
 
         public Guid Id { get; private set; }
         public SocketMode SocketMode { get; set; }
@@ -40,17 +38,6 @@ namespace Hyperletter.Core {
         public HyperSocket(Guid id, SocketMode socketMode) {
             Id = id;
             SocketMode = socketMode;
-
-            _timer = new Timer(HealthCheckChannels, null, 1000, Timeout.Infinite);
-        }
-
-        private void HealthCheckChannels(object state) {
-            _timer.Change(Timeout.Infinite, Timeout.Infinite);
-
-            foreach(var channel in _channels.Values)
-                channel.HealthCheck();
-
-            _timer.Change(1000, Timeout.Infinite);
         }
 
         public void Bind(IPAddress ipAddress, int port) {
@@ -140,7 +127,7 @@ namespace Hyperletter.Core {
         }
 
         private void TrySend() {
-            lock (SyncRoot) {
+            lock (_syncRoot) {
                 if (SocketMode == SocketMode.Unicast)
                     TrySendUnicast();
                 else if (SocketMode == SocketMode.Multicast)

@@ -1,34 +1,27 @@
 using System;
 using System.Collections.Concurrent;
-using System.IO;
 using System.Net.Sockets;
 using System.Threading;
-using System.Threading.Tasks;
 using Hyperletter.Abstraction;
+using Hyperletter.Core.Channel;
 using Hyperletter.Core.Extension;
 
 namespace Hyperletter.Core {
     public abstract class AbstractChannel {
-        protected TcpClient TcpClient;
+        private const int HeartbeatInterval = 1000;
 
-        public Binding Binding { get; private set; }
+        protected TcpClient TcpClient;
         
-        private readonly LetterSerializer _letterSerializer;
         private readonly HyperSocket _hyperSocket;
 
-        private readonly ConcurrentQueue<DeliveryContext> _deliveryQueye = new ConcurrentQueue<DeliveryContext>(); 
+        private CancellationTokenSource _cancellationTokenSource;
+        private LetterTransmitter _transmitter;
+        private LetterReceiver _receiver;
+
         private readonly ConcurrentQueue<ILetter> _letterQueue = new ConcurrentQueue<ILetter>();
-        private readonly MemoryStream _receiveBuffer = new MemoryStream();
-
-        private readonly AutoResetEvent _deliverSynchronization = new AutoResetEvent(false);
-        private readonly Task _deliverTask;
-
-        private readonly ManualResetEventSlim _receiveSynchronization = new ManualResetEventSlim(false);
-        private readonly Task _receiveTask;
 
         private readonly ManualResetEventSlim _cleanUpLock = new ManualResetEventSlim(true);
-
-        private readonly byte[] _tcpReceiveBuffer = new byte[512];
+        private readonly Timer _heartbeat;
 
         public event Action<AbstractChannel> ChannelConnected;
         public event Action<AbstractChannel> ChannelDisconnected;
@@ -41,29 +34,55 @@ namespace Hyperletter.Core {
         private IPart _talkingTo;
         public bool IsConnected { get; private set; }
         private bool _userLetterOnDeliveryQueue;
-        private int _currentLength;
+        private DateTime _lastAction;
+
+        public Binding Binding { get; private set; }
 
         protected AbstractChannel(HyperSocket hyperSocket, Binding binding) {
-            _letterSerializer = new LetterSerializer();
+            _heartbeat = new Timer(Heartbeat);
 
             _hyperSocket = hyperSocket;
             Binding = binding;
+        }
 
-            _receiveTask = new Task(Receive);
-            _receiveTask.Start();
+        protected void Heartbeat(object state) {
+            if ((DateTime.Now - _lastAction).TotalMilliseconds > HeartbeatInterval) {
+                _transmitter.TransmitHeartbeat();
+            }
+        }
 
-            _deliverTask = new Task(Deliver);
-            _deliverTask.Start();
+        protected void Connected() {
+            IsConnected = true;
+
+            _cancellationTokenSource = new CancellationTokenSource();
+
+            _transmitter = new LetterTransmitter(TcpClient.Client, _cancellationTokenSource);
+            _transmitter.Sent += TransmitterOnSent;
+            _transmitter.SocketError += SocketError;
+            _transmitter.Start();
+
+            _receiver = new LetterReceiver(TcpClient.Client, _cancellationTokenSource);
+            _receiver.Received += ReceiverReceived;
+            _receiver.SocketError += SocketError;
+            _receiver.Start();
+
+            _userLetterOnDeliveryQueue = false;
+
+            _heartbeat.Change(HeartbeatInterval, HeartbeatInterval);
+
+            var letter = new Letter { Type = LetterType.Initialize, Parts = new IPart[] { new Part { Data = _hyperSocket.Id.ToByteArray() } } };
+            Enqueue(letter);
+
+            ChannelConnected(this);
         }
 
         protected void Disconnected() {
             if (!IsConnected)
                 return;
             IsConnected = false;
+            _heartbeat.Change(Timeout.Infinite, Timeout.Infinite);
 
-            _deliverSynchronization.Reset();
-            _receiveSynchronization.Reset();
-
+            _cancellationTokenSource.Cancel();
             TcpClient.Client.Disconnect(false);
 
             ChannelDisconnected(this);
@@ -73,40 +92,42 @@ namespace Hyperletter.Core {
 
         protected virtual void AfterDisconnected() { }
 
-        protected void Connected() {
-            _receiveBuffer.SetLength(0);
-            _letterQueue.Clear();
-            
-            _receiveSynchronization.Set();
-            BeginSend();
+        private void ReceiverReceived(ILetter receivedLetter) {
+            ResetHeartbeatTimer();
 
-            IsConnected = true;
+            if (receivedLetter.Type == LetterType.Ack) {
+                ILetter sentLetter;
+                _letterQueue.TryDequeue(out sentLetter);
 
-            ChannelConnected(this);
+                if (sentLetter.Type == LetterType.User)
+                    Sent(this, sentLetter);
+
+                SignalCanSendMoreUserLetter();
+            } else {
+                if (receivedLetter.Type == LetterType.Initialize)
+                    _talkingTo = receivedLetter.Parts[0];
+
+                if (receivedLetter.Options.IsSet(LetterOptions.NoAck))
+                    Received(this, receivedLetter);
+                else
+                    QueueAck(receivedLetter);
+            }
         }
 
-        private void BeginSend() {
-            var letter = new Letter {Type = LetterType.Initialize, Parts = new IPart[] {new Part {Data = _hyperSocket.Id.ToByteArray()}}};
-            Enqueue(letter);
+        private void TransmitterOnSent(TransmitContext transmitContext) {
+            ResetHeartbeatTimer();
+
+            if(transmitContext.Letter.Type == LetterType.Ack)
+                HandleAckSent(transmitContext);
+            else
+                HandleLetterSent(transmitContext);
+        }
+
+        private void ResetHeartbeatTimer() {
+            _lastAction = DateTime.Now;
         }
 
         public virtual void Initialize() {
-        }
-
-        public void HealthCheck() {
-            if (!IsConnected)
-                return;
-
-            bool healty;
-            try {
-                healty = TcpClient.Connected; // && !(TcpClient.Client.Poll(1, SelectMode.SelectRead) && TcpClient.Client.Available == 0);
-            } catch (SocketException) {
-                healty = false;
-            }
-
-            if (!healty) {
-                Failure();
-            }
         }
 
         public void Enqueue(ILetter letter) {
@@ -121,105 +142,27 @@ namespace Hyperletter.Core {
         }
         
         private void QueueForDelivery(ILetter letter, ILetter context) {
-            _deliveryQueye.Enqueue(new DeliveryContext(letter, context));
-            _deliverSynchronization.Set();
+            _transmitter.Enqueue(new TransmitContext(letter, context));
         }
 
-        private void Deliver() {
-            while(true) {
-                _deliverSynchronization.WaitOne();
-                DeliveryContext deliveryContext;
-                while(_deliveryQueye.TryDequeue(out deliveryContext)) {
-                    var letter = _letterSerializer.Serialize(deliveryContext.Send);
-                    try {
-                        SocketError status;
-                        TcpClient.Client.Send(letter, 0, letter.Length, SocketFlags.None, out status);
-                            
-                        if(status != SocketError.Success)
-                            Failure();
-                        else if(deliveryContext.Send.Type == LetterType.Ack)
-                            HandleAckSent(deliveryContext);
-                        else
-                            HandleLetterSent(deliveryContext);
-                    } catch(SocketException) {
-                        Failure();
-                    }
-                }
-            }
-        }
-
-        private void HandleLetterSent(DeliveryContext deliveryContext) {
-            if(deliveryContext.Send.Options.IsSet(LetterOptions.NoAck)) {
+        private void HandleLetterSent(TransmitContext deliveryContext) {
+            if(deliveryContext.Letter.Options.IsSet(LetterOptions.NoAck)) {
                 ILetter sentLetter;
                 _letterQueue.TryDequeue(out sentLetter);
-                Sent(this, deliveryContext.Send);
+                Sent(this, deliveryContext.Letter);
                 SignalCanSendMoreUserLetter();
             }
         }
 
-        private void HandleAckSent(DeliveryContext deliveryContext) {
+        private void HandleAckSent(TransmitContext deliveryContext) {
             var receivedLetter = deliveryContext.Context;
 
-            if(receivedLetter.Type == LetterType.User)
-                TriggerReceived(receivedLetter);
-            else if(receivedLetter.Type == LetterType.Initialize)
+            if(receivedLetter.Type == LetterType.User) {
+                Received(this, receivedLetter);
+            } else if(receivedLetter.Type == LetterType.Initialize)
                 _talkingTo = receivedLetter.Parts[0];
         }
       
-        private void Receive() {
-            while(true) {
-                _receiveSynchronization.Wait();
-                
-                try {
-                    SocketError status;
-                    var read = TcpClient.Client.Receive(_tcpReceiveBuffer, 0, _tcpReceiveBuffer.Length, SocketFlags.None, out status);
-                    if(status != SocketError.Success || read == 0)
-                        Failure();
-                    else
-                        HandleReceived(_tcpReceiveBuffer, read);
-                } catch (SocketException ex) {
-                    Failure();
-                }
-            }
-        }
-
-        private void HandleReceived(byte[] buffer, int length) {
-            int bufferPosition = 0;
-            while (bufferPosition < length) {
-                if (IsNewMessage()) {
-                    _currentLength = BitConverter.ToInt32(buffer, bufferPosition);
-                }
-
-                var write = (int)Math.Min(_currentLength - _receiveBuffer.Length, length - bufferPosition);
-                _receiveBuffer.Write(buffer, bufferPosition, write);
-                bufferPosition += write;
-
-                if (!ReceivedFullLetter())
-                    return;
-
-                var letter = _letterSerializer.Deserialize(_receiveBuffer.ToArray());
-                _receiveBuffer.SetLength(0);
-
-                if (letter.Type == LetterType.Ack) {
-                    ILetter sentLetter;
-                    _letterQueue.TryDequeue(out sentLetter);
-
-                    if (sentLetter.Type == LetterType.User) 
-                        Sent(this, sentLetter);
-
-                    SignalCanSendMoreUserLetter();
-                } else {
-                    if (letter.Type == LetterType.Initialize)
-                        _talkingTo = letter.Parts[0];
-
-                    if (letter.Options.IsSet(LetterOptions.NoAck))
-                        TriggerReceived(letter);
-                    else
-                        QueueAck(letter);
-                }
-            }
-        }
-
         private void QueueAck(ILetter letter) {
             var ack = new Letter {Type = LetterType.Ack};
             QueueForDelivery(ack, letter);
@@ -239,10 +182,13 @@ namespace Hyperletter.Core {
             }
         }
 
-        private void Failure() {
+        private void SocketError() {
             _cleanUpLock.Reset();
+            
+            _cancellationTokenSource.Cancel();
             FailQueuedLetters();
             Disconnected();
+
             _cleanUpLock.Set();
         }
 
@@ -252,21 +198,6 @@ namespace Hyperletter.Core {
                 if (letter.Type == LetterType.User)
                     FailedToSend(this, letter);
             }
-
-            _deliveryQueye.Clear();
-            _userLetterOnDeliveryQueue = false;
-        }
-
-        private bool ReceivedFullLetter() {
-            return _receiveBuffer.Length == _currentLength;
-        }
-
-        private bool IsNewMessage() {
-            return _receiveBuffer.Length == 0;
-        }
-
-        private void TriggerReceived(ILetter receivedLetter) {
-            Received(this, receivedLetter);
         }
     }
 }

@@ -19,7 +19,6 @@ namespace Hyperletter.Core {
                 return;
 
             _connecting = true;
-            
             var task = new Task(() => {
                 TcpClient = new TcpClient();
                 while(!TcpClient.Connected) {
