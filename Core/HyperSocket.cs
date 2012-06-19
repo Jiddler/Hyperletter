@@ -50,11 +50,6 @@ namespace Hyperletter.Core {
             listener.Start();
         }
 
-        private void ChannelCanSend(AbstractChannel abstractChannel) {
-            _channelQueue.Enqueue(abstractChannel);
-            TrySend();
-        }
-
         public void Connect(IPAddress ipAddress, int port) {
             var bindingKey = new Binding(ipAddress, port);
             var channel = new OutboundChannel(this, bindingKey);
@@ -64,7 +59,6 @@ namespace Hyperletter.Core {
         }
 
         private void HookupChannel(AbstractChannel channel) {
-            channel.CanSend += ChannelCanSend;
             channel.Received += ChannelReceived;
             channel.FailedToSend += ChannelFailedToSend;
             channel.Sent += ChannelSent;
@@ -98,6 +92,11 @@ namespace Hyperletter.Core {
         private void ChannelSent(AbstractChannel channel, ILetter letter) {
             if (Sent != null)
                 Sent(letter);
+
+            if (SocketMode == SocketMode.Unicast) {
+                _channelQueue.Enqueue(channel);
+                TrySend();
+            }
         }
 
         private void ChannelFailedToSend(AbstractChannel abstractChannel, ILetter letter) {

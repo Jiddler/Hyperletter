@@ -13,40 +13,44 @@ namespace Hyperletter.Core {
         protected TcpClient TcpClient;
         
         private readonly HyperSocket _hyperSocket;
+        private readonly bool _unicastMode;
 
         private CancellationTokenSource _cancellationTokenSource;
         private LetterTransmitter _transmitter;
         private LetterReceiver _receiver;
 
         private readonly ConcurrentQueue<ILetter> _letterQueue = new ConcurrentQueue<ILetter>();
+        private bool _userLetterOnDeliveryQueue;
 
         private readonly ManualResetEventSlim _cleanUpLock = new ManualResetEventSlim(true);
+        
         private readonly Timer _heartbeat;
+        private int _lastAction;
+        private int _lastActionHeartbeat;
 
         public event Action<AbstractChannel> ChannelConnected;
         public event Action<AbstractChannel> ChannelDisconnected;
 
-        public event Action<AbstractChannel> CanSend;
         public event Action<AbstractChannel, ILetter> Received;
         public event Action<AbstractChannel, ILetter> Sent;
         public event Action<AbstractChannel, ILetter> FailedToSend;
 
         private IPart _talkingTo;
+        
         public bool IsConnected { get; private set; }
-        private bool _userLetterOnDeliveryQueue;
-        private DateTime _lastAction;
-
         public Binding Binding { get; private set; }
 
         protected AbstractChannel(HyperSocket hyperSocket, Binding binding) {
-            _heartbeat = new Timer(Heartbeat);
-
             _hyperSocket = hyperSocket;
+            _unicastMode = _hyperSocket.SocketMode == SocketMode.Unicast;
             Binding = binding;
+            
+            _heartbeat = new Timer(Heartbeat);
         }
 
         protected void Heartbeat(object state) {
-            if ((DateTime.Now - _lastAction).TotalMilliseconds > HeartbeatInterval) {
+            if (_lastAction != _lastActionHeartbeat) {
+                _lastActionHeartbeat = _lastAction;
                 _transmitter.TransmitHeartbeat();
             }
         }
@@ -99,8 +103,7 @@ namespace Hyperletter.Core {
                 ILetter sentLetter;
                 _letterQueue.TryDequeue(out sentLetter);
 
-                if (sentLetter.Type == LetterType.User)
-                    Sent(this, sentLetter);
+                Sent(this, sentLetter);
 
                 SignalCanSendMoreUserLetter();
             } else {
@@ -123,10 +126,6 @@ namespace Hyperletter.Core {
                 HandleLetterSent(transmitContext);
         }
 
-        private void ResetHeartbeatTimer() {
-            _lastAction = DateTime.Now;
-        }
-
         public virtual void Initialize() {
         }
 
@@ -135,14 +134,14 @@ namespace Hyperletter.Core {
 
             _letterQueue.Enqueue(letter);
 
-            if(!_userLetterOnDeliveryQueue) {
-                _userLetterOnDeliveryQueue = true;
-                QueueForDelivery(letter, letter);
+            if (_unicastMode) {
+                _transmitter.Enqueue(new TransmitContext(letter));
+            } else {
+                if (!_userLetterOnDeliveryQueue) {
+                    _userLetterOnDeliveryQueue = true;
+                    _transmitter.Enqueue(new TransmitContext(letter));
+                }
             }
-        }
-        
-        private void QueueForDelivery(ILetter letter, ILetter context) {
-            _transmitter.Enqueue(new TransmitContext(letter, context));
         }
 
         private void HandleLetterSent(TransmitContext deliveryContext) {
@@ -165,17 +164,14 @@ namespace Hyperletter.Core {
       
         private void QueueAck(ILetter letter) {
             var ack = new Letter {Type = LetterType.Ack};
-            QueueForDelivery(ack, letter);
+            _transmitter.Enqueue(new TransmitContext(ack, letter));
         }
 
         private void SignalCanSendMoreUserLetter() {
-            if (_hyperSocket.SocketMode == SocketMode.Unicast) {
-                _userLetterOnDeliveryQueue = false;
-                CanSend(this);
-            } else if (_hyperSocket.SocketMode == SocketMode.Multicast) {
+            if (!_unicastMode) {
                 ILetter nextLetter;
                 if (_letterQueue.TryPeek(out nextLetter)) {
-                    QueueForDelivery(nextLetter, nextLetter);
+                    _transmitter.Enqueue(new TransmitContext(nextLetter));
                 } else {
                     _userLetterOnDeliveryQueue = false;
                 }
@@ -198,6 +194,12 @@ namespace Hyperletter.Core {
                 if (letter.Type == LetterType.User)
                     FailedToSend(this, letter);
             }
+        }
+
+        private void ResetHeartbeatTimer() {
+            _lastAction++;
+            if (_lastAction > 10000000)
+                _lastAction = 0;
         }
     }
 }
