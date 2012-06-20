@@ -31,7 +31,7 @@ namespace Hyperletter.Core {
             
             var tcpClient = _listener.EndAcceptTcpClient(res);
             var binding = GetBinding(tcpClient.Client.RemoteEndPoint);
-            var boundChannel = new InboundChannel(_hyperSocket, tcpClient, binding);
+            var boundChannel = new InboundChannel(_hyperSocket.Id, _hyperSocket.SocketMode, tcpClient, binding);
             IncomingChannel(boundChannel);
         }
 

@@ -4,7 +4,7 @@ using Hyperletter.Abstraction;
 
 namespace Hyperletter.Core {
     public class InboundChannel : AbstractChannel {
-        public InboundChannel(HyperSocket hyperSocket, TcpClient tcpClient, Binding binding) : base(hyperSocket, binding) {
+        public InboundChannel(Guid socketId, SocketMode socketMode, TcpClient tcpClient, Binding binding) : base(socketId, socketMode, binding) {
             TcpClient = tcpClient;
         }
 

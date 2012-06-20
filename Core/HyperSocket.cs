@@ -52,7 +52,7 @@ namespace Hyperletter.Core {
 
         public void Connect(IPAddress ipAddress, int port) {
             var bindingKey = new Binding(ipAddress, port);
-            var channel = new OutboundChannel(this, bindingKey);
+            var channel = new OutboundChannel(Id, SocketMode, bindingKey);
             HookupChannel(channel);
 
             channel.Connect();
@@ -137,11 +137,11 @@ namespace Hyperletter.Core {
         private void TrySendMulticast() {
             ILetter letter;
             while((letter = GetNextLetter()) != null) {
-                foreach (var channel in _channels) {
-                    if(channel.Value.IsConnected)
-                        channel.Value.Enqueue(letter);
+                foreach (var channel in _channels.Values) {
+                    if(channel.IsConnected)
+                        channel.Enqueue(letter);
                     else
-                        ChannelFailedToSend(channel.Value, letter);
+                        ChannelFailedToSend(channel, letter);
                 }
             }
         }

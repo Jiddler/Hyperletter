@@ -1,3 +1,4 @@
+using System;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
@@ -7,7 +8,7 @@ namespace Hyperletter.Core {
     public class OutboundChannel : AbstractChannel {
         private bool _connecting;
 
-        public OutboundChannel(HyperSocket hyperSocket, Binding binding) : base(hyperSocket, binding) {
+        public OutboundChannel(Guid socketId, SocketMode socketMode, Binding binding) : base(socketId, socketMode, binding) {
         }
 
         public void Connect() {

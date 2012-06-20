@@ -8,12 +8,11 @@ using Hyperletter.Core.Extension;
 
 namespace Hyperletter.Core {
     public abstract class AbstractChannel {
+        private readonly Guid _hyperSocketId;
+        private readonly SocketMode _socketMode;
         private const int HeartbeatInterval = 1000;
 
         protected TcpClient TcpClient;
-        
-        private readonly HyperSocket _hyperSocket;
-        private readonly bool _unicastMode;
 
         private CancellationTokenSource _cancellationTokenSource;
         private LetterTransmitter _transmitter;
@@ -40,11 +39,11 @@ namespace Hyperletter.Core {
         public bool IsConnected { get; private set; }
         public Binding Binding { get; private set; }
 
-        protected AbstractChannel(HyperSocket hyperSocket, Binding binding) {
-            _hyperSocket = hyperSocket;
-            _unicastMode = _hyperSocket.SocketMode == SocketMode.Unicast;
+        protected AbstractChannel(Guid hyperSocketId, SocketMode socketMode, Binding binding) {
+            _hyperSocketId = hyperSocketId;
+            _socketMode = socketMode;
             Binding = binding;
-            
+
             _heartbeat = new Timer(Heartbeat);
         }
 
@@ -74,7 +73,7 @@ namespace Hyperletter.Core {
 
             _heartbeat.Change(HeartbeatInterval, HeartbeatInterval);
 
-            var letter = new Letter { Type = LetterType.Initialize, Parts = new IPart[] { new Part { Data = _hyperSocket.Id.ToByteArray() } } };
+            var letter = new Letter { Type = LetterType.Initialize, Parts = new IPart[] { new Part { Data = _hyperSocketId.ToByteArray() } } };
             Enqueue(letter);
 
             ChannelConnected(this);
@@ -134,7 +133,7 @@ namespace Hyperletter.Core {
 
             _letterQueue.Enqueue(letter);
 
-            if (_unicastMode) {
+            if (_socketMode == SocketMode.Unicast) {
                 _transmitter.Enqueue(new TransmitContext(letter));
             } else {
                 if (!_userLetterOnDeliveryQueue) {
@@ -163,12 +162,12 @@ namespace Hyperletter.Core {
         }
       
         private void QueueAck(ILetter letter) {
-            var ack = new Letter {Type = LetterType.Ack};
+            var ack = new Letter {Type = LetterType.Ack, Id = letter.Id };
             _transmitter.Enqueue(new TransmitContext(ack, letter));
         }
 
         private void SignalCanSendMoreUserLetter() {
-            if (!_unicastMode) {
+            if (_socketMode == SocketMode.Multicast) {
                 ILetter nextLetter;
                 if (_letterQueue.TryPeek(out nextLetter)) {
                     _transmitter.Enqueue(new TransmitContext(nextLetter));
