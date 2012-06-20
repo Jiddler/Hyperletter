@@ -7,7 +7,7 @@ using Hyperletter.Core.Channel;
 using Hyperletter.Core.Extension;
 
 namespace Hyperletter.Core {
-    public abstract class AbstractChannel {
+    public abstract class AbstractChannel : IAbstractChannel {
         private readonly Guid _hyperSocketId;
         private readonly SocketMode _socketMode;
         private const int HeartbeatInterval = 1000;
@@ -18,8 +18,7 @@ namespace Hyperletter.Core {
         private LetterTransmitter _transmitter;
         private LetterReceiver _receiver;
 
-        private readonly ConcurrentQueue<ILetter> _letterQueue = new ConcurrentQueue<ILetter>();
-        private bool _userLetterOnDeliveryQueue;
+        private ILetter _sending;
 
         private readonly ManualResetEventSlim _cleanUpLock = new ManualResetEventSlim(true);
         
@@ -27,12 +26,12 @@ namespace Hyperletter.Core {
         private int _lastAction;
         private int _lastActionHeartbeat;
 
-        public event Action<AbstractChannel> ChannelConnected;
-        public event Action<AbstractChannel> ChannelDisconnected;
+        public event Action<IAbstractChannel> ChannelConnected;
+        public event Action<IAbstractChannel> ChannelDisconnected;
 
-        public event Action<AbstractChannel, ILetter> Received;
-        public event Action<AbstractChannel, ILetter> Sent;
-        public event Action<AbstractChannel, ILetter> FailedToSend;
+        public event Action<IAbstractChannel, ILetter> Received;
+        public event Action<IAbstractChannel, ILetter> Sent;
+        public event Action<IAbstractChannel, ILetter> FailedToSend;
 
         private IPart _talkingTo;
         
@@ -45,6 +44,9 @@ namespace Hyperletter.Core {
             Binding = binding;
 
             _heartbeat = new Timer(Heartbeat);
+        }
+
+        public virtual void Initialize() {
         }
 
         protected void Heartbeat(object state) {
@@ -69,8 +71,6 @@ namespace Hyperletter.Core {
             _receiver.SocketError += SocketError;
             _receiver.Start();
 
-            _userLetterOnDeliveryQueue = false;
-
             _heartbeat.Change(HeartbeatInterval, HeartbeatInterval);
 
             var letter = new Letter { Type = LetterType.Initialize, Parts = new IPart[] { new Part { Data = _hyperSocketId.ToByteArray() } } };
@@ -94,6 +94,12 @@ namespace Hyperletter.Core {
         }
 
         protected virtual void AfterDisconnected() { }
+
+        public void Enqueue(ILetter letter) {
+            _cleanUpLock.Wait();
+            _sending = letter;
+            _transmitter.Enqueue(new TransmitContext(letter));
+        }
 
         private void ReceiverReceived(ILetter receivedLetter) {
             ResetHeartbeatTimer();
@@ -120,29 +126,8 @@ namespace Hyperletter.Core {
                 HandleLetterSent();
         }
 
-        public virtual void Initialize() {
-        }
-
-        public void Enqueue(ILetter letter) {
-            _cleanUpLock.Wait();
-
-            _letterQueue.Enqueue(letter);
-
-            if (_socketMode == SocketMode.Unicast) {
-                _transmitter.Enqueue(new TransmitContext(letter));
-            } else {
-                if (!_userLetterOnDeliveryQueue) {
-                    _userLetterOnDeliveryQueue = true;
-                    _transmitter.Enqueue(new TransmitContext(letter));
-                }
-            }
-        }
-
         private void HandleLetterSent() {
-            ILetter sentLetter;
-            _letterQueue.TryDequeue(out sentLetter);
-            Sent(this, sentLetter);
-            SignalCanSendMoreUserLetter();
+            Sent(this, _sending);
         }
 
         private void HandleAckSent(TransmitContext deliveryContext) {
@@ -159,17 +144,6 @@ namespace Hyperletter.Core {
             _transmitter.Enqueue(new TransmitContext(ack, letter));
         }
 
-        private void SignalCanSendMoreUserLetter() {
-            if (_socketMode == SocketMode.Multicast) {
-                ILetter nextLetter;
-                if (_letterQueue.TryPeek(out nextLetter)) {
-                    _transmitter.Enqueue(new TransmitContext(nextLetter));
-                } else {
-                    _userLetterOnDeliveryQueue = false;
-                }
-            }
-        }
-
         private void SocketError() {
             _cleanUpLock.Reset();
             
@@ -181,11 +155,8 @@ namespace Hyperletter.Core {
         }
 
         private void FailQueuedLetters() {
-            ILetter letter;
-            while(_letterQueue.TryDequeue(out letter)) {
-                if (letter.Type == LetterType.User)
-                    FailedToSend(this, letter);
-            }
+            if (_sending != null)
+                FailedToSend(this, _sending);
         }
 
         private void ResetHeartbeatTimer() {

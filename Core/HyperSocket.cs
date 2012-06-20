@@ -17,8 +17,8 @@ namespace Hyperletter.Core {
         private readonly ConcurrentQueue<ILetter> _sendQueue = new ConcurrentQueue<ILetter>();
         private readonly ConcurrentQueue<ILetter> _prioritySendQueue = new ConcurrentQueue<ILetter>();
 
-        private readonly ConcurrentQueue<AbstractChannel> _channelQueue = new ConcurrentQueue<AbstractChannel>();
-        private readonly ConcurrentDictionary<Binding, AbstractChannel> _channels = new ConcurrentDictionary<Binding, AbstractChannel>();
+        private readonly ConcurrentQueue<IAbstractChannel> _channelQueue = new ConcurrentQueue<IAbstractChannel>();
+        private readonly ConcurrentDictionary<Binding, IAbstractChannel> _channels = new ConcurrentDictionary<Binding, IAbstractChannel>();
         private readonly ConcurrentDictionary<Binding, SocketListener> _listeners = new ConcurrentDictionary<Binding, SocketListener>();
 
         private readonly object _syncRoot = new object();
@@ -45,20 +45,32 @@ namespace Hyperletter.Core {
             
             var listener = new SocketListener(this, binding);
             _listeners[binding] = listener;
-            listener.IncomingChannel += HookupChannel;
-   
+            listener.IncomingChannel += ListenerOnIncomingChannel;
             listener.Start();
+        }
+
+        private void ListenerOnIncomingChannel(IAbstractChannel inboundChannel) {
+            DecorateMulticastChannel(inboundChannel);
+        }
+
+        private void DecorateMulticastChannel(IAbstractChannel inboundChannel) {
+            if (SocketMode == SocketMode.Multicast) {
+                var decoratedChannel = new AbstractChannelMulticastDecorator(inboundChannel);
+                HookupChannel(decoratedChannel);
+            } else {
+                HookupChannel(inboundChannel);
+            }
         }
 
         public void Connect(IPAddress ipAddress, int port) {
             var bindingKey = new Binding(ipAddress, port);
             var channel = new OutboundChannel(Id, SocketMode, bindingKey);
-            HookupChannel(channel);
+            DecorateMulticastChannel(channel);
 
             channel.Connect();
         }
 
-        private void HookupChannel(AbstractChannel channel) {
+        private void HookupChannel(IAbstractChannel channel) {
             channel.Received += ChannelReceived;
             channel.FailedToSend += ChannelFailedToSend;
             channel.Sent += ChannelSent;
@@ -69,14 +81,14 @@ namespace Hyperletter.Core {
             channel.Initialize();
         }
 
-        private void ChannelConnected(AbstractChannel obj) {
+        private void ChannelConnected(IAbstractChannel obj) {
             if (Connected != null)
                 Connected(obj.Binding);
         }
 
-        private void ChannelDisconnected(AbstractChannel obj) {
+        private void ChannelDisconnected(IAbstractChannel obj) {
             if(obj is InboundChannel) {
-                AbstractChannel value;
+                IAbstractChannel value;
                 _channels.TryRemove(obj.Binding, out value);
             }
 
@@ -84,12 +96,12 @@ namespace Hyperletter.Core {
                 Disconnected(obj.Binding);
         }
 
-        private void ChannelReceived(AbstractChannel channel, ILetter letter) {
+        private void ChannelReceived(IAbstractChannel channel, ILetter letter) {
             if (Received != null)
                 Received(letter);
         }
 
-        private void ChannelSent(AbstractChannel channel, ILetter letter) {
+        private void ChannelSent(IAbstractChannel channel, ILetter letter) {
             if (Sent != null)
                 Sent(letter);
 
@@ -99,7 +111,7 @@ namespace Hyperletter.Core {
             }
         }
 
-        private void ChannelFailedToSend(AbstractChannel abstractChannel, ILetter letter) {
+        private void ChannelFailedToSend(IAbstractChannel abstractChannel, ILetter letter) {
             if (SocketMode == SocketMode.Unicast) {
                 if (letter.Options.IsSet(LetterOptions.NoRequeue)) {
                     Discard(abstractChannel, letter);
@@ -115,7 +127,7 @@ namespace Hyperletter.Core {
             }
         }
 
-        private void Discard(AbstractChannel abstractChannel, ILetter letter) {
+        private void Discard(IAbstractChannel abstractChannel, ILetter letter) {
             if (Discarded != null && letter.Options.IsSet(LetterOptions.SilentDiscard))
                 Discarded(abstractChannel.Binding, letter);
         }
@@ -148,20 +160,20 @@ namespace Hyperletter.Core {
 
         private void TrySendUnicast() {
             while (CanSend()) {
-                AbstractChannel channel = GetNextChannel();
+                IAbstractChannel channel = GetNextChannel();
                 ILetter letter = GetNextLetter();
                 channel.Enqueue(letter);
             }
         }
 
         private bool CanSend() {
-            AbstractChannel channel;
+            IAbstractChannel channel;
             ILetter letter;
             return _channelQueue.TryPeek(out channel) && (_prioritySendQueue.TryPeek(out letter) || _sendQueue.TryPeek(out letter));
         }
 
-        private AbstractChannel GetNextChannel() {
-            AbstractChannel channel;
+        private IAbstractChannel GetNextChannel() {
+            IAbstractChannel channel;
             _channelQueue.TryDequeue(out channel);
             return channel;
         }
