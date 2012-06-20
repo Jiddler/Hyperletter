@@ -1,9 +1,9 @@
 ﻿using System;
-using System.Collections.Concurrent;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
 using Hyperletter.Abstraction;
+using Hyperletter.Core.Collection;
 
 namespace Hyperletter.Core.Channel {
     internal class LetterTransmitter {
@@ -11,9 +11,8 @@ namespace Hyperletter.Core.Channel {
         private readonly LetterSerializer _letterSerializer;
         private readonly CancellationTokenSource _cancellationTokenSource;
 
-        private readonly ConcurrentQueue<TransmitContext> _queue = new ConcurrentQueue<TransmitContext>();
-        private readonly AutoResetEvent _resetEvent = new AutoResetEvent(false);
-        
+        private readonly WaitableQueue<TransmitContext> _queue = new WaitableQueue<TransmitContext>();
+
         private Task _transmitTask;
 
         public event Action<TransmitContext> Sent;
@@ -30,10 +29,9 @@ namespace Hyperletter.Core.Channel {
             _transmitTask = new Task(Transmit, _cancellationTokenSource.Token);
             _transmitTask.Start();
         }
-        
+
         public void Enqueue(TransmitContext transmitContext) {
             _queue.Enqueue(transmitContext);
-            _resetEvent.Set();
         }
 
         public void TransmitHeartbeat() {
@@ -42,24 +40,19 @@ namespace Hyperletter.Core.Channel {
         }
 
         private void Transmit() {
-            while(true) {
-                _resetEvent.WaitOne();
-                if (_cancellationTokenSource.IsCancellationRequested)
-                    return;
+            try {
+                while (true) {
+                    _queue.WaitUntilQueueNotEmpty(_cancellationTokenSource);
 
-                TransmitAllQueued();
-            }
-        }
+                    var transmitContext = _queue.Dequeue();
+                    var serializedLetter = _letterSerializer.Serialize(transmitContext.Letter);
 
-        private void TransmitAllQueued() {
-            TransmitContext transmitContext;
-            while (_queue.TryDequeue(out transmitContext)) {
-                var serializedLetter = _letterSerializer.Serialize(transmitContext.Letter);
-
-                if (Send(serializedLetter) != System.Net.Sockets.SocketError.Success)
-                    SocketError();
-                else if(transmitContext.Letter.Type != LetterType.Heartbeat)
-                    Sent(transmitContext);
+                    if (Send(serializedLetter) != System.Net.Sockets.SocketError.Success)
+                        SocketError();
+                    else if (transmitContext.Letter.Type != LetterType.Heartbeat)
+                        Sent(transmitContext);
+                }
+            } catch (OperationCanceledException) {
             }
         }
 
