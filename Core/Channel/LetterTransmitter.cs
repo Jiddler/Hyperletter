@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
@@ -11,8 +12,7 @@ namespace Hyperletter.Core.Channel {
         private readonly LetterSerializer _letterSerializer;
         private readonly CancellationTokenSource _cancellationTokenSource;
 
-        private readonly WaitableQueue<TransmitContext> _queue = new WaitableQueue<TransmitContext>();
-
+        private readonly BlockingCollection<TransmitContext> _queue = new BlockingCollection<TransmitContext>();
         private Task _transmitTask;
 
         public event Action<TransmitContext> Sent;
@@ -31,7 +31,7 @@ namespace Hyperletter.Core.Channel {
         }
 
         public void Enqueue(TransmitContext transmitContext) {
-            _queue.Enqueue(transmitContext);
+            _queue.Add(transmitContext);
         }
 
         public void TransmitHeartbeat() {
@@ -42,9 +42,7 @@ namespace Hyperletter.Core.Channel {
         private void Transmit() {
             try {
                 while (true) {
-                    _queue.WaitUntilQueueNotEmpty(_cancellationTokenSource);
-
-                    var transmitContext = _queue.Dequeue();
+                    var transmitContext = _queue.Take(_cancellationTokenSource.Token);
                     var serializedLetter = _letterSerializer.Serialize(transmitContext.Letter);
 
                     if (Send(serializedLetter) != System.Net.Sockets.SocketError.Success)

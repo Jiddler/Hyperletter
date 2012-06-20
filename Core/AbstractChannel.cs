@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Concurrent;
 using System.Net.Sockets;
 using System.Threading;
 using Hyperletter.Abstraction;
@@ -9,7 +8,6 @@ using Hyperletter.Core.Extension;
 namespace Hyperletter.Core {
     public abstract class AbstractChannel : IAbstractChannel {
         private readonly Guid _hyperSocketId;
-        private readonly SocketMode _socketMode;
         private const int HeartbeatInterval = 1000;
 
         protected TcpClient TcpClient;
@@ -18,7 +16,7 @@ namespace Hyperletter.Core {
         private LetterTransmitter _transmitter;
         private LetterReceiver _receiver;
 
-        private ILetter _sending;
+        private ILetter _currentLetter;
 
         private readonly ManualResetEventSlim _cleanUpLock = new ManualResetEventSlim(true);
         
@@ -38,9 +36,8 @@ namespace Hyperletter.Core {
         public bool IsConnected { get; private set; }
         public Binding Binding { get; private set; }
 
-        protected AbstractChannel(Guid hyperSocketId, SocketMode socketMode, Binding binding) {
+        protected AbstractChannel(Guid hyperSocketId, Binding binding) {
             _hyperSocketId = hyperSocketId;
-            _socketMode = socketMode;
             Binding = binding;
 
             _heartbeat = new Timer(Heartbeat);
@@ -97,7 +94,7 @@ namespace Hyperletter.Core {
 
         public void Enqueue(ILetter letter) {
             _cleanUpLock.Wait();
-            _sending = letter;
+            _currentLetter = letter;
             _transmitter.Enqueue(new TransmitContext(letter));
         }
 
@@ -127,7 +124,8 @@ namespace Hyperletter.Core {
         }
 
         private void HandleLetterSent() {
-            Sent(this, _sending);
+            Sent(this, _currentLetter);
+            _currentLetter = null;
         }
 
         private void HandleAckSent(TransmitContext deliveryContext) {
@@ -155,8 +153,8 @@ namespace Hyperletter.Core {
         }
 
         private void FailQueuedLetters() {
-            if (_sending != null)
-                FailedToSend(this, _sending);
+            if (_currentLetter != null)
+                FailedToSend(this, _currentLetter);
         }
 
         private void ResetHeartbeatTimer() {

@@ -10,7 +10,7 @@ namespace ConnectTest
     {
         public static object SyncRoot = new object();
         static void Main(string[] args) {
-            var hs = new HyperSocket(SocketMode.Multicast);
+            var hs = new UnicastSocket();
             //hs.Received += letter => Console.WriteLine(DateTime.Now + " ACTUALY RECEIVED: " + letter.Parts[0].Data);
             int y = 0;
             hs.Sent += letter => {

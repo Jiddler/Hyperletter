@@ -8,7 +8,7 @@ namespace Hyperletter.Core {
     public class OutboundChannel : AbstractChannel {
         private bool _connecting;
 
-        public OutboundChannel(Guid socketId, SocketMode socketMode, Binding binding) : base(socketId, socketMode, binding) {
+        public OutboundChannel(Guid socketId, Binding binding) : base(socketId, binding) {
         }
 
         public void Connect() {

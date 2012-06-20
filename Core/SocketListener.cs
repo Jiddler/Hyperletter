@@ -5,13 +5,13 @@ using Hyperletter.Abstraction;
 
 namespace Hyperletter.Core {
     internal class SocketListener {
-        private readonly HyperSocket _hyperSocket;
+        private readonly AbstractHyperSocket _hyperSocket;
         private readonly Binding _binding;
         private TcpListener _listener;
 
         public event Action<InboundChannel> IncomingChannel;
 
-        public SocketListener(HyperSocket hyperSocket, Binding binding) {
+        public SocketListener(AbstractHyperSocket hyperSocket, Binding binding) {
             _hyperSocket = hyperSocket;
             _binding = binding;
         }
@@ -31,7 +31,7 @@ namespace Hyperletter.Core {
             
             var tcpClient = _listener.EndAcceptTcpClient(res);
             var binding = GetBinding(tcpClient.Client.RemoteEndPoint);
-            var boundChannel = new InboundChannel(_hyperSocket.Id, _hyperSocket.SocketMode, tcpClient, binding);
+            var boundChannel = new InboundChannel(_hyperSocket.Id, tcpClient, binding);
             IncomingChannel(boundChannel);
         }
 

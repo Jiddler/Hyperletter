@@ -11,7 +11,7 @@ namespace BindTest
     {
         public static object SyncRoot = new object();
         static void Main(string[] args) {
-            var hs = new HyperSocket();
+            var hs = new UnicastSocket();
             int i = 0;
             Stopwatch sw = new Stopwatch();
             int y = 0;
