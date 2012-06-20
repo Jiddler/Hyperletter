@@ -99,12 +99,7 @@ namespace Hyperletter.Core {
             ResetHeartbeatTimer();
 
             if (receivedLetter.Type == LetterType.Ack) {
-                ILetter sentLetter;
-                _letterQueue.TryDequeue(out sentLetter);
-
-                Sent(this, sentLetter);
-
-                SignalCanSendMoreUserLetter();
+                HandleLetterSent();
             } else {
                 if (receivedLetter.Type == LetterType.Initialize)
                     _talkingTo = receivedLetter.Parts[0];
@@ -121,8 +116,8 @@ namespace Hyperletter.Core {
 
             if(transmitContext.Letter.Type == LetterType.Ack)
                 HandleAckSent(transmitContext);
-            else
-                HandleLetterSent(transmitContext);
+            else if (transmitContext.Letter.Options.IsSet(LetterOptions.NoAck))
+                HandleLetterSent();
         }
 
         public virtual void Initialize() {
@@ -143,13 +138,11 @@ namespace Hyperletter.Core {
             }
         }
 
-        private void HandleLetterSent(TransmitContext deliveryContext) {
-            if(deliveryContext.Letter.Options.IsSet(LetterOptions.NoAck)) {
-                ILetter sentLetter;
-                _letterQueue.TryDequeue(out sentLetter);
-                Sent(this, deliveryContext.Letter);
-                SignalCanSendMoreUserLetter();
-            }
+        private void HandleLetterSent() {
+            ILetter sentLetter;
+            _letterQueue.TryDequeue(out sentLetter);
+            Sent(this, sentLetter);
+            SignalCanSendMoreUserLetter();
         }
 
         private void HandleAckSent(TransmitContext deliveryContext) {
