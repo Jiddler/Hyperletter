@@ -11,7 +11,8 @@ namespace Hyperletter.Core.Channel {
         private readonly LetterSerializer _letterSerializer;
         private readonly CancellationTokenSource _cancellationTokenSource;
 
-        private readonly BlockingCollection<TransmitContext> _queue = new BlockingCollection<TransmitContext>();
+        private readonly ConcurrentQueue<TransmitContext> _queue = new ConcurrentQueue<TransmitContext>();
+        private readonly AutoResetEvent _resetEvent = new AutoResetEvent(false);
         private Task _transmitTask;
 
         public event Action<TransmitContext> Sent;
@@ -30,7 +31,8 @@ namespace Hyperletter.Core.Channel {
         }
 
         public void Enqueue(TransmitContext transmitContext) {
-            _queue.Add(transmitContext);
+            _queue.Enqueue(transmitContext);
+            _resetEvent.Set();
         }
 
         public void TransmitHeartbeat() {
@@ -41,13 +43,16 @@ namespace Hyperletter.Core.Channel {
         private void Transmit() {
             try {
                 while (true) {
-                    var transmitContext = _queue.Take(_cancellationTokenSource.Token);
-                    var serializedLetter = _letterSerializer.Serialize(transmitContext.Letter);
+                    _resetEvent.WaitOne();
+                    TransmitContext transmitContext;
+                    while(_queue.TryDequeue(out transmitContext)) {
+                        var serializedLetter = _letterSerializer.Serialize(transmitContext.Letter);
 
-                    if (Send(serializedLetter) != System.Net.Sockets.SocketError.Success)
-                        SocketError();
-                    else if (transmitContext.Letter.Type != LetterType.Heartbeat)
-                        Sent(transmitContext);
+                        if (Send(serializedLetter) != System.Net.Sockets.SocketError.Success)
+                            SocketError();
+                        else if (transmitContext.Letter.Type != LetterType.Heartbeat)
+                            Sent(transmitContext);    
+                    }
                 }
             } catch (OperationCanceledException) {
             }

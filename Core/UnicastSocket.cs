@@ -13,20 +13,14 @@ namespace Hyperletter.Core {
         private readonly ConcurrentQueue<ILetter> _sendQueue = new ConcurrentQueue<ILetter>();
         private readonly ConcurrentQueue<ILetter> _prioritySendQueue = new ConcurrentQueue<ILetter>();
 
-        private readonly Task _sendTask;
-        private readonly CancellationTokenSource _cancellationTokenSource = new CancellationTokenSource();
-
         private readonly object _syncRoot = new object();
-        public UnicastSocket() {
-            //_sendTask = new Task(Send);
-            //_sendTask.Start();
-        }
 
         protected override void ChannelFailedToSend(IAbstractChannel abstractChannel, ILetter letter) {
             if (letter.Options.IsSet(LetterOptions.NoRequeue)) {
                 Discard(abstractChannel, letter);
             } else {
-                _sendQueue.Enqueue(letter);
+                _prioritySendQueue.Enqueue(letter);
+                TrySend();
                 if (Requeued != null)
                     Requeued(letter);
             }
@@ -41,25 +35,6 @@ namespace Hyperletter.Core {
             _channelQueue.Enqueue(channel);
             TrySend();
         }
-        /*
-        private void Send() {
-            try {
-                while (true) {
-                    _channelQueue.WaitUntilQueueNotEmpty(_cancellationTokenSource);
-                    _sendQueue.WaitUntilQueueNotEmpty(_cancellationTokenSource);
-
-                    var channel = _channelQueue.Dequeue();
-                    var letter = _sendQueue.Dequeue();
-
-                    channel.Enqueue(letter);
-
-                    _channelQueue.Done();
-                    _sendQueue.Done();
-                }
-            } catch(OperationCanceledException) {
-            }
-        }
-         * */
         
         protected void TrySend() {
             lock (_syncRoot) {
@@ -72,9 +47,7 @@ namespace Hyperletter.Core {
         }
 
         private bool CanSend() {
-            IAbstractChannel channel;
-            ILetter letter;
-            return _channelQueue.TryPeek(out channel) && (_prioritySendQueue.TryPeek(out letter) || _sendQueue.TryPeek(out letter));
+            return _channelQueue.Count > 0 && (_prioritySendQueue.Count > 0 || _sendQueue.Count > 0);
         }
 
         private IAbstractChannel GetNextChannel() {

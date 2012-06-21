@@ -1,7 +1,7 @@
 using Hyperletter.Abstraction;
 
 namespace Hyperletter.Core {
-    public class MulticastHyperSocket : AbstractHyperSocket {
+    public class MulticastSocket : AbstractHyperSocket {
         protected override IAbstractChannel PrepareChannel(IAbstractChannel channel) {
             return new AbstractChannelMulticastDecorator(channel);
         }
