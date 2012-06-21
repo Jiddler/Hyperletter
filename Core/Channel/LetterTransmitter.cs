@@ -4,7 +4,6 @@ using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
 using Hyperletter.Abstraction;
-using Hyperletter.Core.Collection;
 
 namespace Hyperletter.Core.Channel {
     internal class LetterTransmitter {
