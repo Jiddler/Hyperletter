@@ -31,7 +31,8 @@ namespace ConnectTest
             hs.Requeued += letter => Console.WriteLine("REQUEUED");
 
             hs.Connect(IPAddress.Parse("127.0.0.1"), 8001);
-            //hs.Connect(IPAddress.Parse("127.0.0.1"), 8002);
+            hs.Connect(IPAddress.Parse("127.0.0.1"), 8002);
+            hs.Connect(IPAddress.Parse("127.0.0.1"), 8003);
             string line;
             while ((line = Console.ReadLine()) != null) {
                 if (line == "exit")

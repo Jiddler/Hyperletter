@@ -2,7 +2,6 @@ using System;
 using System.IO;
 using System.Net.Sockets;
 using System.Threading;
-using System.Threading.Tasks;
 using Hyperletter.Abstraction;
 
 namespace Hyperletter.Core.Channel {
@@ -14,7 +13,9 @@ namespace Hyperletter.Core.Channel {
         private readonly byte[] _tcpReceiveBuffer = new byte[512];
         private readonly MemoryStream _receiveBuffer = new MemoryStream();
 
-        private Task _receiveTask;
+
+        private readonly SocketAsyncEventArgs _receiveEventArgs = new SocketAsyncEventArgs();
+
         private int _currentLength;
 
         public event Action<ILetter> Received;
@@ -27,25 +28,37 @@ namespace Hyperletter.Core.Channel {
         }
 
         public void Start() {
-            _receiveTask = new Task(Receive);
-            _receiveTask.Start();
+            _receiveEventArgs.SetBuffer(_tcpReceiveBuffer, 0, _tcpReceiveBuffer.Length);
+            _receiveEventArgs.Completed += ReceiveEventArgsOnCompleted;
+
+            BeginReceive();
         }
 
-        private void Receive() {
-            while (true) {
-                if (_cancellationTokenSource.IsCancellationRequested)
-                    return;
+        private void ReceiveEventArgsOnCompleted(object sender, SocketAsyncEventArgs socketAsyncEventArgs) {
+            EndReceived(socketAsyncEventArgs);
+        }
 
-                try {
-                    SocketError status;
-                    var read = _socket.Receive(_tcpReceiveBuffer, 0, _tcpReceiveBuffer.Length, SocketFlags.None, out status);
-                    if (status != System.Net.Sockets.SocketError.Success || read == 0)
-                        SocketError();
-                    else
-                        HandleReceived(_tcpReceiveBuffer, read);
-                } catch (SocketException) {
-                    SocketError();
-                }
+        private void BeginReceive() {
+            if (_cancellationTokenSource.IsCancellationRequested)
+                return;
+
+            try {
+                var pending =_socket.ReceiveAsync(_receiveEventArgs);
+                if(!pending)
+                    EndReceived(_receiveEventArgs);
+            } catch (SocketException) {
+                SocketError();
+            }
+        }
+
+        private void EndReceived(SocketAsyncEventArgs socketAsyncEvent) {
+            SocketError status = socketAsyncEvent.SocketError;
+            var read = socketAsyncEvent.BytesTransferred;
+            if (status != System.Net.Sockets.SocketError.Success || read == 0) {
+                SocketError();
+            } else {
+                HandleReceived(_tcpReceiveBuffer, read);
+                BeginReceive();
             }
         }
 
@@ -66,11 +79,11 @@ namespace Hyperletter.Core.Channel {
                 var letter = _letterSerializer.Deserialize(_receiveBuffer.ToArray());
                 _receiveBuffer.SetLength(0);
 
-                if(letter.Type != LetterType.Heartbeat)
+                if (letter.Type != LetterType.Heartbeat)
                     Received(letter);
             }
         }
-        
+
         private bool ReceivedFullLetter() {
             return _receiveBuffer.Length == _currentLength;
         }
