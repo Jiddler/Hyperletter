@@ -38,7 +38,7 @@ So far there is only a .NET-binding, if you like the protocol please submit lang
         }
     }
 
-    public class Receiver {
+    public class ReceiveAndAnswer {
         public static void Main() {
             var socket = new UnicastSocket();
             socket.Connect(IPAddress.Parse("127.0.0.1"), 8001);
@@ -55,7 +55,12 @@ So far there is only a .NET-binding, if you like the protocol please submit lang
     }
 
 ## Whats next
-Addresses, if you´re building chains of sockets and you send a letter from A via B to C and C decides to answer, the letter should get back to A no matter if B is connected to alot of sockets.
+
+### Refactoring
+Internal refactoring of the core queuing parts
+
+### Addresses
+if you´re building chains of sockets and you send a letter from A via B to C and C decides to answer, the letter should get back to A no matter if B is connected to multiple sockets.
 
 ## Protocol specification
 ### Header
