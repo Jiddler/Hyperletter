@@ -41,14 +41,16 @@ So far there is only a .NET-binding, if you like the protocol please submit lang
     public class ReceiveAndAnswer {
         public static void Main() {
             var socket = new UnicastSocket();
-            socket.Connect(IPAddress.Parse("127.0.0.1"), 8001);
-            Console.WriteLine("RECEIVED");
+            
+            Console.WriteLine("RECEIVING");
             socket.Received += letter => {
                 Console.WriteLine("RECEIVED");
 
                 var noReliabilityOptions = LetterOptions.NoAck | LetterOptions.SilentDiscard | LetterOptions.NoRequeue;
                 socket.Send(new Letter(noReliabilityOptions, new[] { (byte)'B' }));
             };
+			
+			socket.Connect(IPAddress.Parse("127.0.0.1"), 8001);
 
             Console.ReadLine();
         }        
