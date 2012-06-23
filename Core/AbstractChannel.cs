@@ -138,7 +138,7 @@ namespace Hyperletter.Core {
         }
       
         private void QueueAck(ILetter letter) {
-            var ack = new Letter {Type = LetterType.Ack, Id = letter.Id };
+            var ack = new Letter {Type = LetterType.Ack, Id = letter.Id, Options = (letter.Options & LetterOptions.UniqueId) == LetterOptions.UniqueId ? LetterOptions.UniqueId : LetterOptions.None };
             _transmitter.Enqueue(new TransmitContext(ack, letter));
         }
 

@@ -16,5 +16,13 @@ namespace Hyperletter.Core {
         public LetterType Type { get; set; }
         public LetterOptions Options { get; set; }
         public IPart[] Parts { get; set; }
+
+        public Letter() {}
+
+        public Letter(LetterOptions options, byte[] userPart) {
+            Type = LetterType.User;
+            Options = options;
+            Parts = new IPart[] { new Part { Data = userPart, PartType = PartType.User } };
+        }
     }
 }

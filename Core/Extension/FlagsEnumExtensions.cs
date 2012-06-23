@@ -8,5 +8,12 @@ namespace Hyperletter.Core.Extension {
 
             return (keysVal & flagVal) == flagVal;
         }
+
+        public static bool IsNotSet<T>(this Enum type, T value) {
+            ulong keysVal = Convert.ToUInt64(type);
+            ulong flagVal = Convert.ToUInt64(value);
+
+            return (keysVal & flagVal) == 0;
+        }
     }
 }

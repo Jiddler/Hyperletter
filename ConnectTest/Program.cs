@@ -41,8 +41,8 @@ namespace ConnectTest
                     Console.WriteLine(y);
                 else 
                     for (int i = 0; i < 100000; i++ )
-                        hs.Send(new Letter() { Options = LetterOptions.NoAck, Type = LetterType.User, Parts = new IPart[] { new Part { PartType = PartType.User, Data = new[] { (byte)'A' } } } });
-                        //hs.Send(new Letter() { Type = LetterType.User, Parts = new IPart[] { new Part { PartType = PartType.User, Data = new[] { (byte)'A' } } } });
+                        //hs.Send(new Letter() { Options = LetterOptions.NoAck, Type = LetterType.User, Parts = new IPart[] { new Part { PartType = PartType.User, Data = new[] { (byte)'A' } } } });
+                        hs.Send(new Letter() { Type = LetterType.User, Parts = new IPart[] { new Part { PartType = PartType.User, Data = new[] { (byte)'A' } } } });
             }
         }
 
@@ -50,4 +50,35 @@ namespace ConnectTest
             Console.WriteLine(arg1 + " " + arg2);
         }
     }
+    /*
+    public class Transmitter {
+        public static void Main() {
+            var socket = new UnicastSocket();
+            socket.Bind(IPAddress.Any, 8001);
+
+            Console.WriteLine("TRANSMITTING");
+            for(int i=0; i<100; i++) {
+                socket.Send(new Letter(LetterOptions.None, new[] { (byte) 'A' } ));
+            }
+
+            Console.ReadLine();
+        }
+    }
+
+    public class Receiver {
+        public static void Main() {
+            var socket = new UnicastSocket();
+            socket.Connect(IPAddress.Parse("127.0.0.1"), 8001);
+            Console.WriteLine("RECEIVED");
+            socket.Received += letter => {
+                Console.WriteLine("RECEIVED");
+
+                var noReliabilityOptions = LetterOptions.NoAck | LetterOptions.SilentDiscard | LetterOptions.NoRequeue;
+                socket.Send(new Letter(noReliabilityOptions, new[] { (byte)'B' }));
+            };
+
+            Console.ReadLine();
+        }        
+    }
+    */
 }
