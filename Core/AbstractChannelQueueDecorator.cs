@@ -4,7 +4,7 @@ using System.Threading;
 using Hyperletter.Abstraction;
 
 namespace Hyperletter.Core {
-    public class AbstractChannelMulticastDecorator : IAbstractChannel {
+    public class AbstractChannelQueueDecorator : IAbstractChannel {
         private readonly IAbstractChannel _abstractChannel;
         private readonly ConcurrentQueue<ILetter> _queue = new ConcurrentQueue<ILetter>();
         private readonly ManualResetEventSlim _cleanUpLock = new ManualResetEventSlim(true);
@@ -20,7 +20,7 @@ namespace Hyperletter.Core {
         public bool IsConnected { get { return _abstractChannel.IsConnected; } }
         public Binding Binding { get { return _abstractChannel.Binding; } }
 
-        public AbstractChannelMulticastDecorator(IAbstractChannel abstractChannel) {
+        public AbstractChannelQueueDecorator(IAbstractChannel abstractChannel) {
             _abstractChannel = abstractChannel;
             _abstractChannel.ChannelConnected += channel => ChannelConnected(channel);
             _abstractChannel.ChannelDisconnected += AbstractChannelOnChannelDisconnected;

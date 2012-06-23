@@ -66,7 +66,7 @@ Addresses, if you´re building chains of sockets and you send a letter from A via
      1 byte : Part count
 
 ### Parts
-     1 byte : Part type
+     1 byte : Part type ( Address = 1, User = 2)
      4 bytes: Length of data
      X byte : Data
 
