@@ -1,25 +1,32 @@
 ﻿using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using System.Net.Sockets;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Hyperletter.Abstraction;
 
 namespace Hyperletter.Core.Channel {
-    internal class LetterTransmitter {
-        private readonly Socket _socket;
+    internal class BufferedLetterTransmitter {
         private readonly LetterSerializer _letterSerializer;
+        private readonly TcpClient _client;
         private readonly CancellationTokenSource _cancellationTokenSource;
 
         private readonly ConcurrentQueue<TransmitContext> _queue = new ConcurrentQueue<TransmitContext>();
         private readonly AutoResetEvent _resetEvent = new AutoResetEvent(false);
         private Task _transmitTask;
+        private readonly BufferedStream _bufferedWriter;
 
         public event Action<TransmitContext> Sent;
         public event Action SocketError;
+        public event Action CanSendMore;
 
-        public LetterTransmitter(TcpClient client, CancellationTokenSource cancellationTokenSource) {
-            _socket = client.Client;
+        public BufferedLetterTransmitter(TcpClient client, CancellationTokenSource cancellationTokenSource) {
+            _bufferedWriter = new BufferedStream(client.GetStream());
+            _client = client;
             _cancellationTokenSource = cancellationTokenSource;
 
             _letterSerializer = new LetterSerializer();
@@ -45,26 +52,39 @@ namespace Hyperletter.Core.Channel {
                 while (true) {
                     _resetEvent.WaitOne();
                     TransmitContext transmitContext;
-                    while(_queue.TryDequeue(out transmitContext)) {
+                    
+                    var buffered = new Queue<TransmitContext>();
+                    while (_queue.TryDequeue(out transmitContext)) {
                         var serializedLetter = _letterSerializer.Serialize(transmitContext.Letter);
 
-                        if (Send(serializedLetter) != System.Net.Sockets.SocketError.Success)
+                        if (!Send(serializedLetter))
                             SocketError();
-                        else if (transmitContext.Letter.Type != LetterType.Heartbeat)
-                            Sent(transmitContext);    
+                        else if (transmitContext.Letter.Type != LetterType.Heartbeat) {
+                            CanSendMore();
+                            buffered.Enqueue(transmitContext);
+                        }
+                    }
+
+                    try {
+                        _bufferedWriter.Flush();
+                        while (buffered.Count > 0) {
+                            Sent(buffered.Dequeue());
+                        }
+                    } catch (IOException) {
+                        SocketError();
                     }
                 }
             } catch (OperationCanceledException) {
             }
         }
 
-        private SocketError Send(byte[] serializedLetter) {
-            var status = System.Net.Sockets.SocketError.Success;
+        private bool Send(byte[] serializedLetter) {
             try {
-                _socket.Send(serializedLetter, 0, serializedLetter.Length, SocketFlags.None, out status);
-            } catch (SocketException) {
+                _bufferedWriter.Write(serializedLetter, 0, serializedLetter.Length);
+                return true;
+            } catch (Exception) {
             }
-            return status;
+            return false;
         }
     }
 }

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
+using System.IO;
 using System.Net;
 using Hyperletter;
 using Hyperletter.Abstraction;
@@ -23,11 +24,13 @@ namespace BindTest
                 }
             };
             int z = 0;
+            //StreamWriter swr = new StreamWriter(@"C:\Users\Lars Stenberg\Desktop\Log.txt", true);
             hs.Received += letter => {
+                //swr.WriteLine(System.Text.Encoding.Unicode.GetString(letter.Parts[0].Data));
                 if(z == 0)
                     sw.Restart();
                 z++;
-                if (z % 10000 == 0)
+                if (z % 20000 == 0)
                     Console.WriteLine("<-" + z);
                 if (z % 100000 == 0) {
                     Console.WriteLine("Received: " + z + " in " + sw.ElapsedMilliseconds + " ms" + ". " + (z/sw.ElapsedMilliseconds) + " letter/millisecond");

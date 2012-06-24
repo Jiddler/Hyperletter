@@ -40,6 +40,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AbstractChannel.cs" />
+    <Compile Include="Channel\BufferedLetterTransmitter.cs" />
     <Compile Include="Channel\LetterReceiver.cs" />
     <Compile Include="Channel\LetterTransmitter.cs" />
     <Compile Include="Channel\TransmitContext.cs" />

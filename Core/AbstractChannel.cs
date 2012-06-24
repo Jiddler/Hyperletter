@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Net.Sockets;
 using System.Threading;
@@ -24,7 +23,7 @@ namespace Hyperletter.Core {
         private readonly Timer _heartbeat;
         private int _lastAction;
         private int _lastActionHeartbeat;
-        private int initalizationCount;
+        private int _initalizationCount;
 
         public event Action<IAbstractChannel> ChannelConnected;
         public event Action<IAbstractChannel> ChannelDisconnected;
@@ -61,9 +60,10 @@ namespace Hyperletter.Core {
 
             _cancellationTokenSource = new CancellationTokenSource();
 
-            _transmitter = new LetterTransmitter(TcpClient.Client, _cancellationTokenSource);
+            _transmitter = new LetterTransmitter(TcpClient, _cancellationTokenSource);
             _transmitter.Sent += TransmitterOnSent;
             _transmitter.SocketError += SocketError;
+            //_transmitter.CanSendMore += () => ChannelQueueEmpty(this);
             _transmitter.Start();
 
             _receiver = new LetterReceiver(TcpClient.Client, _cancellationTokenSource);
@@ -71,7 +71,7 @@ namespace Hyperletter.Core {
             _receiver.SocketError += SocketError;
             _receiver.Start();
 
-            initalizationCount = 0;
+            _initalizationCount = 0;
 
             Enqueue(new Letter { Type = LetterType.Initialize, Parts = new IPart[] { new Part { Data = _hyperSocketId.ToByteArray() } } });
 
@@ -136,8 +136,8 @@ namespace Hyperletter.Core {
 
         private void HandleInitialize() {
             lock(this) {
-                initalizationCount++;
-                if(initalizationCount == 2)
+                _initalizationCount++;
+                if(_initalizationCount == 2)
                     ChannelInitialized(this);
 
                 _heartbeat.Change(HeartbeatInterval, HeartbeatInterval);
@@ -171,8 +171,8 @@ namespace Hyperletter.Core {
         }
 
         private void FailQueuedLetters() {
-            //if (_currentLetter != null)
-              //  FailedToSend(this, _currentLetter);
+            while (_queue.Count > 0)
+                FailedToSend(this, _queue.Dequeue());
         }
 
         private void ResetHeartbeatTimer() {
