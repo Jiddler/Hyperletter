@@ -24,16 +24,21 @@ namespace Hyperletter.Core {
             }
         }
 
+        protected override IAbstractChannel PrepareChannel(IAbstractChannel channel) {
+            channel.ChannelQueueEmpty += ChannelOnChannelQueueEmpty;
+            return channel;
+        }
+
+        private void ChannelOnChannelQueueEmpty(IAbstractChannel abstractChannel) {
+            _channelQueue.Enqueue(abstractChannel);
+            TrySend();
+        }
+
         public override void Send(ILetter letter) {
             _sendQueue.Enqueue(letter);
             TrySend();
         }
-
-        protected override void AfterSent(IAbstractChannel channel) {
-            _channelQueue.Enqueue(channel);
-            TrySend();
-        }
-        
+       
         protected void TrySend() {
             lock (_syncRoot) {
                 while (CanSend()) {

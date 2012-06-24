@@ -8,7 +8,9 @@ namespace Hyperletter.Core {
         public byte[] Serialize(ILetter letter) {
             var ms = new MemoryStream();
             WriteMetadata(letter, ms);
-            WriteParts(letter, ms);
+            if (letter.Type != LetterType.Ack && letter.Type != LetterType.Heartbeat)
+                WriteParts(letter, ms);
+
             WriteTotalLength(ms);
             return ms.ToArray();
         }
@@ -42,8 +44,12 @@ namespace Hyperletter.Core {
             var letter = new Letter();
             letter.Type = (LetterType) serializedLetter[4];
             letter.Options = (LetterOptions)serializedLetter[5];
+
             if(letter.Options.IsSet(LetterOptions.UniqueId))
                 letter.Id = new Guid(GetByteRange(serializedLetter, 6, 16));
+
+            if (letter.Type == LetterType.Ack || letter.Type == LetterType.Heartbeat)
+                return letter;
 
             letter.Parts = GetParts(serializedLetter, letter.Options.IsSet(LetterOptions.UniqueId) ? 22 : 6);
             return letter;

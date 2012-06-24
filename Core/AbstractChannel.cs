@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Net.Sockets;
 using System.Threading;
 using Hyperletter.Abstraction;
@@ -16,8 +18,7 @@ namespace Hyperletter.Core {
         private LetterTransmitter _transmitter;
         private LetterReceiver _receiver;
 
-        private ILetter _currentLetter;
-
+        private readonly Queue<ILetter> _queue = new Queue<ILetter>();
         private readonly ManualResetEventSlim _cleanUpLock = new ManualResetEventSlim(true);
         
         private readonly Timer _heartbeat;
@@ -26,6 +27,7 @@ namespace Hyperletter.Core {
 
         public event Action<IAbstractChannel> ChannelConnected;
         public event Action<IAbstractChannel> ChannelDisconnected;
+        public event Action<IAbstractChannel> ChannelQueueEmpty;
 
         public event Action<IAbstractChannel, ILetter> Received;
         public event Action<IAbstractChannel, ILetter> Sent;
@@ -94,7 +96,7 @@ namespace Hyperletter.Core {
 
         public void Enqueue(ILetter letter) {
             _cleanUpLock.Wait();
-            _currentLetter = letter;
+            _queue.Enqueue(letter);
             _transmitter.Enqueue(new TransmitContext(letter));
         }
 
@@ -124,8 +126,10 @@ namespace Hyperletter.Core {
         }
 
         private void HandleLetterSent() {
-            Sent(this, _currentLetter);
-            _currentLetter = null;
+            Sent(this, _queue.Dequeue());
+
+            if (_queue.Count == 0 && ChannelQueueEmpty != null)
+                ChannelQueueEmpty(this);
         }
 
         private void HandleAckSent(TransmitContext deliveryContext) {
@@ -153,8 +157,8 @@ namespace Hyperletter.Core {
         }
 
         private void FailQueuedLetters() {
-            if (_currentLetter != null)
-                FailedToSend(this, _currentLetter);
+            //if (_currentLetter != null)
+              //  FailedToSend(this, _currentLetter);
         }
 
         private void ResetHeartbeatTimer() {

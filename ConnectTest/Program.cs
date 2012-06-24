@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Net;
-using Hyperletter;
 using Hyperletter.Abstraction;
 using Hyperletter.Core;
 
@@ -11,7 +10,7 @@ namespace ConnectTest
         public static object SyncRoot = new object();
         static void Main(string[] args) {
             var hs = new UnicastSocket();
-            //hs.Received += letter => Console.WriteLine(DateTime.Now + " ACTUALY RECEIVED: " + letter.Parts[0].Data);
+
             int y = 0;
             hs.Sent += letter => {
                 lock (SyncRoot) {
@@ -21,18 +20,21 @@ namespace ConnectTest
                     }
                 }
             };
+            
             int z = 0;
             hs.Received += letter => {
                 z++;
                 if(z % 5000 == 0)
                     Console.WriteLine("<-" + z);
             };
+            
             hs.Discarded += hs_Discarded;
             hs.Requeued += letter => Console.WriteLine("REQUEUED");
 
             hs.Connect(IPAddress.Parse("127.0.0.1"), 8001);
             hs.Connect(IPAddress.Parse("127.0.0.1"), 8002);
             hs.Connect(IPAddress.Parse("127.0.0.1"), 8003);
+            
             string line;
             while ((line = Console.ReadLine()) != null) {
                 if (line == "exit")
@@ -50,35 +52,4 @@ namespace ConnectTest
             Console.WriteLine(arg1 + " " + arg2);
         }
     }
-    /*
-    public class Transmitter {
-        public static void Main() {
-            var socket = new UnicastSocket();
-            socket.Bind(IPAddress.Any, 8001);
-
-            Console.WriteLine("TRANSMITTING");
-            for(int i=0; i<100; i++) {
-                socket.Send(new Letter(LetterOptions.None, new[] { (byte) 'A' } ));
-            }
-
-            Console.ReadLine();
-        }
-    }
-
-    public class Receiver {
-        public static void Main() {
-            var socket = new UnicastSocket();
-            socket.Connect(IPAddress.Parse("127.0.0.1"), 8001);
-            Console.WriteLine("RECEIVED");
-            socket.Received += letter => {
-                Console.WriteLine("RECEIVED");
-
-                var noReliabilityOptions = LetterOptions.NoAck | LetterOptions.SilentDiscard | LetterOptions.NoRequeue;
-                socket.Send(new Letter(noReliabilityOptions, new[] { (byte)'B' }));
-            };
-
-            Console.ReadLine();
-        }        
-    }
-    */
 }
