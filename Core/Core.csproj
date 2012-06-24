@@ -49,7 +49,7 @@
     <Compile Include="InboundChannel.cs" />
     <Compile Include="Letter.cs" />
     <Compile Include="LetterSerializer.cs" />
-    <Compile Include="AbstractChannelMulticastDecorator.cs" />
+    <Compile Include="AbstractChannelQueueDecorator.cs" />
     <Compile Include="MulticastSocket.cs" />
     <Compile Include="OutboundChannel.cs" />
     <Compile Include="Part.cs" />

@@ -3,7 +3,7 @@ using Hyperletter.Abstraction;
 namespace Hyperletter.Core {
     public class MulticastSocket : AbstractHyperSocket {
         protected override IAbstractChannel PrepareChannel(IAbstractChannel channel) {
-            return new AbstractChannelMulticastDecorator(channel);
+            return new AbstractChannelQueueDecorator(channel);
         }
 
         protected override void ChannelFailedToSend(IAbstractChannel abstractChannel, ILetter letter) {
