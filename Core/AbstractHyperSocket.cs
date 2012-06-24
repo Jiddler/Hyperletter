@@ -16,6 +16,7 @@ namespace Hyperletter.Core {
         private readonly ConcurrentDictionary<Binding, SocketListener> _listeners = new ConcurrentDictionary<Binding, SocketListener>();
 
         protected readonly ConcurrentDictionary<Binding, IAbstractChannel> Channels = new ConcurrentDictionary<Binding, IAbstractChannel>();
+        protected readonly ConcurrentDictionary<Guid, IAbstractChannel> RouteChannels = new ConcurrentDictionary<Guid, IAbstractChannel>();
 
         public Guid Id { get; private set; }
 
@@ -50,9 +51,14 @@ namespace Hyperletter.Core {
             preparedChannel.Sent += ChannelSent;
             preparedChannel.ChannelDisconnected += ChannelDisconnected;
             preparedChannel.ChannelConnected += ChannelConnected;
+            preparedChannel.ChannelInitialized += ChannelInitialized;
 
             Channels[preparedChannel.Binding] = preparedChannel;
             preparedChannel.Initialize();
+        }
+
+        private void ChannelInitialized(IAbstractChannel obj) {
+            RouteChannels.TryAdd(obj.ConnectedTo, obj);
         }
 
         protected virtual IAbstractChannel PrepareChannel(IAbstractChannel channel) {
@@ -82,18 +88,19 @@ namespace Hyperletter.Core {
         private void ChannelSent(IAbstractChannel channel, ILetter letter) {
             if (Sent != null)
                 Sent(letter);
-
-            AfterSent(channel);
         }
 
-        protected virtual void AfterSent(IAbstractChannel channel) {}
-        protected abstract void ChannelFailedToSend(IAbstractChannel abstractChannel, ILetter letter);
-
+        
         protected void Discard(IAbstractChannel abstractChannel, ILetter letter) {
             if (Discarded != null && letter.Options.IsSet(LetterOptions.SilentDiscard))
                 Discarded(abstractChannel.Binding, letter);
         }
 
+        protected void SendRoutedLetter(ILetter letter) {
+            
+        }
+
         public abstract void Send(ILetter letter);
+        protected abstract void ChannelFailedToSend(IAbstractChannel abstractChannel, ILetter letter);
     }
 }

@@ -1,9 +1,8 @@
 namespace Hyperletter.Abstraction {
     public enum LetterType : byte {
-        Ack = 0x01,
-        User = 0x02,
-        Initialize = 0x03,
-        StopSending = 0x04,
-        Heartbeat = 0x05
+        Ack         = 0x01,
+        Initialize  = 0x02,
+        Heartbeat   = 0x03,
+        User        = 0x64
     }
 }

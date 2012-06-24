@@ -25,11 +25,12 @@ namespace Hyperletter.Core {
         }
 
         protected override IAbstractChannel PrepareChannel(IAbstractChannel channel) {
-            channel.ChannelQueueEmpty += ChannelOnChannelQueueEmpty;
+            channel.ChannelQueueEmpty += ChannelCanSend;
+            channel.ChannelInitialized += ChannelCanSend;
             return channel;
         }
 
-        private void ChannelOnChannelQueueEmpty(IAbstractChannel abstractChannel) {
+        private void ChannelCanSend(IAbstractChannel abstractChannel) {
             _channelQueue.Enqueue(abstractChannel);
             TrySend();
         }

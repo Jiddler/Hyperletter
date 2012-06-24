@@ -7,6 +7,8 @@ namespace Hyperletter.Abstraction {
         SilentDiscard = 1,
         NoRequeue     = 2,
         NoAck         = 4,
-        UniqueId      = 8
+        UniqueId      = 8,
+        Routed        = 16,
+        Answer        = 32
     }
 }
