@@ -71,10 +71,10 @@ namespace Hyperletter.Core {
         }
 
         private void ChannelDisconnected(IAbstractChannel obj) {
-            if(obj is InboundChannel) {
-                IAbstractChannel value;
+            IAbstractChannel value;
+            if(obj is InboundChannel)
                 Channels.TryRemove(obj.Binding, out value);
-            }
+            RouteChannels.TryRemove(obj.ConnectedTo, out value);
 
             if (Disconnected != null)
                 Disconnected(obj.Binding);
@@ -89,7 +89,6 @@ namespace Hyperletter.Core {
             if (Sent != null)
                 Sent(letter);
         }
-
         
         protected void Discard(IAbstractChannel abstractChannel, ILetter letter) {
             if (Discarded != null && letter.Options.IsSet(LetterOptions.SilentDiscard))
@@ -97,6 +96,7 @@ namespace Hyperletter.Core {
         }
 
         protected void SendRoutedLetter(ILetter letter) {
+            
             
         }
 
