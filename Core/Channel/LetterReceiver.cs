@@ -13,9 +13,10 @@ namespace Hyperletter.Core.Channel {
         private readonly byte[] _tcpReceiveBuffer = new byte[512];
         private readonly MemoryStream _receiveBuffer = new MemoryStream();
 
-
         private readonly SocketAsyncEventArgs _receiveEventArgs = new SocketAsyncEventArgs();
-
+        
+        private readonly byte[] _lengthBuffer = new byte[4];
+        private int _lengthPosition;
         private int _currentLength;
 
         public event Action<ILetter> Received;
@@ -66,7 +67,14 @@ namespace Hyperletter.Core.Channel {
             int bufferPosition = 0;
             while (bufferPosition < length) {
                 if (IsNewMessage()) {
-                    _currentLength = BitConverter.ToInt32(buffer, bufferPosition);
+                    var lengthPositionBefore = _lengthPosition;
+                    var read = ReadNewLetterLength(buffer, bufferPosition);
+                    if(read < 4) {
+                        _receiveBuffer.Write(_lengthBuffer, lengthPositionBefore, read);
+                    }
+
+                    if (_currentLength == 0)
+                        return;
                 }
 
                 var write = (int)Math.Min(_currentLength - _receiveBuffer.Length, length - bufferPosition);
@@ -78,10 +86,28 @@ namespace Hyperletter.Core.Channel {
 
                 var letter = _letterSerializer.Deserialize(_receiveBuffer.ToArray());
                 _receiveBuffer.SetLength(0);
+                _currentLength = 0;
 
                 if (letter.Type != LetterType.Heartbeat)
                     Received(letter);
             }
+        }
+
+        private int ReadNewLetterLength(byte[] buffer, int bufferPosition) {
+            var bytesToRead = (buffer.Length - bufferPosition);
+            if (bytesToRead < 4 || _lengthPosition != 0) {
+                for (; bufferPosition < buffer.Length && _lengthPosition < 4; bufferPosition++, _lengthPosition++)
+                    _lengthBuffer[_lengthPosition] = buffer[bufferPosition];
+
+                if (_lengthPosition != 4)
+                    return bytesToRead;
+
+                _lengthPosition = 0;
+                _currentLength = BitConverter.ToInt32(_lengthBuffer, 0);
+            } else
+                _currentLength = BitConverter.ToInt32(buffer, bufferPosition);
+
+            return 4;
         }
 
         private bool ReceivedFullLetter() {
@@ -89,7 +115,7 @@ namespace Hyperletter.Core.Channel {
         }
 
         private bool IsNewMessage() {
-            return _receiveBuffer.Length == 0;
+            return _currentLength == 0;
         }
     }
 }
