@@ -1,7 +1,7 @@
 using System;
 
 namespace Hyperletter.Abstraction {
-    public interface IAbstractChannel {
+    public interface IAbstractChannel : IDisposable {
         event Action<IAbstractChannel> ChannelConnected;
         event Action<IAbstractChannel> ChannelDisconnected;
         event Action<IAbstractChannel> ChannelQueueEmpty;

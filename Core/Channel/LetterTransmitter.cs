@@ -48,10 +48,12 @@ namespace Hyperletter.Core.Channel {
                     while(_queue.TryDequeue(out transmitContext)) {
                         var serializedLetter = _letterSerializer.Serialize(transmitContext.Letter);
 
-                        if (Send(serializedLetter) != System.Net.Sockets.SocketError.Success)
+                        if (Send(serializedLetter) != System.Net.Sockets.SocketError.Success) {
                             SocketError();
-                        else if (transmitContext.Letter.Type != LetterType.Heartbeat)
-                            Sent(transmitContext);    
+                            return;
+                        }
+
+                        Sent(transmitContext);
                     }
                 }
             } catch (OperationCanceledException) {
@@ -62,7 +64,7 @@ namespace Hyperletter.Core.Channel {
             var status = System.Net.Sockets.SocketError.Success;
             try {
                 _socket.Send(serializedLetter, 0, serializedLetter.Length, SocketFlags.None, out status);
-            } catch (SocketException) {
+            } catch (Exception) {
             }
             return status;
         }

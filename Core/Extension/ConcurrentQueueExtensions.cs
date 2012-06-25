@@ -6,5 +6,11 @@ namespace Hyperletter.Core.Extension {
             T entry;
             while (dictionary.TryDequeue(out entry)) {}
         }
+
+        public static T Dequeue<T>(this ConcurrentQueue<T> dictionary) {
+            T entry;
+            dictionary.TryDequeue(out entry);
+            return entry;
+        }
     }
 }

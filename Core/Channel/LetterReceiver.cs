@@ -10,7 +10,7 @@ namespace Hyperletter.Core.Channel {
         private readonly CancellationTokenSource _cancellationTokenSource;
         private readonly LetterSerializer _letterSerializer;
 
-        private readonly byte[] _tcpReceiveBuffer = new byte[512];
+        private readonly byte[] _tcpReceiveBuffer = new byte[4096];
         private readonly MemoryStream _receiveBuffer = new MemoryStream();
 
         private readonly SocketAsyncEventArgs _receiveEventArgs = new SocketAsyncEventArgs();
@@ -47,7 +47,7 @@ namespace Hyperletter.Core.Channel {
                 var pending =_socket.ReceiveAsync(_receiveEventArgs);
                 if(!pending)
                     EndReceived(_receiveEventArgs);
-            } catch (SocketException) {
+            } catch (Exception) {
                 SocketError();
             }
         }

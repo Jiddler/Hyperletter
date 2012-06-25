@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Net.Sockets;
 using System.Threading;
@@ -17,13 +18,14 @@ namespace Hyperletter.Core {
         private LetterTransmitter _transmitter;
         private LetterReceiver _receiver;
 
-        private readonly Queue<ILetter> _queue = new Queue<ILetter>();
+        private readonly ConcurrentQueue<ILetter> _queue = new ConcurrentQueue<ILetter>();
         private readonly ManualResetEventSlim _cleanUpLock = new ManualResetEventSlim(true);
         
         private readonly Timer _heartbeat;
         private int _lastAction;
         private int _lastActionHeartbeat;
         private int _initalizationCount;
+        protected bool Disposed;
 
         public event Action<IAbstractChannel> ChannelConnected;
         public event Action<IAbstractChannel> ChannelDisconnected;
@@ -51,7 +53,8 @@ namespace Hyperletter.Core {
         protected void Heartbeat(object state) {
             if (_lastAction != _lastActionHeartbeat) {
                 _lastActionHeartbeat = _lastAction;
-                _transmitter.TransmitHeartbeat();
+            } else {
+                Enqueue(new Letter { Type = LetterType.Heartbeat, Options = LetterOptions.NoAck | LetterOptions.SilentDiscard | LetterOptions.NoRequeue });
             }
         }
 
@@ -74,7 +77,7 @@ namespace Hyperletter.Core {
             _initalizationCount = 0;
 
             Enqueue(new Letter { Type = LetterType.Initialize, Parts = new IPart[] { new Part { Data = _hyperSocketId.ToByteArray() } } });
-
+            Console.WriteLine("CONNECTED");
             ChannelConnected(this);
         }
 
@@ -85,17 +88,19 @@ namespace Hyperletter.Core {
             _heartbeat.Change(Timeout.Infinite, Timeout.Infinite);
 
             _cancellationTokenSource.Cancel();
-            TcpClient.Client.Disconnect(false);
+            try {
+                TcpClient.Client.Disconnect(false);
+            } catch(Exception) {}
 
             ChannelDisconnected(this);
-            
+            Console.WriteLine("DISCONNECTED");
             AfterDisconnected();
         }
 
         protected virtual void AfterDisconnected() { }
 
         public void Enqueue(ILetter letter) {
-            _cleanUpLock.Wait();
+            //_cleanUpLock.Wait();
             _queue.Enqueue(letter);
             _transmitter.Enqueue(new TransmitContext(letter));
         }
@@ -126,7 +131,7 @@ namespace Hyperletter.Core {
             var sentLetter = _queue.Dequeue();
             if (sentLetter.Type == LetterType.Initialize)
                 HandleInitialize();
-            else {
+            else if (sentLetter.Type != LetterType.Heartbeat) {
                 Sent(this, sentLetter);
 
                 if (_queue.Count == 0 && ChannelQueueEmpty != null)
@@ -161,13 +166,15 @@ namespace Hyperletter.Core {
         }
 
         private void SocketError() {
-            _cleanUpLock.Reset();
-            
-            _cancellationTokenSource.Cancel();
-            FailQueuedLetters();
-            Disconnected();
+            lock (this) {
+                //_cleanUpLock.Reset();
 
-            _cleanUpLock.Set();
+                _cancellationTokenSource.Cancel();
+                FailQueuedLetters();
+                Disconnected();
+
+                //_cleanUpLock.Set();
+            }
         }
 
         private void FailQueuedLetters() {
@@ -179,6 +186,13 @@ namespace Hyperletter.Core {
             _lastAction++;
             if (_lastAction > 10000000)
                 _lastAction = 0;
+        }
+
+        public void Dispose() {
+            Disposed = true;
+            TcpClient.Client.Disconnect(false);
+            TcpClient.Client.Dispose();
+            TcpClient.Close();
         }
     }
 }

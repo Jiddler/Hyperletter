@@ -5,7 +5,7 @@ using Hyperletter.Abstraction;
 using Hyperletter.Core.Extension;
 
 namespace Hyperletter.Core {
-    public abstract class AbstractHyperSocket {
+    public abstract class AbstractHyperSocket : IDisposable {
         public event Action<ILetter> Sent;
         public event Action<ILetter> Received;
         public event Action<Binding, ILetter> Discarded;
@@ -102,5 +102,14 @@ namespace Hyperletter.Core {
 
         public abstract void Send(ILetter letter);
         protected abstract void ChannelFailedToSend(IAbstractChannel abstractChannel, ILetter letter);
+        
+        public void Dispose() {
+            foreach (var listener in _listeners.Values)
+                listener.Dispose();
+
+            foreach(var channel in Channels.Values) {
+                channel.Dispose();
+            }
+        }
     }
 }
