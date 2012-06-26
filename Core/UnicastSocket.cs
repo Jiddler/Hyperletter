@@ -14,13 +14,13 @@ namespace Hyperletter.Core {
         private readonly object _syncRoot = new object();
 
         protected override void ChannelFailedToSend(IAbstractChannel abstractChannel, ILetter letter) {
-            if (letter.Options.IsSet(LetterOptions.NoRequeue)) {
-                Discard(abstractChannel, letter);
-            } else {
+            if (letter.Options.IsSet(LetterOptions.Requeue)) {
                 _prioritySendQueue.Enqueue(letter);
                 TrySend();
                 if (Requeued != null)
                     Requeued(letter);
+            } else {
+                Discard(abstractChannel, letter);
             }
         }
 
@@ -31,8 +31,13 @@ namespace Hyperletter.Core {
         }
 
         private void ChannelCanSend(IAbstractChannel abstractChannel) {
-            _channelQueue.Enqueue(abstractChannel);
-            TrySend();
+            ILetter letter;
+            if (_sendQueue.TryDequeue(out letter)) {
+                abstractChannel.Enqueue(letter);
+            } else {
+                _channelQueue.Enqueue(abstractChannel);
+                TrySend();
+            }
         }
 
         public override void Send(ILetter letter) {

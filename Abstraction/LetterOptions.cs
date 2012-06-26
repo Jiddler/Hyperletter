@@ -5,8 +5,8 @@ namespace Hyperletter.Abstraction {
     public enum LetterOptions : byte {
         None          = 0,
         SilentDiscard = 1,
-        NoRequeue     = 2,
-        NoAck         = 4,
+        Requeue     = 2,
+        Ack         = 4,
         UniqueId      = 8,
         Routed        = 16,
         Answer        = 32

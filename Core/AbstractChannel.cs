@@ -19,6 +19,7 @@ namespace Hyperletter.Core {
         private LetterReceiver _receiver;
 
         private readonly ConcurrentQueue<ILetter> _queue = new ConcurrentQueue<ILetter>();
+        private readonly ConcurrentQueue<ILetter> _receivedQueue = new ConcurrentQueue<ILetter>();
         private readonly ManualResetEventSlim _cleanUpLock = new ManualResetEventSlim(true);
         
         private readonly Timer _heartbeat;
@@ -54,7 +55,7 @@ namespace Hyperletter.Core {
             if (_lastAction != _lastActionHeartbeat) {
                 _lastActionHeartbeat = _lastAction;
             } else {
-                Enqueue(new Letter { Type = LetterType.Heartbeat, Options = LetterOptions.NoAck | LetterOptions.SilentDiscard | LetterOptions.NoRequeue });
+                Enqueue(new Letter { Type = LetterType.Heartbeat, Options = LetterOptions.SilentDiscard });
             }
         }
 
@@ -76,7 +77,7 @@ namespace Hyperletter.Core {
 
             _initalizationCount = 0;
 
-            Enqueue(new Letter { Type = LetterType.Initialize, Parts = new IPart[] { new Part { Data = _hyperSocketId.ToByteArray() } } });
+            Enqueue(new Letter { Type = LetterType.Initialize, Options = LetterOptions.Ack , Parts = new IPart[] { new Part { Data = _hyperSocketId.ToByteArray() } } });
             Console.WriteLine("CONNECTED");
             ChannelConnected(this);
         }
@@ -102,7 +103,7 @@ namespace Hyperletter.Core {
         public void Enqueue(ILetter letter) {
             //_cleanUpLock.Wait();
             _queue.Enqueue(letter);
-            _transmitter.Enqueue(new TransmitContext(letter));
+            _transmitter.Enqueue(letter);
         }
 
         private void ReceiverReceived(ILetter receivedLetter) {
@@ -111,19 +112,19 @@ namespace Hyperletter.Core {
             if (receivedLetter.Type == LetterType.Ack) {
                 HandleLetterSent();
             } else {
-                if (receivedLetter.Options.IsSet(LetterOptions.NoAck))
-                    Received(this, receivedLetter);
-                else
+                if (receivedLetter.Options.IsSet(LetterOptions.Ack))
                     QueueAck(receivedLetter);
+                else
+                    Received(this, receivedLetter);
             }
         }
 
-        private void TransmitterOnSent(TransmitContext transmitContext) {
+        private void TransmitterOnSent(ILetter sentLetter) {
             ResetHeartbeatTimer();
 
-            if(transmitContext.Letter.Type == LetterType.Ack)
-                HandleAckSent(transmitContext);
-            else if (transmitContext.Letter.Options.IsSet(LetterOptions.NoAck))
+            if (sentLetter.Type == LetterType.Ack)
+                HandleAckSent();
+            else if (!sentLetter.Options.IsSet(LetterOptions.Ack))
                 HandleLetterSent();
         }
 
@@ -149,11 +150,10 @@ namespace Hyperletter.Core {
             }
         }
 
-        private void HandleAckSent(TransmitContext deliveryContext) {
-            var receivedLetter = deliveryContext.Context;
-
+        private void HandleAckSent() {
+            ILetter receivedLetter = _receivedQueue.Dequeue();
             if(receivedLetter.Type == LetterType.User) {
-                Received(this, receivedLetter);
+                Received(this, _receivedQueue.Dequeue());
             } else if (receivedLetter.Type == LetterType.Initialize) {
                 ConnectedTo = new Guid(receivedLetter.Parts[0].Data);
                 HandleInitialize();
@@ -161,8 +161,9 @@ namespace Hyperletter.Core {
         }
       
         private void QueueAck(ILetter letter) {
+            _receivedQueue.Enqueue(letter);
             var ack = new Letter {Type = LetterType.Ack, Id = letter.Id, Options = (letter.Options & LetterOptions.UniqueId) == LetterOptions.UniqueId ? LetterOptions.UniqueId : LetterOptions.None };
-            _transmitter.Enqueue(new TransmitContext(ack, letter));
+            _transmitter.Enqueue(ack);
         }
 
         private void SocketError() {

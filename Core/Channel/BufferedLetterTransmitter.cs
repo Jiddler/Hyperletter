@@ -6,6 +6,7 @@ using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
 using Hyperletter.Abstraction;
+using Hyperletter.Core.Extension;
 using Hyperletter.Core.Stream;
 
 namespace Hyperletter.Core.Channel {
@@ -13,13 +14,13 @@ namespace Hyperletter.Core.Channel {
         private readonly LetterSerializer _letterSerializer;
         private readonly CancellationTokenSource _cancellationTokenSource;
 
-        private readonly ConcurrentQueue<TransmitContext> _queue = new ConcurrentQueue<TransmitContext>();
-        private readonly ConcurrentQueue<TransmitContext> _buffered = new ConcurrentQueue<TransmitContext>();
+        private readonly ConcurrentQueue<ILetter> _queue = new ConcurrentQueue<ILetter>();
+        private readonly ConcurrentQueue<ILetter> _buffered = new ConcurrentQueue<ILetter>();
         private readonly AutoResetEvent _resetEvent = new AutoResetEvent(false);
         private Task _transmitTask;
         private readonly SizeBufferedStream _bufferedWriter;
 
-        public event Action<TransmitContext> Sent;
+        public event Action<ILetter> Sent;
         public event Action SocketError;
         public event Action CanSendMore;
 
@@ -33,9 +34,7 @@ namespace Hyperletter.Core.Channel {
 
         private void BufferedWriterOnFlushed(int flushed) {
             for (int i = 0; i < flushed && _buffered.Count > 0; i++) {
-                TransmitContext context;
-                _buffered.TryDequeue(out context);
-                Sent(context);
+                Sent(_buffered.Dequeue());
             }
         }
 
@@ -44,8 +43,8 @@ namespace Hyperletter.Core.Channel {
             _transmitTask.Start();
         }
 
-        public void Enqueue(TransmitContext transmitContext) {
-            _queue.Enqueue(transmitContext);
+        public void Enqueue(ILetter letter) {
+            _queue.Enqueue(letter);
             _resetEvent.Set();
         }
 
@@ -54,20 +53,19 @@ namespace Hyperletter.Core.Channel {
                 while (true) {
                     _resetEvent.WaitOne();
 
-                    TransmitContext transmitContext;
-                    while (_queue.TryDequeue(out transmitContext)) {
-                        var serializedLetter = _letterSerializer.Serialize(transmitContext.Letter);
+                    ILetter letter;
+                    while (_queue.TryDequeue(out letter)) {
+                        var serializedLetter = _letterSerializer.Serialize(letter);
 
-                        _buffered.Enqueue(transmitContext);
+                        _buffered.Enqueue(letter);
 
                         if (!Send(serializedLetter)) {
                             SocketError();
                             return;
                         }
                        
-                        if (transmitContext.Letter.Type != LetterType.Heartbeat) {
+                        if (letter.Type != LetterType.Heartbeat)
                             CanSendMore();
-                        }
                     }
 
                     try {

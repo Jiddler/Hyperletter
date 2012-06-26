@@ -46,7 +46,7 @@ namespace ConnectTest
                     hs.Dispose();
                 else
                     for (int i = 0; i < 1000000; i++)
-                        //hs.Send(new Letter() { Options = LetterOptions.NoAck, Type = LetterType.User, Parts = new IPart[] { new Part { PartType = PartType.User, Data = Encoding.Unicode.GetBytes("Hej " + i) } } });
+                        //hs.Send(new Letter() { Options = LetterOptions.Ack, Type = LetterType.User, Parts = new IPart[] { new Part { PartType = PartType.User, Data = Encoding.Unicode.GetBytes("Hej " + i) } } });
                         hs.Send(new Letter() { Type = LetterType.User, Parts = new IPart[] { new Part { PartType = PartType.User, Data = Encoding.Unicode.GetBytes("Hej " + i) } } });
             }
         }

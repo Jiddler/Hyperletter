@@ -40,10 +40,10 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AbstractChannel.cs" />
+    <Compile Include="Channel\BatchLetterBuilder.cs" />
     <Compile Include="Channel\BufferedLetterTransmitter.cs" />
     <Compile Include="Channel\LetterReceiver.cs" />
     <Compile Include="Channel\LetterTransmitter.cs" />
-    <Compile Include="Channel\TransmitContext.cs" />
     <Compile Include="Extension\ConcurrentQueueExtensions.cs" />
     <Compile Include="Extension\FlagsEnumExtensions.cs" />
     <Compile Include="AbstractHyperSocket.cs" />

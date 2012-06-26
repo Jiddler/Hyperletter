@@ -11,11 +11,11 @@ namespace Hyperletter.Core.Channel {
         private readonly LetterSerializer _letterSerializer;
         private readonly CancellationTokenSource _cancellationTokenSource;
 
-        private readonly ConcurrentQueue<TransmitContext> _queue = new ConcurrentQueue<TransmitContext>();
+        private readonly ConcurrentQueue<ILetter> _queue = new ConcurrentQueue<ILetter>();
         private readonly AutoResetEvent _resetEvent = new AutoResetEvent(false);
         private Task _transmitTask;
 
-        public event Action<TransmitContext> Sent;
+        public event Action<ILetter> Sent;
         public event Action SocketError;
 
         public LetterTransmitter(TcpClient client, CancellationTokenSource cancellationTokenSource) {
@@ -30,30 +30,25 @@ namespace Hyperletter.Core.Channel {
             _transmitTask.Start();
         }
 
-        public void Enqueue(TransmitContext transmitContext) {
-            _queue.Enqueue(transmitContext);
+        public void Enqueue(ILetter letter) {
+            _queue.Enqueue(letter);
             _resetEvent.Set();
         }
-
-        public void TransmitHeartbeat() {
-            var letter = new Letter { Type = LetterType.Heartbeat, Options = LetterOptions.NoAck | LetterOptions.SilentDiscard | LetterOptions.NoRequeue };
-            Enqueue(new TransmitContext(letter));
-        }
-
+        
         private void Transmit() {
             try {
                 while (true) {
                     _resetEvent.WaitOne();
-                    TransmitContext transmitContext;
-                    while(_queue.TryDequeue(out transmitContext)) {
-                        var serializedLetter = _letterSerializer.Serialize(transmitContext.Letter);
+                    ILetter letter;
+                    while(_queue.TryDequeue(out letter)) {
+                        var serializedLetter = _letterSerializer.Serialize(letter);
 
                         if (Send(serializedLetter) != System.Net.Sockets.SocketError.Success) {
                             SocketError();
                             return;
                         }
 
-                        Sent(transmitContext);
+                        Sent(letter);
                     }
                 }
             } catch (OperationCanceledException) {
