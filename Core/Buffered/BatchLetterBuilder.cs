@@ -1,8 +1,8 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using Hyperletter.Abstraction;
 using Hyperletter.Core.Extension;
 
-namespace Hyperletter.Core.Channel {
+namespace Hyperletter.Core.Buffered {
     internal class BatchLetterBuilder {
         private readonly List<ILetter> _letters = new List<ILetter>();
         private readonly LetterSerializer _serializer;
@@ -29,9 +29,9 @@ namespace Hyperletter.Core.Channel {
         public Letter Build() {
             var letter = new Letter { Type = LetterType.Batch, Options = _batchOptions };
 
-            var parts = new Part[_letters.Count];
+            letter.Parts = new Part[_letters.Count];
             for (int i = 0; i < _letters.Count; i++)
-                parts[i] = new Part { PartType = PartType.Letter, Data = _serializer.Serialize(_letters[i]) };
+                letter.Parts[i] = new Part { PartType = PartType.Letter, Data = _serializer.Serialize(_letters[i]) };
 
             _letters.Clear();
 

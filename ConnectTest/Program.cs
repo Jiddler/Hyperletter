@@ -40,14 +40,15 @@ namespace ConnectTest
             while ((line = Console.ReadLine()) != null) {
                 if (line == "exit")
                     return;
+                
                 if(line == "s")
                     Console.WriteLine(y);
-                if (line == "k")
+                else if (line == "k")
                     hs.Dispose();
                 else
                     for (int i = 0; i < 1000000; i++)
-                        //hs.Send(new Letter() { Options = LetterOptions.Ack, Type = LetterType.User, Parts = new IPart[] { new Part { PartType = PartType.User, Data = Encoding.Unicode.GetBytes("Hej " + i) } } });
-                        hs.Send(new Letter() { Type = LetterType.User, Parts = new IPart[] { new Part { PartType = PartType.User, Data = Encoding.Unicode.GetBytes("Hej " + i) } } });
+                        hs.Send(new Letter() { Options = LetterOptions.Ack | LetterOptions.Requeue, Type = LetterType.User, Parts = new IPart[] { new Part { PartType = PartType.User, Data = Encoding.Unicode.GetBytes("Hej " + i) } } });
+                        //hs.Send(new Letter() { Type = LetterType.User, Parts = new IPart[] { new Part { PartType = PartType.User, Data = Encoding.Unicode.GetBytes("Hej " + i) } } });
             }
         }
 

@@ -42,8 +42,8 @@ namespace Hyperletter.Core.Channel {
                     ILetter letter;
                     while(_queue.TryDequeue(out letter)) {
                         var serializedLetter = _letterSerializer.Serialize(letter);
-
-                        if (Send(serializedLetter) != System.Net.Sockets.SocketError.Success) {
+                        
+                        if (!Send(serializedLetter)) {
                             SocketError();
                             return;
                         }
@@ -55,13 +55,16 @@ namespace Hyperletter.Core.Channel {
             }
         }
 
-        private SocketError Send(byte[] serializedLetter) {
-            var status = System.Net.Sockets.SocketError.Success;
+        private bool Send(byte[] serializedLetter) {
+            SocketError status;
             try {
                 _socket.Send(serializedLetter, 0, serializedLetter.Length, SocketFlags.None, out status);
             } catch (Exception) {
+                return false;
             }
-            return status;
+            return status == System.Net.Sockets.SocketError.Success;
         }
+
+        
     }
 }

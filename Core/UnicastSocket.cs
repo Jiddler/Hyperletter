@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Concurrent;
 using Hyperletter.Abstraction;
+using Hyperletter.Core.Buffered;
 using Hyperletter.Core.Extension;
 
 namespace Hyperletter.Core {
@@ -25,19 +26,17 @@ namespace Hyperletter.Core {
         }
 
         protected override IAbstractChannel PrepareChannel(IAbstractChannel channel) {
-            channel.ChannelQueueEmpty += ChannelCanSend;
-            channel.ChannelInitialized += ChannelCanSend;
-            return channel;
+            var bufferedChannel = new BufferedAbstractChannel(channel);
+
+            bufferedChannel.ChannelQueueEmpty += ChannelCanSend;
+            bufferedChannel.ChannelInitialized += ChannelCanSend;
+            
+            return bufferedChannel;
         }
 
         private void ChannelCanSend(IAbstractChannel abstractChannel) {
-            ILetter letter;
-            if (_sendQueue.TryDequeue(out letter)) {
-                abstractChannel.Enqueue(letter);
-            } else {
-                _channelQueue.Enqueue(abstractChannel);
-                TrySend();
-            }
+            _channelQueue.Enqueue(abstractChannel);
+            TrySend();
         }
 
         public override void Send(ILetter letter) {
@@ -50,13 +49,18 @@ namespace Hyperletter.Core {
                 while (CanSend()) {
                     IAbstractChannel channel = GetNextChannel();
                     ILetter letter = GetNextLetter();
-                    channel.Enqueue(letter);
+                    var canSendMore = channel.Enqueue(letter);
+                    if (canSendMore)
+                        _channelQueue.Enqueue(channel);
                 }
             }
         }
 
         private bool CanSend() {
-            return _channelQueue.Count > 0 && (_prioritySendQueue.Count > 0 || _sendQueue.Count > 0);
+            ILetter letter;
+            IAbstractChannel channel;
+            
+            return _channelQueue.TryPeek(out channel) && (_prioritySendQueue.TryPeek(out letter) || _sendQueue.TryPeek(out letter));
         }
 
         private IAbstractChannel GetNextChannel() {
@@ -69,6 +73,8 @@ namespace Hyperletter.Core {
             ILetter letter;
             if (!_prioritySendQueue.TryDequeue(out letter))
                 _sendQueue.TryDequeue(out letter);
+
+
             return letter;
         }
     }
