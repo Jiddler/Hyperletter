@@ -91,7 +91,7 @@ namespace Hyperletter.Core {
         }
         
         protected void Discard(IAbstractChannel abstractChannel, ILetter letter) {
-            if (Discarded != null && letter.Options.IsSet(LetterOptions.SilentDiscard))
+            if (Discarded != null && !letter.Options.IsSet(LetterOptions.SilentDiscard))
                 Discarded(abstractChannel.Binding, letter);
         }
 
