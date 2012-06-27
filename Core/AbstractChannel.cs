@@ -153,7 +153,7 @@ namespace Hyperletter.Core {
         private void HandleAckSent() {
             ILetter receivedLetter = _receivedQueue.Dequeue();
             if(receivedLetter.Type == LetterType.User) {
-                Received(this, _receivedQueue.Dequeue());
+                Received(this, receivedLetter);
             } else if (receivedLetter.Type == LetterType.Initialize) {
                 ConnectedTo = new Guid(receivedLetter.Parts[0].Data);
                 HandleInitialize();
