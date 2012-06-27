@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Net;
 using System.Text;
+using System.Threading;
 using Hyperletter.Abstraction;
 using Hyperletter.Core;
 
@@ -46,9 +47,11 @@ namespace ConnectTest
                 else if (line == "k")
                     hs.Dispose();
                 else
-                    for (int i = 0; i < 1000000; i++)
+                    for (int i = 0; i < 1000000; i++) {
                         hs.Send(new Letter() { Options = LetterOptions.Ack | LetterOptions.Requeue, Type = LetterType.User, Parts = new IPart[] { new Part { PartType = PartType.User, Data = Encoding.Unicode.GetBytes("Hej " + i) } } });
                         //hs.Send(new Letter() { Type = LetterType.User, Parts = new IPart[] { new Part { PartType = PartType.User, Data = Encoding.Unicode.GetBytes("Hej " + i) } } });
+                        //Thread.Sleep(90);
+                    }
             }
         }
 

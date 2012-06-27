@@ -1,4 +1,5 @@
 using System;
+using System.Timers;
 using System.Collections.Concurrent;
 using Hyperletter.Abstraction;
 using Hyperletter.Core.Extension;
@@ -6,10 +7,15 @@ using Hyperletter.Core.Extension;
 namespace Hyperletter.Core.Buffered {
     public class BufferedAbstractChannel : IAbstractChannel {
         private readonly IAbstractChannel _channel;
-        private ConcurrentQueue<ILetter> _queue = new ConcurrentQueue<ILetter>();
+        private readonly ConcurrentQueue<ILetter> _queue = new ConcurrentQueue<ILetter>();
 
         private readonly LetterSerializer _letterSerializer;
         private readonly BatchLetterBuilder _batchBuilder;
+        private readonly Timer _slidingTimeoutTimer;
+        private readonly object _syncRoot = new object();
+
+        private DateTime _firstEnqueueAt;
+        private bool _sentBatch;
 
         public event Action<IAbstractChannel> ChannelConnected;
         public event Action<IAbstractChannel> ChannelDisconnected;
@@ -30,20 +36,22 @@ namespace Hyperletter.Core.Buffered {
             _batchBuilder = new BatchLetterBuilder();
 
             _channel.ChannelConnected += abstractChannel => ChannelConnected(this);
-            _channel.ChannelDisconnected += ChannelOnChannelDisconnected;
+            _channel.ChannelDisconnected += abstractChannel => ChannelDisconnected(this);
             _channel.ChannelQueueEmpty += abstractChannel => { if (ChannelQueueEmpty != null) ChannelQueueEmpty(this); };
             _channel.ChannelInitialized += abstractChannel => ChannelInitialized(this);
             
             _channel.Received += ChannelOnReceived;
             _channel.Sent += ChannelOnSent;
             _channel.FailedToSend += ChannelOnFailedToSend;
+
+            _slidingTimeoutTimer = new Timer(100);
+            _slidingTimeoutTimer.AutoReset = false;
+            _slidingTimeoutTimer.Elapsed += SlidingTimeoutTimerOnElapsed;
         }
 
-        private void ChannelOnChannelDisconnected(IAbstractChannel abstractChannel) {
-            //ILetter failedLetter;
-            //while(_queue.TryDequeue(out failedLetter)) {
-            //    FailedToSend(this, failedLetter);
-            //}
+        private void SlidingTimeoutTimerOnElapsed(object sender, ElapsedEventArgs elapsedEventArgs) {
+            _slidingTimeoutTimer.Enabled = false;
+            TrySendBatch(true);
         }
 
         public void Initialize() {
@@ -51,24 +59,41 @@ namespace Hyperletter.Core.Buffered {
         }
 
         public bool Enqueue(ILetter letter) {
+            _slidingTimeoutTimer.Enabled = false;
+            _slidingTimeoutTimer.Enabled = true;
+
+            if (_queue.Count == 0)
+                _firstEnqueueAt = DateTime.Now;
+
             _queue.Enqueue(letter);
             _batchBuilder.Add(letter);
 
-            lock (this) {
-                if (_batchBuilder.Count >= 4000) {
-                    _channel.Enqueue(_batchBuilder.Build());
-                    return false;
-                }
+            TrySendBatch(false);
+            return true;
+        }
 
-                return true;
+        private void TrySendBatch(bool timeout) {
+            lock (_syncRoot) {
+                if (_sentBatch)
+                    return;
+
+                if (HasSomethingToSend() && (timeout || _batchBuilder.Count >= 4000 || (DateTime.Now - _firstEnqueueAt).TotalMilliseconds >= 1000)) {
+                    _sentBatch = true;
+                    _channel.Enqueue(_batchBuilder.Build());
+                }
             }
+        }
+
+        private bool HasSomethingToSend() {
+            return _batchBuilder.Count > 0;
         }
 
         private void ChannelOnSent(IAbstractChannel abstractChannel, ILetter letter) {
             if(letter.Type == LetterType.Batch) {
-                for (int i = 0; i < letter.Parts.Length; i++) {
+                _sentBatch = false;
+
+                for (int i = 0; i < letter.Parts.Length; i++)
                     Sent(this, _queue.Dequeue());
-                }
             } else
                 Sent(this, _queue.Dequeue());
         }
