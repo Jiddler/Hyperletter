@@ -91,11 +91,11 @@ namespace Hyperletter.Core {
 
         protected virtual void AfterDisconnected() { }
 
-        public bool Enqueue(ILetter letter) {
+        public EnqueueResult Enqueue(ILetter letter) {
             _queue.Enqueue(letter);
             _transmitter.Enqueue(letter);
             
-            return false;
+            return EnqueueResult.CantEnqueueMore;
         }
 
         private void HandleInitialize() {

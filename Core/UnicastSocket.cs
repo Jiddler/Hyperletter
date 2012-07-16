@@ -49,8 +49,8 @@ namespace Hyperletter.Core {
                 while (CanSend()) {
                     IAbstractChannel channel = GetNextChannel();
                     ILetter letter = GetNextLetter();
-                    var canSendMore = channel.Enqueue(letter);
-                    if (canSendMore)
+                    var result = channel.Enqueue(letter);
+                    if (result == EnqueueResult.CanEnqueueMore)
                         _channelQueue.Enqueue(channel);
                 }
             }

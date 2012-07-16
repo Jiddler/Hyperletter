@@ -58,7 +58,7 @@ namespace Hyperletter.Core.Buffered {
             _channel.Initialize();
         }
 
-        public bool Enqueue(ILetter letter) {
+        public EnqueueResult Enqueue(ILetter letter) {
             _slidingTimeoutTimer.Enabled = false;
             _slidingTimeoutTimer.Enabled = true;
 
@@ -69,7 +69,8 @@ namespace Hyperletter.Core.Buffered {
             _batchBuilder.Add(letter);
 
             TrySendBatch(false);
-            return true;
+
+            return EnqueueResult.CanEnqueueMore;
         }
 
         private void TrySendBatch(bool timeout) {

@@ -40,6 +40,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Binding.cs" />
+    <Compile Include="ChannelStatus.cs" />
     <Compile Include="IAbstractChannel.cs" />
     <Compile Include="IHyperSocket.cs" />
     <Compile Include="ILetter.cs" />

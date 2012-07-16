@@ -16,6 +16,6 @@ namespace Hyperletter.Abstraction {
         Binding Binding { get; }
 
         void Initialize();
-        bool Enqueue(ILetter letter);
+        EnqueueResult Enqueue(ILetter letter);
     }
 }
