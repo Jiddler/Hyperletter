@@ -24,11 +24,8 @@ namespace BindTest
                 }
             };
             int z = 0;
-            StreamWriter swr = new StreamWriter(@"C:\Users\Lars Stenberg\Desktop\Log.txt", true);
             hs.Received += letter => {
                 lock (hs) {
-                    swr.WriteLine(System.Text.Encoding.Unicode.GetString(letter.Parts[0].Data));
-
                     if (z == 0)
                         sw.Restart();
                     z++;
@@ -60,9 +57,6 @@ namespace BindTest
             hs.Dispose();
 
             Thread.Sleep(500);
-
-            swr.WriteLine("EXITING");
-            swr.Flush();
         }
     }
 }
