@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Concurrent;
 using Hyperletter.Abstraction;
-using Hyperletter.Core.Buffered;
+using Hyperletter.Core.Batch;
 using Hyperletter.Core.Extension;
 
 namespace Hyperletter.Core {
@@ -32,7 +32,7 @@ namespace Hyperletter.Core {
 
         protected override IAbstractChannel PrepareChannel(IAbstractChannel channel) {
             if(Options.BatchOptions.Enabled)
-                channel = new BufferedAbstractChannel(channel, Options.BatchOptions);
+                channel = new BatchAbstractChannel(channel, Options.BatchOptions);
 
             channel.ChannelQueueEmpty += ChannelCanSend;
             channel.ChannelInitialized += ChannelCanSend;

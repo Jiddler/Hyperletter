@@ -40,8 +40,8 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AbstractChannel.cs" />
-    <Compile Include="Buffered\BatchLetterBuilder.cs" />
-    <Compile Include="Buffered\BufferedAbstractChannel.cs" />
+    <Compile Include="Batch\BatchLetterBuilder.cs" />
+    <Compile Include="Batch\BatchAbstractChannel.cs" />
     <Compile Include="Channel\LetterReceiver.cs" />
     <Compile Include="Channel\LetterTransmitter.cs" />
     <Compile Include="Extension\ConcurrentQueueExtensions.cs" />

@@ -69,7 +69,6 @@ namespace Hyperletter.Core {
             _initalizationCount = 0;
 
             Enqueue(new Letter { Type = LetterType.Initialize, Options = LetterOptions.Ack, Parts = new IPart[] { new Part { Data = _hyperSocketId.ToByteArray() } } });
-            Console.WriteLine("CONNECTED");
             ChannelConnected(this);
         }
 
@@ -85,7 +84,6 @@ namespace Hyperletter.Core {
             } catch (Exception) { }
 
             ChannelDisconnected(this);
-            Console.WriteLine("DISCONNECTED");
             AfterDisconnected();
         }
 
@@ -182,8 +180,6 @@ namespace Hyperletter.Core {
         }
 
         private void FailQueuedLetters() {
-            // IF Type == BUFFERED DO SOMETHING SPECIAL
-
             ILetter letter;
             while (_queue.TryDequeue(out letter))
                 FailedToSend(this, letter);

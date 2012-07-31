@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using Hyperletter.Abstraction;
 using Hyperletter.Core.Extension;
 
-namespace Hyperletter.Core.Buffered {
+namespace Hyperletter.Core.Batch {
     internal class BatchLetterBuilder {
         private readonly List<ILetter> _letters = new List<ILetter>();
         private readonly LetterSerializer _serializer;

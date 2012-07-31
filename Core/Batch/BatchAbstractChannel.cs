@@ -4,8 +4,8 @@ using System.Collections.Concurrent;
 using Hyperletter.Abstraction;
 using Hyperletter.Core.Extension;
 
-namespace Hyperletter.Core.Buffered {
-    public class BufferedAbstractChannel : IAbstractChannel {
+namespace Hyperletter.Core.Batch {
+    public class BatchAbstractChannel : IAbstractChannel {
         private readonly IAbstractChannel _channel;
         private readonly BatchOptions _options;
         private readonly ConcurrentQueue<ILetter> _queue = new ConcurrentQueue<ILetter>();
@@ -31,7 +31,7 @@ namespace Hyperletter.Core.Buffered {
         public Guid ConnectedTo { get { return _channel.ConnectedTo; } }
         public Binding Binding { get { return _channel.Binding; } }
 
-        public BufferedAbstractChannel(IAbstractChannel channel, BatchOptions options) {
+        public BatchAbstractChannel(IAbstractChannel channel, BatchOptions options) {
             _channel = channel;
             _options = options;
 
