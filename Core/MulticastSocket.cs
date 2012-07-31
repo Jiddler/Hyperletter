@@ -2,6 +2,12 @@ using Hyperletter.Abstraction;
 
 namespace Hyperletter.Core {
     public class MulticastSocket : AbstractHyperSocket {
+        public MulticastSocket() {
+        }
+
+        public MulticastSocket(SocketOptions options) : base(options) {
+        }
+
         protected override void ChannelFailedToSend(IAbstractChannel abstractChannel, ILetter letter) {
             Discard(abstractChannel, letter);
         }

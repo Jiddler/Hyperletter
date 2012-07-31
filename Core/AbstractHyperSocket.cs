@@ -18,13 +18,14 @@ namespace Hyperletter.Core {
         protected readonly ConcurrentDictionary<Binding, IAbstractChannel> Channels = new ConcurrentDictionary<Binding, IAbstractChannel>();
         protected readonly ConcurrentDictionary<Guid, IAbstractChannel> RouteChannels = new ConcurrentDictionary<Guid, IAbstractChannel>();
 
-        public Guid Id { get; private set; }
+        public SocketOptions Options { get; set; }
 
-        protected AbstractHyperSocket() : this(Guid.NewGuid()) {
+        protected AbstractHyperSocket() {
+            Options = new SocketOptions();
         }
 
-        protected AbstractHyperSocket(Guid id) {
-            Id = id;
+        protected AbstractHyperSocket(SocketOptions options) {
+            Options = options;
         }
 
         public void Bind(IPAddress ipAddress, int port) {
@@ -38,7 +39,7 @@ namespace Hyperletter.Core {
 
         public void Connect(IPAddress ipAddress, int port) {
             var bindingKey = new Binding(ipAddress, port);
-            var channel = new OutboundChannel(Id, bindingKey);
+            var channel = new OutboundChannel(Options.Id, bindingKey);
             HookupChannel(channel);
             channel.Connect();
         }

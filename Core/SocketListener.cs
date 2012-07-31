@@ -40,7 +40,7 @@ namespace Hyperletter.Core {
             tcpClient.NoDelay = true;
             tcpClient.LingerState = new LingerOption(true, 1);
             var binding = GetBinding(tcpClient.Client.RemoteEndPoint);
-            var boundChannel = new InboundChannel(_hyperSocket.Id, tcpClient, binding);
+            var boundChannel = new InboundChannel(_hyperSocket.Options.Id, tcpClient, binding);
             IncomingChannel(boundChannel);
         }
 

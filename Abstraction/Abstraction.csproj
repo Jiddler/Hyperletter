@@ -39,6 +39,7 @@
     <Reference Include="System.Core" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="BatchOptions.cs" />
     <Compile Include="Binding.cs" />
     <Compile Include="ChannelStatus.cs" />
     <Compile Include="IAbstractChannel.cs" />
@@ -50,6 +51,7 @@
     <Compile Include="PartType.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SocketMode.cs" />
+    <Compile Include="SocketOptions.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

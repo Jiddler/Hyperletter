@@ -6,13 +6,18 @@ using Hyperletter.Core.Extension;
 
 namespace Hyperletter.Core {
     public class UnicastSocket : AbstractHyperSocket {
-        public event Action<ILetter> Requeued;
-
         private readonly ConcurrentQueue<IAbstractChannel> _channelQueue = new ConcurrentQueue<IAbstractChannel>();
         private readonly ConcurrentQueue<ILetter> _sendQueue = new ConcurrentQueue<ILetter>();
         private readonly ConcurrentQueue<ILetter> _prioritySendQueue = new ConcurrentQueue<ILetter>();
 
         private readonly object _syncRoot = new object();
+
+        public event Action<ILetter> Requeued;
+
+        public UnicastSocket() {}
+
+        public UnicastSocket(SocketOptions options) : base(options) {
+        }
 
         protected override void ChannelFailedToSend(IAbstractChannel abstractChannel, ILetter letter) {
             if (letter.Options.IsSet(LetterOptions.Requeue)) {
@@ -26,12 +31,13 @@ namespace Hyperletter.Core {
         }
 
         protected override IAbstractChannel PrepareChannel(IAbstractChannel channel) {
-            var bufferedChannel = new BufferedAbstractChannel(channel);
+            if(Options.BatchOptions.Enabled)
+                channel = new BufferedAbstractChannel(channel, Options.BatchOptions);
 
-            bufferedChannel.ChannelQueueEmpty += ChannelCanSend;
-            bufferedChannel.ChannelInitialized += ChannelCanSend;
-            
-            return bufferedChannel;
+            channel.ChannelQueueEmpty += ChannelCanSend;
+            channel.ChannelInitialized += ChannelCanSend;
+
+            return channel;
         }
 
         private void ChannelCanSend(IAbstractChannel abstractChannel) {

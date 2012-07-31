@@ -7,6 +7,7 @@ using Hyperletter.Core.Extension;
 namespace Hyperletter.Core.Buffered {
     public class BufferedAbstractChannel : IAbstractChannel {
         private readonly IAbstractChannel _channel;
+        private readonly BatchOptions _options;
         private readonly ConcurrentQueue<ILetter> _queue = new ConcurrentQueue<ILetter>();
 
         private readonly LetterSerializer _letterSerializer;
@@ -30,8 +31,10 @@ namespace Hyperletter.Core.Buffered {
         public Guid ConnectedTo { get { return _channel.ConnectedTo; } }
         public Binding Binding { get { return _channel.Binding; } }
 
-        public BufferedAbstractChannel(IAbstractChannel channel) {
+        public BufferedAbstractChannel(IAbstractChannel channel, BatchOptions options) {
             _channel = channel;
+            _options = options;
+
             _letterSerializer = new LetterSerializer();
             _batchBuilder = new BatchLetterBuilder();
 
@@ -44,7 +47,7 @@ namespace Hyperletter.Core.Buffered {
             _channel.Sent += ChannelOnSent;
             _channel.FailedToSend += ChannelOnFailedToSend;
 
-            _slidingTimeoutTimer = new Timer(100);
+            _slidingTimeoutTimer = new Timer(_options.Extend.TotalMilliseconds);
             _slidingTimeoutTimer.AutoReset = false;
             _slidingTimeoutTimer.Elapsed += SlidingTimeoutTimerOnElapsed;
         }
@@ -78,7 +81,7 @@ namespace Hyperletter.Core.Buffered {
                 if (_sentBatch)
                     return;
 
-                if (HasSomethingToSend() && (timeout || _batchBuilder.Count >= 4000 || (DateTime.Now - _firstEnqueueAt).TotalMilliseconds >= 1000)) {
+                if (HasSomethingToSend() && (timeout || _batchBuilder.Count >= _options.MaxLetters || (DateTime.Now - _firstEnqueueAt).TotalMilliseconds >= _options.MaxExtend.TotalMilliseconds)) {
                     _sentBatch = true;
                     _channel.Enqueue(_batchBuilder.Build());
                 }
