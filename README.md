@@ -18,7 +18,7 @@ Hyperletter _does not_ persist the queues on disk, so if you´re application cras
 You can build disk caching if you want to, just listen to the Sent-event to know when to delete it from you´re persistence. We´re might include this feature in the future.
 
 ## Performance
-On my laptop, I5 something, Hyperletter can send around 20k letters/second with application level ACKs and around 60k letters/second with the NoAck option. Even with the NoAck option Hyperletter will still detect network failures (on the TCP-level) and requeue those letters.
+On my laptop, I5 something, Hyperletter can send around 20k letters/second with application level ACKs and around 60k letters/second with the NoAck option. Even with the NoAck option Hyperletter will still detect network most failures (on the TCP-level) and requeue those letters.
 
 ## Bindings
 So far there is only a .NET-binding, if you like the protocol please submit language bindings for your language.
@@ -58,22 +58,42 @@ So far there is only a .NET-binding, if you like the protocol please submit lang
 
 ## Whats next
 
-### Refactoring
+### V1. Refactoring
 Internal refactoring of the core queuing parts
 
-### Addresses
+### V2. Persistence
+Internal refactoring of the core queuing parts
+
+### V3. Make use of the addresses
 if you´re building chains of sockets and you send a letter from A via B to C and C decides to answer, the letter should get back to A no matter if B is connected to multiple sockets.
 
 ## Protocol specification
 ### Header
      4 bytes: Total length
      1 byte : Letter type
-     1 byte : Letter options (SilentDiscard = 1, NoRequeue = 2, NoAck = 4, UniqueId = 8)
+		Ack         = 0x01,
+        Initialize  = 0x02,
+        Heartbeat   = 0x03,
+        Batch       = 0x04,
+        User        = 0x64
+
+     1 byte : Letter options
+		SilentDiscard	= 1,
+		NoRequeue		= 2,
+		NoAck			= 4,
+		UniqueId		= 8,
+
     16 bytes: UniqueID (GUID-compatible, Only if UniqueId is used) 
-     1 byte : Part count
+
+### Addresses
+	 4 bytes: Addresses count
+	 [Multiple]
+	 1 byte : Address length
+	 X bytes: Address (An address part is allowed to be up to 255 chars)
 
 ### Parts
-     1 byte : Part type ( Address = 1, User = 2)
-     4 bytes: Length of data
-     X byte : Data
+     4 byte : Part count
+     [Multiple]
+	 4 bytes: Length of data
+     X bytes: Data
 
