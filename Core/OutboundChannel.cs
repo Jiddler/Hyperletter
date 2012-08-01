@@ -10,6 +10,7 @@ namespace Hyperletter.Core {
         private bool _reconnect;
 
         public OutboundChannel(Guid socketId, Binding binding) : base(socketId, binding) {
+            ChannelDisconnected += OnChannelDisconnected;
         }
 
         public void Connect() {
@@ -42,8 +43,8 @@ namespace Hyperletter.Core {
 
             task.Start();
         }
-        
-        protected override void AfterDisconnected() {
+
+        private void OnChannelDisconnected(IAbstractChannel abstractChannel) {
             _reconnect = true;
             TryConnect();
         }

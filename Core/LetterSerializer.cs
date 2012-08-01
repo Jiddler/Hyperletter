@@ -8,19 +8,25 @@ namespace Hyperletter.Core {
         public byte[] Serialize(ILetter letter) {
             var ms = new MemoryStream();
             WriteMetadata(letter, ms);
-            if (letter.Type != LetterType.Ack && letter.Type != LetterType.Heartbeat)
-                WriteParts(letter, ms);
-
+            WriteAddress(letter, ms);
+            WriteParts(letter, ms);
             WriteTotalLength(ms);
+
             return ms.ToArray();
         }
 
-        private static void WriteTotalLength(MemoryStream ms) {
+        private void WriteAddress(ILetter letter, Stream ms) {
+            ms.Write(BitConverter.GetBytes(letter.Address.Length), 0, 2);
+            for(int i=0; i<letter.Address.Length; i++)
+                ms.Write(letter.Address[i].ToByteArray(), 0, 16);
+        }
+
+        private static void WriteTotalLength(Stream ms) {
             ms.Position = 0;
             ms.Write(BitConverter.GetBytes(ms.Length), 0, 4);
         }
 
-        private static void WriteMetadata(ILetter letter, MemoryStream ms) {
+        private static void WriteMetadata(ILetter letter, Stream ms) {
             ms.Position = 4;
             ms.WriteByte((byte)letter.Type);
             ms.WriteByte((byte)letter.Options);
@@ -30,34 +36,50 @@ namespace Hyperletter.Core {
 
         private static void WriteParts(ILetter letter, MemoryStream ms) {
             ms.Write(BitConverter.GetBytes(letter.Parts == null ? 0x000000 : letter.Parts.Length), 0, 4);
+
             for (int i = 0; letter.Parts != null && i < letter.Parts.Length; i++)
-                WritePart(letter.Parts[i].PartType, letter.Parts[i].Data, ms);
+                WritePart(letter.Parts[i], ms);
         }
 
-        private static void WritePart(PartType partType, byte[] address, MemoryStream ms) {
-            ms.WriteByte((byte)partType);
+        private static void WritePart(byte[] address, MemoryStream ms) {
             ms.Write(BitConverter.GetBytes(address.Length), 0, 4);
             ms.Write(address, 0, address.Length);
         }
 
         public ILetter Deserialize(byte[] serializedLetter) {
             var letter = new Letter();
-            letter.Type = (LetterType) serializedLetter[4];
-            letter.Options = (LetterOptions)serializedLetter[5];
 
-            if(letter.Options.IsSet(LetterOptions.UniqueId))
+            int position = 4;
+            letter.Type = (LetterType) serializedLetter[position++];
+            letter.Options = (LetterOptions) serializedLetter[position++];
+
+            if(letter.Options.IsSet(LetterOptions.UniqueId)) {
                 letter.Id = new Guid(GetByteRange(serializedLetter, 6, 16));
+                position += 16;
+            }
 
-            if (letter.Type == LetterType.Ack || letter.Type == LetterType.Heartbeat)
-                return letter;
+            letter.Address = ReadAddress(serializedLetter, ref position);
+            letter.Parts = ReadParts(serializedLetter, ref position);
 
-            letter.Parts = GetParts(serializedLetter, letter.Options.IsSet(LetterOptions.UniqueId) ? 22 : 6);
             return letter;
         }
 
-        private IPart[] GetParts(byte[] serializedLetter, int position) {
+        private Guid[] ReadAddress(byte[] serializedLetter, ref int position) {
+            var addressCount = BitConverter.ToInt16(serializedLetter, position);
+            position += 2;
+
+            var address = new Guid[addressCount];
+            for(int i=0; i<addressCount; i++) {
+                address[i] = new Guid(GetByteRange(serializedLetter, position, 16));
+                position += 16;
+            }
+
+            return address;
+        }
+
+        private byte[][] ReadParts(byte[] serializedLetter, ref int position) {
             var partCount = BitConverter.ToInt32(serializedLetter, position);
-            var parts = new IPart[partCount];
+            var parts = new byte[partCount][];
 
             if (partCount == 0)
                 return parts;
@@ -65,16 +87,11 @@ namespace Hyperletter.Core {
             position += 4;
             int i = 0;
             while (position < serializedLetter.Length) {
-                var part = new Part();
-                
-                part.PartType = (PartType) serializedLetter[position];
-                position += 1;
                 var partLength = GetLength(serializedLetter, position);
                 position += 4;
-                part.Data = GetByteRange(serializedLetter, position, partLength);
-                position += partLength;
 
-                parts[i++] = part;
+                parts[i++] = GetByteRange(serializedLetter, position, partLength);
+                position += partLength;
             }
 
             return parts;

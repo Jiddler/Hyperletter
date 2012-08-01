@@ -29,9 +29,9 @@ namespace Hyperletter.Core.Batch {
         public Letter Build() {
             var letter = new Letter { Type = LetterType.Batch, Options = _batchOptions };
 
-            letter.Parts = new Part[_letters.Count];
+            letter.Parts = new byte[_letters.Count][];
             for (int i = 0; i < _letters.Count; i++)
-                letter.Parts[i] = new Part { PartType = PartType.Letter, Data = _serializer.Serialize(_letters[i]) };
+                letter.Parts[i] = _serializer.Serialize(_letters[i]);
 
             _letters.Clear();
 

@@ -47,8 +47,7 @@ namespace Hyperletter.Core.Batch {
             _channel.Sent += ChannelOnSent;
             _channel.FailedToSend += ChannelOnFailedToSend;
 
-            _slidingTimeoutTimer = new Timer(_options.Extend.TotalMilliseconds);
-            _slidingTimeoutTimer.AutoReset = false;
+            _slidingTimeoutTimer = new Timer(_options.Extend.TotalMilliseconds) { AutoReset = false };
             _slidingTimeoutTimer.Elapsed += SlidingTimeoutTimerOnElapsed;
         }
 
@@ -118,13 +117,8 @@ namespace Hyperletter.Core.Batch {
         }
 
         private void UnpackBatch(ILetter letter, Action<byte[]> callback) {
-            for (int i = 0; i < letter.Parts.Length; i++) {
-                var part = letter.Parts[i];
-                if (part.PartType != PartType.Letter)
-                    continue;
-
-                callback(part.Data);
-            }
+            for (int i = 0; i < letter.Parts.Length; i++)
+                callback(letter.Parts[i]);
         }
 
         public void Dispose() {

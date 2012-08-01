@@ -71,28 +71,27 @@ if you´re building chains of sockets and you send a letter from A via B to C and
 ### Header
      4 bytes: Total length
      1 byte : Letter type
-		Ack         = 0x01,
-        Initialize  = 0x02,
-        Heartbeat   = 0x03,
-        Batch       = 0x04,
-        User        = 0x64
+		Ack				= 0x01,
+        Initialize		= 0x02,
+        Heartbeat		= 0x03,
+        Batch			= 0x04,
+        User			= 0x64
 
-     1 byte : Letter options
-		SilentDiscard	= 1,
-		NoRequeue		= 2,
-		NoAck			= 4,
-		UniqueId		= 8,
+     1 byte : Letter flags
+		SilentDiscard	= 0x01,
+		NoRequeue		= 0x02,
+		NoAck			= 0x04,
+		UniqueId		= 0x08
 
     16 bytes: UniqueID (GUID-compatible, Only if UniqueId is used) 
 
 ### Addresses
-	 4 bytes: Addresses count
+	 2 bytes: Addresses count
 	 [Multiple]
-	 1 byte : Address length
-	 X bytes: Address (An address part is allowed to be up to 255 chars)
+	16 bytes: Address (An address part is allowed to be up to 255 chars)
 
 ### Parts
-     4 byte : Part count
+	 2 bytes: Part count
      [Multiple]
 	 4 bytes: Length of data
      X bytes: Data

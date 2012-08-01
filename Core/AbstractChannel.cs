@@ -20,8 +20,6 @@ namespace Hyperletter.Core {
         private readonly ConcurrentQueue<ILetter> _queue = new ConcurrentQueue<ILetter>();
         private readonly ConcurrentQueue<ILetter> _receivedQueue = new ConcurrentQueue<ILetter>();
 
-        private readonly ManualResetEventSlim _cleanUpLock = new ManualResetEventSlim(true);
-
         private readonly Timer _heartbeat;
         private int _lastAction;
         private int _lastActionHeartbeat;
@@ -68,26 +66,9 @@ namespace Hyperletter.Core {
 
             _initalizationCount = 0;
 
-            Enqueue(new Letter { Type = LetterType.Initialize, Options = LetterOptions.Ack, Parts = new IPart[] { new Part { Data = _hyperSocketId.ToByteArray() } } });
+            Enqueue(new Letter { Type = LetterType.Initialize, Options = LetterOptions.Ack, Parts = new[] { _hyperSocketId.ToByteArray() } });
             ChannelConnected(this);
         }
-
-        protected void Disconnected() {
-            if (!IsConnected)
-                return;
-            IsConnected = false;
-            _heartbeat.Change(Timeout.Infinite, Timeout.Infinite);
-
-            _cancellationTokenSource.Cancel();
-            try {
-                TcpClient.Client.Disconnect(false);
-            } catch (Exception) { }
-
-            ChannelDisconnected(this);
-            AfterDisconnected();
-        }
-
-        protected virtual void AfterDisconnected() { }
 
         public EnqueueResult Enqueue(ILetter letter) {
             _queue.Enqueue(letter);
@@ -143,7 +124,7 @@ namespace Hyperletter.Core {
 
         private void HandleReceivedLetter(ILetter receivedLetter) {
             if(receivedLetter.Type == LetterType.Initialize) {
-                ConnectedTo = new Guid(receivedLetter.Parts[0].Data);
+                ConnectedTo = new Guid(receivedLetter.Parts[0]);
                 HandleInitialize();                
             } else if (receivedLetter.Type == LetterType.User || receivedLetter.Type == LetterType.Batch) {
                 Received(this, receivedLetter);
@@ -169,14 +150,26 @@ namespace Hyperletter.Core {
 
         private void SocketError() {
             lock (this) {
-                //_cleanUpLock.Reset();
-
+                _heartbeat.Change(Timeout.Infinite, Timeout.Infinite);
                 _cancellationTokenSource.Cancel();
-                FailQueuedLetters();
-                Disconnected();
 
-                //_cleanUpLock.Set();
+                FailQueuedLetters();
+
+                if (IsConnected) {
+                    DisconnectSocket();
+                    ChannelDisconnected(this);
+                }
             }
+        }
+
+        private void DisconnectSocket() {
+            IsConnected = false;
+
+            try {
+                TcpClient.Client.Disconnect(false);
+                TcpClient.Client.Dispose();
+                TcpClient.Close();
+            } catch (Exception) {}
         }
 
         private void FailQueuedLetters() {
@@ -196,9 +189,7 @@ namespace Hyperletter.Core {
 
         public void Dispose() {
             Disposed = true;
-            TcpClient.Client.Disconnect(false);
-            TcpClient.Client.Dispose();
-            TcpClient.Close();
+            DisconnectSocket();
         }
     }
 }

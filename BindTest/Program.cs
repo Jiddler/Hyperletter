@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Diagnostics;
-using System.IO;
 using System.Net;
 using System.Threading;
 using Hyperletter.Abstraction;
@@ -13,8 +12,7 @@ namespace BindTest
         public static object SyncRoot = new object();
         static void Main(string[] args) {
             var hs = new UnicastSocket();
-            int i = 0;
-            Stopwatch sw = new Stopwatch();
+            var sw = new Stopwatch();
             int y = 0;
             hs.Sent += letter => {
                 lock (SyncRoot) {
@@ -51,7 +49,7 @@ namespace BindTest
                     Console.WriteLine("KILLED SOCKET");
                 } else
                     for (int m = 0; m < 1000; m++)
-                        hs.Send(new Letter() { Type = LetterType.User, Parts = new IPart[] { new Part { PartType = PartType.User, Data = new[] { (byte)'A' } } } });
+                        hs.Send(new Letter { Type = LetterType.User, Parts = new[] { new[] { (byte)'A' } } });
             }
 
             hs.Dispose();

@@ -5,6 +5,7 @@ namespace Hyperletter.Abstraction {
         Guid Id { get; }
         LetterType Type { get; }
         LetterOptions Options { get; }
-        IPart[] Parts { get; }
+        byte[][] Parts { get; }
+        Guid[] Address { get; }
     }
 }

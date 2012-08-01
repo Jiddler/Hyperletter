@@ -3,6 +3,8 @@ using Hyperletter.Abstraction;
 
 namespace Hyperletter.Core {
     public class Letter : ILetter {
+        private static readonly Guid[] EmptyAddress = new Guid[0];
+
         private Guid? _id;
         public Guid Id {
             get {
@@ -15,14 +17,18 @@ namespace Hyperletter.Core {
 
         public LetterType Type { get; set; }
         public LetterOptions Options { get; set; }
-        public IPart[] Parts { get; set; }
+        
+        public Guid[] Address { get; set; }
+        public byte[][] Parts { get; set; }
 
-        public Letter() {}
+        public Letter() {
+            Address = EmptyAddress;
+        }
 
-        public Letter(LetterOptions options, byte[] userPart) {
+        public Letter(LetterOptions options, byte[] userPart) : this() {
             Type = LetterType.User;
             Options = options;
-            Parts = new IPart[] { new Part { Data = userPart, PartType = PartType.User } };
+            Parts = new[] { userPart };
         }
     }
 }

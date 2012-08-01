@@ -45,10 +45,8 @@
     <Compile Include="IAbstractChannel.cs" />
     <Compile Include="IHyperSocket.cs" />
     <Compile Include="ILetter.cs" />
-    <Compile Include="IPart.cs" />
     <Compile Include="LetterOptions.cs" />
     <Compile Include="LetterType.cs" />
-    <Compile Include="PartType.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SocketMode.cs" />
     <Compile Include="SocketOptions.cs" />

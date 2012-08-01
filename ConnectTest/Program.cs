@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Net;
 using System.Text;
-using System.Threading;
 using Hyperletter.Abstraction;
 using Hyperletter.Core;
 
@@ -10,8 +9,9 @@ namespace ConnectTest
     class Program
     {
         public static object SyncRoot = new object();
-        static void Main(string[] args) {
-            var hs = new UnicastSocket();
+        static void Main() {
+            var options = new SocketOptions();
+            var hs = new UnicastSocket(options);
 
             int y = 0;
             hs.Sent += letter => {
@@ -31,7 +31,7 @@ namespace ConnectTest
             };
             
             hs.Discarded += hs_Discarded;
-            hs.Requeued += letter => Console.WriteLine("REQUEUED " + Encoding.Unicode.GetString(letter.Parts[0].Data)) ;
+            hs.Requeued += letter => Console.WriteLine("REQUEUED " + Encoding.Unicode.GetString(letter.Parts[0])) ;
 
             hs.Connect(IPAddress.Parse("127.0.0.1"), 8001);
             //hs.Connect(IPAddress.Parse("127.0.0.1"), 8002);
@@ -48,7 +48,7 @@ namespace ConnectTest
                     hs.Dispose();
                 else
                     for (int i = 0; i < 1000000; i++) {
-                        hs.Send(new Letter() { Options = LetterOptions.Ack | LetterOptions.Requeue, Type = LetterType.User, Parts = new IPart[] { new Part { PartType = PartType.User, Data = Encoding.Unicode.GetBytes("Hej " + i) } } });
+                        hs.Send(new Letter { Options = LetterOptions.Ack | LetterOptions.Requeue, Type = LetterType.User, Parts = new[] { Encoding.Unicode.GetBytes("Hej " + i) } });
                         //hs.Send(new Letter() { Type = LetterType.User, Parts = new IPart[] { new Part { PartType = PartType.User, Data = Encoding.Unicode.GetBytes("Hej " + i) } } });
                         //Thread.Sleep(90);
                     }
