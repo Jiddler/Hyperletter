@@ -1,5 +1,8 @@
 # Hyperletter
 
+## Version
+We´re currently on V1. See below for product roadmap under "Whats next".
+
 ## Concept
 You can think of Hyperletter as a mix between ZMQ and WCF. ZMQ is great for speedy applications but is you need to do a lot of extra work to make sure its reliable. WCF on the other hand is reliable but is a hassle to work with.
 
@@ -14,16 +17,21 @@ Hyperletter ensures your data is delivered, unless _you_ tell it that what you´r
 
 If there is no-one to deliver the letter to Hyperletter will queue it internally until it’s possible to deliver.
 
-Hyperletter _does not_ persist the queues on disk, so if you´re application crashes you´re data is lost.
-You can build disk caching if you want to, just listen to the Sent-event to know when to delete it from you´re persistence. We´re might include this feature in the future.
+Hyperletter _does not_ persist the queues on disk (see whats next below), so if you´re application crashes you´re queued data is lost.
+You can build disk caching if you want to, just listen to the Sent-event to know when to delete it from you´re persistence. We´re going to include this feature in the future.
 
 ## Performance
-On my laptop, I5 something, Hyperletter can send around 20k letters/second with application level ACKs and around 60k letters/second with the NoAck option. Even with the NoAck option Hyperletter will still detect network most failures (on the TCP-level) and requeue those letters.
+On my laptop, I5 something.
+
+With TCP-batching turned off: Hyperletter can send around 20k letters/second with application level ACKs and around 60k letters/second with the NoAck option.
+With TCP batching turned on: Depends on configuration, we´ve seen results between 90k and 900k letters/second. If one of the batched letters requires and ACK the batch as a whole will be ACK:ed and therefore its no big performance difference between ACK or NoAck.
+
+Even with the NoAck option Hyperletter will still detect network most failures (on the TCP-level) and requeue those letters.
 
 ## Bindings
 So far there is only a .NET-binding, if you like the protocol please submit language bindings for your language.
 
-## .NET example
+## .NET example (See BindTest and ConnectTest in the source for more details)
     public class Transmitter {
         public static void Main() {
             var socket = new UnicastSocket();
