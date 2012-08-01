@@ -8,6 +8,10 @@ namespace Hyperletter.Core {
             TcpClient = tcpClient;
         }
 
+        public override Direction Direction {
+            get { return Direction.Inbound; }
+        }
+
         public override void Initialize() {
             Connected();
         }

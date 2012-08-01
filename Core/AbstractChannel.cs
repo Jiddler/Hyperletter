@@ -38,6 +38,7 @@ namespace Hyperletter.Core {
         public bool IsConnected { get; private set; }
         public Guid ConnectedTo { get; private set; }
         public Binding Binding { get; private set; }
+        public abstract Direction Direction { get; }
 
         protected AbstractChannel(Guid hyperSocketId, Binding binding) {
             _hyperSocketId = hyperSocketId;
@@ -174,11 +175,10 @@ namespace Hyperletter.Core {
 
         private void FailQueuedLetters() {
             ILetter letter;
-            while (_queue.TryDequeue(out letter))
-                FailedToSend(this, letter);
-
-            while (_queue.TryDequeue(out letter))
-                FailedToSend(this, letter);
+            while (_queue.TryDequeue(out letter)) {
+                if(letter.Type == LetterType.User || letter.Type == LetterType.Batch)
+                    FailedToSend(this, letter);
+            }
         }
 
         private void ResetHeartbeatTimer() {

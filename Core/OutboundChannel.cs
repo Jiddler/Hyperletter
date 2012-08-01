@@ -7,10 +7,12 @@ using Hyperletter.Abstraction;
 namespace Hyperletter.Core {
     public class OutboundChannel : AbstractChannel {
         private bool _connecting;
-        private bool _reconnect;
+
+        public override Direction Direction {
+            get { return Direction.Outbound; }
+        }
 
         public OutboundChannel(Guid socketId, Binding binding) : base(socketId, binding) {
-            ChannelDisconnected += OnChannelDisconnected;
         }
 
         public void Connect() {
@@ -23,10 +25,8 @@ namespace Hyperletter.Core {
 
             _connecting = true;
             var task = new Task(() => {
-                if (_reconnect)
-                    Thread.Sleep(1000);
-
                 TcpClient = new TcpClient();
+
                 while(!TcpClient.Connected) {
                     try {
                         TcpClient.Connect(Binding.IpAddress, Binding.Port);
@@ -42,11 +42,6 @@ namespace Hyperletter.Core {
             });
 
             task.Start();
-        }
-
-        private void OnChannelDisconnected(IAbstractChannel abstractChannel) {
-            _reconnect = true;
-            TryConnect();
         }
     }
 }

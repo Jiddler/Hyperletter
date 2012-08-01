@@ -11,33 +11,41 @@ namespace BindTest
     {
         public static object SyncRoot = new object();
         static void Main(string[] args) {
-            var hs = new UnicastSocket();
-            var sw = new Stopwatch();
-            int y = 0;
-            hs.Sent += letter => {
+            var options = new SocketOptions();
+            var unicastSocket = new UnicastSocket(options);
+
+            var stopwatch = new Stopwatch();
+            
+            int sent = 0;
+            unicastSocket.Sent += letter => {
                 lock (SyncRoot) {
-                    y++;
-                    if (y%1000 == 0)
-                        Console.WriteLine("->" + y);
+                    sent++;
+                    if (sent%1000 == 0)
+                        Console.WriteLine("->" + sent);
                 }
             };
-            int z = 0;
-            hs.Received += letter => {
-                lock (hs) {
-                    if (z == 0)
-                        sw.Restart();
-                    z++;
-                    if (z%20000 == 0)
-                        Console.WriteLine("<-" + z);
-                    if (z%100000 == 0) {
-                        Console.WriteLine("Received: " + z + " in " + sw.ElapsedMilliseconds + " ms" + ". " + (z/sw.ElapsedMilliseconds) + " letter/millisecond");
-                        z = 0;
+
+            unicastSocket.Disconnected += binding => Console.WriteLine("DISCONNECTED " + binding);
+            unicastSocket.Connected += binding => Console.WriteLine("CONNECTED " + binding);
+
+            int received = 0;
+            unicastSocket.Received += letter => {
+                lock (unicastSocket) {
+                    if (received == 0)
+                        stopwatch.Restart();
+                    received++;
+
+                    if (received%20000 == 0)
+                        Console.WriteLine("<-" + received);
+                    if (received%100000 == 0) {
+                        Console.WriteLine("Received: " + received + " in " + stopwatch.ElapsedMilliseconds + " ms" + ". " + (received/stopwatch.ElapsedMilliseconds) + " letter/millisecond");
+                        received = 0;
                     }
                 }
             };
 
             int port = int.Parse(args[0]);
-            hs.Bind(IPAddress.Any, port);
+            unicastSocket.Bind(IPAddress.Any, port);
 
             string line;
             while ((line = Console.ReadLine()) != null) {
@@ -45,14 +53,14 @@ namespace BindTest
                     break;
 
                 if (line == "k") {
-                    hs.Dispose();
+                    unicastSocket.Dispose();
                     Console.WriteLine("KILLED SOCKET");
                 } else
                     for (int m = 0; m < 1000; m++)
-                        hs.Send(new Letter { Type = LetterType.User, Parts = new[] { new[] { (byte)'A' } } });
+                        unicastSocket.Send(new Letter { Type = LetterType.User, Parts = new[] { new[] { (byte)'A' } } });
             }
 
-            hs.Dispose();
+            unicastSocket.Dispose();
 
             Thread.Sleep(500);
         }

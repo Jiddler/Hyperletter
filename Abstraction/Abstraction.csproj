@@ -42,6 +42,7 @@
     <Compile Include="BatchOptions.cs" />
     <Compile Include="Binding.cs" />
     <Compile Include="ChannelStatus.cs" />
+    <Compile Include="Direction.cs" />
     <Compile Include="IAbstractChannel.cs" />
     <Compile Include="IHyperSocket.cs" />
     <Compile Include="ILetter.cs" />

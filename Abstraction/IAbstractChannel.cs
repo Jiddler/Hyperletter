@@ -14,6 +14,7 @@ namespace Hyperletter.Abstraction {
         bool IsConnected { get; }
         Guid ConnectedTo { get; }
         Binding Binding { get; }
+        Direction Direction { get; }
 
         void Initialize();
         EnqueueResult Enqueue(ILetter letter);

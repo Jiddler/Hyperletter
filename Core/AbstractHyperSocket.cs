@@ -73,12 +73,16 @@ namespace Hyperletter.Core {
 
         private void ChannelDisconnected(IAbstractChannel obj) {
             IAbstractChannel value;
-            if(obj is InboundChannel)
-                Channels.TryRemove(obj.Binding, out value);
+            Channels.TryRemove(obj.Binding, out value);
             RouteChannels.TryRemove(obj.ConnectedTo, out value);
 
             if (Disconnected != null)
                 Disconnected(obj.Binding);
+
+            if (obj.Direction == Direction.Outbound)
+                Connect(obj.Binding.IpAddress, obj.Binding.Port);
+
+            obj.Dispose();
         }
 
         private void ChannelReceived(IAbstractChannel channel, ILetter letter) {
@@ -108,9 +112,8 @@ namespace Hyperletter.Core {
             foreach (var listener in _listeners.Values)
                 listener.Dispose();
 
-            foreach(var channel in Channels.Values) {
+            foreach(var channel in Channels.Values)
                 channel.Dispose();
-            }
         }
     }
 }

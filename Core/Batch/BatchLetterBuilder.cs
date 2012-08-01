@@ -1,10 +1,11 @@
-using System.Collections.Generic;
+using System.Collections.Concurrent;
 using Hyperletter.Abstraction;
 using Hyperletter.Core.Extension;
 
 namespace Hyperletter.Core.Batch {
     internal class BatchLetterBuilder {
-        private readonly List<ILetter> _letters = new List<ILetter>();
+        private readonly int _maxLetters;
+        private readonly ConcurrentQueue<ILetter> _letters = new ConcurrentQueue<ILetter>();
         private readonly LetterSerializer _serializer;
 
         public const int MaxLettersInOneBatch = 1000;
@@ -15,7 +16,8 @@ namespace Hyperletter.Core.Batch {
 
         private LetterOptions _batchOptions = LetterOptions.None;
 
-        public BatchLetterBuilder() {
+        public BatchLetterBuilder(int maxLetters) {
+            _maxLetters = maxLetters;
             _serializer = new LetterSerializer();
         }
 
@@ -23,17 +25,16 @@ namespace Hyperletter.Core.Batch {
             if(letter.Options.IsSet(LetterOptions.Ack))
                 _batchOptions = LetterOptions.Ack;
 
-            _letters.Add(letter);
+            _letters.Enqueue(letter);
         }
 
         public Letter Build() {
             var letter = new Letter { Type = LetterType.Batch, Options = _batchOptions };
 
-            letter.Parts = new byte[_letters.Count][];
-            for (int i = 0; i < _letters.Count; i++)
-                letter.Parts[i] = _serializer.Serialize(_letters[i]);
-
-            _letters.Clear();
+            int lettersInBatch = _letters.Count < _maxLetters ? _letters.Count : _maxLetters;
+            letter.Parts = new byte[lettersInBatch][];
+            for (int i = 0; i < lettersInBatch; i++)
+                letter.Parts[i] = _serializer.Serialize(_letters.Dequeue());
 
             return letter;
         }

@@ -4,59 +4,73 @@ using System.Text;
 using Hyperletter.Abstraction;
 using Hyperletter.Core;
 
-namespace ConnectTest
-{
-    class Program
-    {
+namespace ConnectTest {
+    class Program {
         public static object SyncRoot = new object();
-        static void Main() {
-            var options = new SocketOptions();
-            var hs = new UnicastSocket(options);
 
-            int y = 0;
-            hs.Sent += letter => {
+        static void Main() {
+            var socketOptions = new SocketOptions();
+            var unicastSocket = new UnicastSocket(socketOptions);
+
+            int sent = 0;
+
+            unicastSocket.Sent += letter => {
                 lock (SyncRoot) {
-                    y++;
-                    if (y%20000 == 0) {
-                        Console.WriteLine("->" + y);
-                    }
+                    sent++;
+
+                    if (sent % 20000 == 0)
+                        Console.WriteLine("SENT: " + sent);
                 }
             };
             
-            int z = 0;
-            hs.Received += letter => {
-                z++;
-                if(z % 20000 == 0)
-                    Console.WriteLine("<-" + z);
+            int received = 0;
+            unicastSocket.Received += letter => {
+                received++;
+
+                if(received % 20000 == 0)
+                    Console.WriteLine("RECEIVED: " + received);
             };
             
-            hs.Discarded += hs_Discarded;
-            hs.Requeued += letter => Console.WriteLine("REQUEUED " + Encoding.Unicode.GetString(letter.Parts[0])) ;
+            unicastSocket.Discarded += (binding, letter) => Console.WriteLine("DISCARDED: " + binding + " " + Encoding.Unicode.GetString(letter.Parts[0]));
+            unicastSocket.Requeued += letter => Console.WriteLine("REQUEUED: " + letter) ;
 
-            hs.Connect(IPAddress.Parse("127.0.0.1"), 8001);
-            //hs.Connect(IPAddress.Parse("127.0.0.1"), 8002);
-            //hs.Connect(IPAddress.Parse("127.0.0.1"), 8003);
+            unicastSocket.Disconnected += binding => Console.WriteLine("DISCONNECTED " + binding);
+            unicastSocket.Connected += binding => Console.WriteLine("CONNECTED " + binding);
+
+            unicastSocket.Connect(IPAddress.Parse("127.0.0.1"), 8001);
+            //unicastSocket.Connect(IPAddress.Parse("127.0.0.1"), 8002);
             
+            Console.WriteLine("Commands: ");
+            Console.WriteLine("status\t\t- print number of sent and received letters");
+            Console.WriteLine("any number\t\t- send a number of letters");
+            Console.WriteLine("anything else\t- Send 1 000 000 letters");
+            Console.WriteLine("exit\t\t- exit");
+
             string line;
+            Console.Write("\n\nENTER COMMAND: ");
             while ((line = Console.ReadLine()) != null) {
                 if (line == "exit")
                     return;
-                
-                if(line == "s")
-                    Console.WriteLine(y);
-                else if (line == "k")
-                    hs.Dispose();
+                else if (line == "status")
+                    WriteStatus(sent, received);
+                else if (line != "")
+                    SendXLetters(unicastSocket, int.Parse(line));
                 else
-                    for (int i = 0; i < 1000000; i++) {
-                        hs.Send(new Letter { Options = LetterOptions.Ack | LetterOptions.Requeue, Type = LetterType.User, Parts = new[] { Encoding.Unicode.GetBytes("Hej " + i) } });
-                        //hs.Send(new Letter() { Type = LetterType.User, Parts = new IPart[] { new Part { PartType = PartType.User, Data = Encoding.Unicode.GetBytes("Hej " + i) } } });
-                        //Thread.Sleep(90);
-                    }
+                    SendXLetters(unicastSocket, 1000000);
             }
+
+            unicastSocket.Dispose();
         }
 
-        static void hs_Discarded(Binding arg1, ILetter arg2) {
-            Console.WriteLine(arg1 + " " + arg2);
+        private static void WriteStatus(int sent, int received) {
+            Console.WriteLine("SENT: " + sent);
+            Console.WriteLine("RECEIVED: " + received);
+        }
+
+        private static void SendXLetters(UnicastSocket unicastSocket, int numberToSend) {
+            for (int i = 0; i < numberToSend; i++)
+                unicastSocket.Send(new Letter
+                {Options = LetterOptions.Ack | LetterOptions.Requeue, Type = LetterType.User, Parts = new[] {Encoding.Unicode.GetBytes("Hej " + i)}});
         }
     }
 }
