@@ -5,7 +5,7 @@ using Hyperletter.Abstraction;
 using Hyperletter.Core.Extension;
 
 namespace Hyperletter.Core {
-    public abstract class AbstractHyperSocket : IDisposable {
+    public abstract class AbstractHyperSocket : IDisposable, IAbstractHyperSocket {
         public event Action<ILetter> Sent;
         public event Action<ILetter> Received;
         public event Action<Binding, ILetter> Discarded;

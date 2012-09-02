@@ -25,6 +25,11 @@ namespace Hyperletter.Core {
             Address = EmptyAddress;
         }
 
+        public Letter(LetterOptions options) {
+            Address = EmptyAddress;
+            Options = options;
+        }
+
         public Letter(LetterOptions options, byte[] userPart) : this() {
             Type = LetterType.User;
             Options = options;
