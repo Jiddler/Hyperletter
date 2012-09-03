@@ -3,16 +3,16 @@ using System.Reflection;
 
 namespace Hyperletter.Dispatcher {
     public class DefaultHandlerFactory : IHandlerFactory {
-        public IHandler<TMessage> CreateHandler<THandler, TMessage>() {
-            var constructorInfo = GetConstructor<THandler>();
-            return (IHandler<TMessage>)constructorInfo.Invoke(new object[0]);
+        public IHandler<TMessage> CreateHandler<THandler, TMessage>(TMessage message) {
+            ConstructorInfo constructorInfo = GetConstructor<THandler>();
+            return (IHandler<TMessage>) constructorInfo.Invoke(new object[0]);
         }
 
-        private ConstructorInfo GetConstructor<THandler>()
-        {
-            var constructor = typeof(THandler).GetConstructors().FirstOrDefault(ci => !ci.GetParameters().Any());
+        private ConstructorInfo GetConstructor<THandler>() {
+            ConstructorInfo constructor =
+                typeof(THandler).GetConstructors().FirstOrDefault(ci => !ci.GetParameters().Any());
 
-            if (constructor == null)
+            if(constructor == null)
                 throw new NoMatchingConstructorException();
 
             return constructor;

@@ -52,7 +52,7 @@ namespace Hyperletter.Dispatcher {
 
             public override void Invoke(ILetter letter, Type concreteType) {
                 var message = _serializer.Deserialize<TMessage>(letter.Parts[1], concreteType);
-                var handler = _handlerFactory.CreateHandler<THandler, TMessage>();
+                var handler = _handlerFactory.CreateHandler<THandler, TMessage>(message);
                 handler.Execute(message);
             }
         }
