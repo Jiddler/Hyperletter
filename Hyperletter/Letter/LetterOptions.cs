@@ -1,6 +1,6 @@
 using System;
 
-namespace Hyperletter.Core.Letter {
+namespace Hyperletter.Letter {
     [Flags]
     public enum LetterOptions : byte {
         None          = 0,

@@ -1,6 +1,6 @@
-using Hyperletter.Core.Letter;
+using Hyperletter.Letter;
 
-namespace Hyperletter.Core.Dispatcher {
+namespace Hyperletter.Dispatcher {
     public abstract class AbstractDispatcher {
         protected readonly IHyperSocket HyperSocket;
         protected readonly ITransportSerializer Serializer;

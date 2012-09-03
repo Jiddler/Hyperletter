@@ -1,7 +1,7 @@
 using System;
-using Hyperletter.Core.Letter;
+using Hyperletter.Letter;
 
-namespace Hyperletter.Core.Dispatcher {
+namespace Hyperletter.Dispatcher {
     public interface IDelegateSocket {
         void Register<TMessage>(Action<TMessage> handler);
         void Send<T>(T value);

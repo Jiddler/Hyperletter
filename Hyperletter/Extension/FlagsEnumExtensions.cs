@@ -1,6 +1,6 @@
 using System;
 
-namespace Hyperletter.Core.Extension {
+namespace Hyperletter.Extension {
     public static class FlagsEnumExtensions {
         public static bool IsSet<T>(this Enum type, T value) {
             ulong keysVal = Convert.ToUInt64(type);

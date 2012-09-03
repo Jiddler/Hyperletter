@@ -1,8 +1,8 @@
 using System;
 using System.IO;
-using Hyperletter.Core.Extension;
+using Hyperletter.Extension;
 
-namespace Hyperletter.Core.Letter {
+namespace Hyperletter.Letter {
     internal class LetterSerializer {
         public byte[] Serialize(ILetter letter) {
             var ms = new MemoryStream();

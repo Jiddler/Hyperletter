@@ -1,7 +1,7 @@
 using System.Linq;
 using System.Reflection;
 
-namespace Hyperletter.Core.Dispatcher {
+namespace Hyperletter.Dispatcher {
     public class DefaultHandlerFactory : IHandlerFactory {
         public IHandler<TMessage> CreateHandler<THandler, TMessage>() {
             var constructorInfo = GetConstructor<THandler>();

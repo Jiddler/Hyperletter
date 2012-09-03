@@ -1,4 +1,4 @@
-namespace Hyperletter.Core.Letter {
+namespace Hyperletter.Letter {
     public enum LetterType : byte {
         Ack         = 0x01,
         Initialize  = 0x02,

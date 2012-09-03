@@ -7,8 +7,8 @@
     <ProjectGuid>{3CABACB8-0FB8-49F8-B2DE-5C1283C92441}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>Hyperletter.Core</RootNamespace>
-    <AssemblyName>Hyperletter.Core</AssemblyName>
+    <RootNamespace>Hyperletter</RootNamespace>
+    <AssemblyName>Hyperletter</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
   </PropertyGroup>

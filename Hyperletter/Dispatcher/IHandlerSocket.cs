@@ -1,6 +1,6 @@
-using Hyperletter.Core.Letter;
+using Hyperletter.Letter;
 
-namespace Hyperletter.Core.Dispatcher {
+namespace Hyperletter.Dispatcher {
     public interface IHandlerSocket {
         void Register<TMessage, THandler>() where THandler : IHandler<TMessage>;
         void Send<T>(T value);

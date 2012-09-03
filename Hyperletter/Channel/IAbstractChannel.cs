@@ -1,7 +1,7 @@
 using System;
-using Hyperletter.Core.Letter;
+using Hyperletter.Letter;
 
-namespace Hyperletter.Core.Channel {
+namespace Hyperletter.Channel {
     public interface IAbstractChannel : IDisposable {
         event Action<IAbstractChannel> ChannelConnected;
         event Action<IAbstractChannel> ChannelDisconnected;

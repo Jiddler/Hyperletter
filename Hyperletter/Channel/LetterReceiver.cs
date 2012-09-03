@@ -2,9 +2,9 @@ using System;
 using System.IO;
 using System.Net.Sockets;
 using System.Threading;
-using Hyperletter.Core.Letter;
+using Hyperletter.Letter;
 
-namespace Hyperletter.Core.Channel {
+namespace Hyperletter.Channel {
     internal class LetterReceiver {
         private readonly Socket _socket;
         private readonly CancellationTokenSource _cancellationTokenSource;

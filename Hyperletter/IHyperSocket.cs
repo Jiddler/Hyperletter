@@ -1,8 +1,8 @@
 using System;
 using System.Net;
-using Hyperletter.Core.Letter;
+using Hyperletter.Letter;
 
-namespace Hyperletter.Core {
+namespace Hyperletter {
     public interface IHyperSocket {
         event Action<ILetter> Sent;
         event Action<ILetter> Received;

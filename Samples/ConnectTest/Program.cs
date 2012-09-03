@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Net;
 using System.Text;
-using Hyperletter.Core;
-using Hyperletter.Core.Letter;
+using Hyperletter;
+using Hyperletter.Letter;
 
 namespace ConnectTest {
     class Program {

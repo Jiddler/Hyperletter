@@ -3,9 +3,9 @@ using System.Collections.Concurrent;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
-using Hyperletter.Core.Letter;
+using Hyperletter.Letter;
 
-namespace Hyperletter.Core.Channel {
+namespace Hyperletter.Channel {
     internal class LetterTransmitter {
         private readonly Socket _socket;
         private readonly LetterSerializer _letterSerializer;

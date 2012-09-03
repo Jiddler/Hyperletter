@@ -2,8 +2,8 @@
 using System.Diagnostics;
 using System.Net;
 using System.Threading;
-using Hyperletter.Core;
-using Hyperletter.Core.Letter;
+using Hyperletter;
+using Hyperletter.Letter;
 
 namespace BindTest
 {

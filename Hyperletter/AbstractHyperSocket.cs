@@ -1,11 +1,11 @@
 using System;
 using System.Collections.Concurrent;
 using System.Net;
-using Hyperletter.Core.Channel;
-using Hyperletter.Core.Extension;
-using Hyperletter.Core.Letter;
+using Hyperletter.Channel;
+using Hyperletter.Extension;
+using Hyperletter.Letter;
 
-namespace Hyperletter.Core {
+namespace Hyperletter {
     public abstract class AbstractHyperSocket : IDisposable, IHyperSocket {
         public event Action<ILetter> Sent;
         public event Action<ILetter> Received;

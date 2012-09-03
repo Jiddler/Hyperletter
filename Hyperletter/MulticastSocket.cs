@@ -1,7 +1,7 @@
-using Hyperletter.Core.Channel;
-using Hyperletter.Core.Letter;
+using Hyperletter.Channel;
+using Hyperletter.Letter;
 
-namespace Hyperletter.Core {
+namespace Hyperletter {
     public class MulticastSocket : AbstractHyperSocket {
         public MulticastSocket() {
         }

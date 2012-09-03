@@ -1,11 +1,11 @@
 using System;
 using System.Timers;
 using System.Collections.Concurrent;
-using Hyperletter.Core.Channel;
-using Hyperletter.Core.Extension;
-using Hyperletter.Core.Letter;
+using Hyperletter.Channel;
+using Hyperletter.Extension;
+using Hyperletter.Letter;
 
-namespace Hyperletter.Core.Batch {
+namespace Hyperletter.Batch {
     public class BatchAbstractChannel : IAbstractChannel {
         private readonly IAbstractChannel _channel;
         private readonly BatchOptions _options;

@@ -1,6 +1,6 @@
 using System;
 
-namespace Hyperletter.Core.Batch {
+namespace Hyperletter.Batch {
     public class BatchOptions {
         public bool Enabled { get; set; }
         public TimeSpan Extend { get; set; }

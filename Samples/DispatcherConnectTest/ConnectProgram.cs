@@ -2,8 +2,8 @@
 using System.Net;
 using System.Threading;
 using DispatcherUtility;
-using Hyperletter.Core;
-using Hyperletter.Core.Dispatcher;
+using Hyperletter;
+using Hyperletter.Dispatcher;
 
 namespace DispatcherConnectTest {
     public class ConnectProgram {

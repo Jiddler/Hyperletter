@@ -1,11 +1,11 @@
 using System;
 using System.Collections.Concurrent;
-using Hyperletter.Core.Batch;
-using Hyperletter.Core.Channel;
-using Hyperletter.Core.Extension;
-using Hyperletter.Core.Letter;
+using Hyperletter.Batch;
+using Hyperletter.Channel;
+using Hyperletter.Extension;
+using Hyperletter.Letter;
 
-namespace Hyperletter.Core {
+namespace Hyperletter {
     public class UnicastSocket : AbstractHyperSocket {
         private readonly ConcurrentQueue<IAbstractChannel> _channelQueue = new ConcurrentQueue<IAbstractChannel>();
         private readonly ConcurrentQueue<ILetter> _sendQueue = new ConcurrentQueue<ILetter>();

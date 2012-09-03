@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Hyperletter.Core.Dispatcher {
+namespace Hyperletter.Dispatcher {
     public class DictionaryList<TKey, TValue> {
         private readonly Dictionary<TKey, List<TValue>> _dictionary;
         private readonly IEnumerable<TValue> _emptyEnumerable = Enumerable.Empty<TValue>();

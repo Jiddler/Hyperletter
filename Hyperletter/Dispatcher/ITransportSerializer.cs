@@ -1,6 +1,6 @@
 using System;
 
-namespace Hyperletter.Core.Dispatcher {
+namespace Hyperletter.Dispatcher {
     public interface ITransportSerializer {
         byte[] Serialize(object obj);
         T Deserialize<T>(byte[] value);

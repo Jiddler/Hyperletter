@@ -1,12 +1,12 @@
 using System;
 using System.Text;
-using Hyperletter.Core.Dispatcher;
+using Hyperletter.Dispatcher;
 using Newtonsoft.Json;
 
 namespace DispatcherUtility {
     public class JsonTransportSerializer : ITransportSerializer {
         public byte[] Serialize(object obj) {
-            return Encoding.UTF8.GetBytes((string) JsonConvert.SerializeObject(obj));
+            return Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(obj));
         }
 
         public T Deserialize<T>(byte[] value) {

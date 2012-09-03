@@ -2,10 +2,10 @@ using System;
 using System.Collections.Concurrent;
 using System.Net.Sockets;
 using System.Threading;
-using Hyperletter.Core.Extension;
-using Hyperletter.Core.Letter;
+using Hyperletter.Extension;
+using Hyperletter.Letter;
 
-namespace Hyperletter.Core.Channel {
+namespace Hyperletter.Channel {
     public abstract class AbstractChannel : IAbstractChannel {
         private readonly Guid _hyperSocketId;
         private const int HeartbeatInterval = 1000;

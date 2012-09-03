@@ -1,6 +1,6 @@
 using System;
 
-namespace Hyperletter.Core.Letter {
+namespace Hyperletter.Letter {
     public interface ILetter {
         Guid Id { get; }
         LetterType Type { get; }

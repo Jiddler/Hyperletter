@@ -1,4 +1,4 @@
-namespace Hyperletter.Core.Channel {
+namespace Hyperletter.Channel {
     public enum EnqueueResult {
         CantEnqueueMore,
         CanEnqueueMore

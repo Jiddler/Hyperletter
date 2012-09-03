@@ -1,8 +1,8 @@
 using System.Collections.Concurrent;
-using Hyperletter.Core.Extension;
-using Hyperletter.Core.Letter;
+using Hyperletter.Extension;
+using Hyperletter.Letter;
 
-namespace Hyperletter.Core.Batch {
+namespace Hyperletter.Batch {
     internal class BatchLetterBuilder {
         private readonly int _maxLetters;
         private readonly ConcurrentQueue<ILetter> _letters = new ConcurrentQueue<ILetter>();

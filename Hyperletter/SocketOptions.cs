@@ -1,7 +1,7 @@
 using System;
-using Hyperletter.Core.Batch;
+using Hyperletter.Batch;
 
-namespace Hyperletter.Core {
+namespace Hyperletter {
     public class SocketOptions {
         public BatchOptions BatchOptions { get; private set; }
         public Guid Id { get; set; }

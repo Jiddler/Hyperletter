@@ -1,8 +1,8 @@
 using System;
 using System.Collections.Generic;
-using Hyperletter.Core.Letter;
+using Hyperletter.Letter;
 
-namespace Hyperletter.Core.Dispatcher {
+namespace Hyperletter.Dispatcher {
     public class DelegateSocket : AbstractDispatcher, IDelegateSocket {
         private readonly DictionaryList<Type, Registration> _registry = new DictionaryList<Type, Registration>();
 

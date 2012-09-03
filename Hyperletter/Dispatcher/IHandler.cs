@@ -1,4 +1,4 @@
-namespace Hyperletter.Core.Dispatcher {
+namespace Hyperletter.Dispatcher {
     public interface IHandler<TMessage> {
         void Execute(TMessage message);
     }

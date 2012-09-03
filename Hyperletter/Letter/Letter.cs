@@ -1,6 +1,6 @@
 using System;
 
-namespace Hyperletter.Core.Letter {
+namespace Hyperletter.Letter {
     public class Letter : ILetter {
         private static readonly Guid[] EmptyAddress = new Guid[0];
 

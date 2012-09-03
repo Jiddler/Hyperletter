@@ -1,6 +1,6 @@
 using System.Net;
 
-namespace Hyperletter.Core {
+namespace Hyperletter {
     public class Binding {
         public IPAddress IpAddress { get; private set; }
         public int Port { get; private set; }
