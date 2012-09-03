@@ -3,13 +3,13 @@ using System.Net;
 using System.Threading;
 using DispatcherUtility;
 using Hyperletter.Core;
-using Hyperletter.Dispatcher;
+using Hyperletter.Core.Dispatcher;
 
 namespace DispatcherBindTest {
     public class BindProgram {
         public static void Main() {
             var hyperSocket = new UnicastSocket();
-            var handleDispatcher = new DelegateDispatcher(hyperSocket, new JsonTransportSerializer());
+            var handleDispatcher = new DelegateSocket(hyperSocket, new JsonTransportSerializer());
             handleDispatcher.Register<TestMessage>(IncomingTestMessage);
             hyperSocket.Bind(IPAddress.Any, 8900);
 

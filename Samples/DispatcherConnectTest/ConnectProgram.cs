@@ -3,14 +3,14 @@ using System.Net;
 using System.Threading;
 using DispatcherUtility;
 using Hyperletter.Core;
-using Hyperletter.Dispatcher;
+using Hyperletter.Core.Dispatcher;
 
 namespace DispatcherConnectTest {
     public class ConnectProgram {
         public static void Main()
         {
             var hyperSocket = new UnicastSocket();
-            var handleDispatcher = new HandlerDispatcher(hyperSocket, new DefaultHandlerFactory(), new JsonTransportSerializer());
+            var handleDispatcher = new HandlerSocket(hyperSocket, new DefaultHandlerFactory(), new JsonTransportSerializer());
             handleDispatcher.Register<TestMessage, MessageHandler>();
             hyperSocket.Connect(IPAddress.Parse("127.0.0.1"), 8900);
 
@@ -26,15 +26,9 @@ namespace DispatcherConnectTest {
         }
     }
 
-    public class MessageHandler : IHandler {
-        private readonly TestMessage _message;
-
-        public MessageHandler(TestMessage message) {
-            _message = message;
-        }
-
-        public void Execute() {
-            Console.WriteLine(DateTime.Now + " RECEIVED MESSAGE: " + _message.Message);
+    public class MessageHandler : IHandler<TestMessage> {
+        public void Execute(TestMessage message) {
+            Console.WriteLine(DateTime.Now + " RECEIVED MESSAGE: " + message.Message);
         }
     }
 }

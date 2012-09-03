@@ -43,17 +43,9 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\Abstraction\Abstraction.csproj">
-      <Project>{3EC2DAA6-C05B-4897-BEAD-CEE486BF66C9}</Project>
-      <Name>Abstraction</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\..\Core\Core.csproj">
-      <Project>{3CABACB8-0FB8-49F8-B2DE-5C1283C92441}</Project>
-      <Name>Core</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\..\Serialization\Dispatcher.csproj">
-      <Project>{1E3EC10F-6DEA-4B0B-93F4-921F440682A4}</Project>
-      <Name>Dispatcher</Name>
+    <ProjectReference Include="..\..\Hyperletter\Hyperletter.csproj">
+      <Project>{3cabacb8-0fb8-49f8-b2de-5c1283c92441}</Project>
+      <Name>Hyperletter</Name>
     </ProjectReference>
     <ProjectReference Include="..\DispatcherUtility\DispatcherUtility.csproj">
       <Project>{AE79FF0D-5CC0-489F-8072-EA2500D6DA5F}</Project>

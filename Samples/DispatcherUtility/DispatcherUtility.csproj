@@ -49,13 +49,13 @@
     <Compile Include="TestMessage.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\Serialization\Dispatcher.csproj">
-      <Project>{1E3EC10F-6DEA-4B0B-93F4-921F440682A4}</Project>
-      <Name>Dispatcher</Name>
-    </ProjectReference>
+    <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="packages.config" />
+    <ProjectReference Include="..\..\Hyperletter\Hyperletter.csproj">
+      <Project>{3cabacb8-0fb8-49f8-b2de-5c1283c92441}</Project>
+      <Name>Hyperletter</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Import Project="$(SolutionDir)\.nuget\nuget.targets" />
