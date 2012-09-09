@@ -33,7 +33,7 @@ namespace Hyperletter {
 
         protected override IAbstractChannel PrepareChannel(IAbstractChannel channel) {
             if(Options.BatchOptions.Enabled)
-                channel = new BatchAbstractChannel(channel, Options.BatchOptions);
+                channel = new BatchAbstractChannel(this, channel);
 
             channel.ChannelQueueEmpty += ChannelCanSend;
             channel.ChannelInitialized += ChannelCanSend;
@@ -50,7 +50,7 @@ namespace Hyperletter {
             _sendQueue.Enqueue(letter);
             TrySend();
         }
-       
+
         protected void TrySend() {
             lock (_syncRoot) {
                 while (CanSend()) {

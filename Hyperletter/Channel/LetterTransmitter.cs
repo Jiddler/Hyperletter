@@ -18,11 +18,10 @@ namespace Hyperletter.Channel {
         public event Action<ILetter> Sent;
         public event Action SocketError;
 
-        public LetterTransmitter(TcpClient client, CancellationTokenSource cancellationTokenSource) {
+        public LetterTransmitter(LetterSerializer letterSerializer, TcpClient client, CancellationTokenSource cancellationTokenSource) {
             _socket = client.Client;
             _cancellationTokenSource = cancellationTokenSource;
-
-            _letterSerializer = new LetterSerializer();
+            _letterSerializer = letterSerializer;
         }
 
         public void Start() {

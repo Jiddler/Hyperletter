@@ -1,6 +1,6 @@
 using System;
 using System.Text;
-using Hyperletter.Dispatcher;
+using Hyperletter;
 using Newtonsoft.Json;
 
 namespace DispatcherUtility {

@@ -1,12 +1,16 @@
-using System.Linq;
+﻿using System.Linq;
 using System.Reflection;
 
-namespace Hyperletter.Dispatcher {
-    public class DefaultHandlerFactory : IHandlerFactory {
-        public IHandler<TMessage> CreateHandler<THandler, TMessage>(TMessage message) {
+namespace Hyperletter.Typed {
+    public class DefaultTypedHandlerFactory : ITypedHandlerFactory {
+        #region ITypedHandlerFactory Members
+
+        public ITypedHandler<TMessage> CreateHandler<THandler, TMessage>(TMessage message) {
             ConstructorInfo constructorInfo = GetConstructor<THandler>();
-            return (IHandler<TMessage>) constructorInfo.Invoke(new object[0]);
+            return (ITypedHandler<TMessage>) constructorInfo.Invoke(new object[0]);
         }
+
+        #endregion
 
         private ConstructorInfo GetConstructor<THandler>() {
             ConstructorInfo constructor =

@@ -3,19 +3,26 @@ using System.Net;
 using System.Threading;
 using DispatcherUtility;
 using Hyperletter;
-using Hyperletter.Dispatcher;
+using Hyperletter.Typed;
 
 namespace DispatcherBindTest {
     public class BindProgram {
         public static void Main() {
             var hyperSocket = new UnicastSocket();
-            var handleDispatcher = new DelegateSocket(hyperSocket, new JsonTransportSerializer());
+            var handleDispatcher = new TypedSocket(hyperSocket, new DefaultTypedHandlerFactory(),
+                                                   new JsonTransportSerializer());
             handleDispatcher.Register<TestMessage>(IncomingTestMessage);
             hyperSocket.Bind(IPAddress.Any, 8900);
 
-            for (int i = 0; i < 100; i++) {
-                handleDispatcher.Send(new TestMessage { Message = "Message from BindProgram "});
-                Console.WriteLine(DateTime.Now + " SENT MESSAGE");
+            for(int i = 0; i < 100; i++) {
+                string message = "Message from BindProgram " + i;
+                Console.WriteLine(DateTime.Now + " SENDING MESSAGE (NONBLOCKING): " + message);
+                handleDispatcher.Send<TestMessage, TestMessage>(new TestMessage {Message = message}, Callback);
+
+                Console.WriteLine(DateTime.Now + " SENDING MESSAGE (BLOCKING)   : " + message);
+                IAnswerable<TestMessage> reply = handleDispatcher.Send<TestMessage, TestMessage>(new TestMessage {Message = message});
+                Console.WriteLine("RECEIVED ANSWER (BLOCKING): " + reply.Message.Message);
+
                 Thread.Sleep(1000);
             }
 
@@ -23,8 +30,12 @@ namespace DispatcherBindTest {
             Console.ReadKey();
         }
 
-        private static void IncomingTestMessage(TestMessage message) {
-            Console.WriteLine(DateTime.Now + " RECEIVED MESSAGE: " + message.Message);
+        private static void Callback(ITypedSocket socket, IAnswerable<TestMessage> answerable) {
+            Console.WriteLine("RECEIVED ANSWER (NONBLOCKING): " + answerable.Message.Message);
+        }
+
+        private static void IncomingTestMessage(ITypedSocket typedSocket, IAnswerable<TestMessage> answerable) {
+            //Console.WriteLine(DateTime.Now + " RECEIVED MESSAGE: " + answerable.Message.Message);
         }
     }
 }

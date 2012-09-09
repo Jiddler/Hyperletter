@@ -4,6 +4,12 @@ using Hyperletter.Extension;
 
 namespace Hyperletter.Letter {
     internal class LetterSerializer {
+        private readonly Guid _address;
+
+        public LetterSerializer(Guid address) {
+            _address = address;
+        }
+
         public byte[] Serialize(ILetter letter) {
             var ms = new MemoryStream();
             WriteMetadata(letter, ms);
@@ -15,7 +21,10 @@ namespace Hyperletter.Letter {
         }
 
         private void WriteAddress(ILetter letter, Stream ms) {
-            ms.Write(BitConverter.GetBytes(letter.Address.Length), 0, 2);
+            ms.Write(BitConverter.GetBytes(letter.Address.Length + 1), 0, 2);
+            
+            ms.Write(_address.ToByteArray(), 0, 16);
+
             for(int i=0; i<letter.Address.Length; i++)
                 ms.Write(letter.Address[i].ToByteArray(), 0, 16);
         }

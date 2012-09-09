@@ -7,7 +7,7 @@ using Hyperletter.Letter;
 
 namespace Hyperletter.Channel {
     public abstract class AbstractChannel : IAbstractChannel {
-        private readonly Guid _hyperSocketId;
+        private readonly AbstractHyperSocket _hyperSocket;
         private const int HeartbeatInterval = 1000;
 
         protected TcpClient TcpClient;
@@ -39,8 +39,8 @@ namespace Hyperletter.Channel {
         public Binding Binding { get; private set; }
         public abstract Direction Direction { get; }
 
-        protected AbstractChannel(Guid hyperSocketId, Binding binding) {
-            _hyperSocketId = hyperSocketId;
+        protected AbstractChannel(AbstractHyperSocket hyperSocket, Binding binding) {
+            _hyperSocket = hyperSocket;
             Binding = binding;
 
             _heartbeat = new Timer(Heartbeat);
@@ -54,19 +54,19 @@ namespace Hyperletter.Channel {
 
             _cancellationTokenSource = new CancellationTokenSource();
 
-            _transmitter = new LetterTransmitter(TcpClient, _cancellationTokenSource);
+            _transmitter = new LetterTransmitter(_hyperSocket.LetterSerializer, TcpClient, _cancellationTokenSource);
             _transmitter.Sent += TransmitterOnSent;
             _transmitter.SocketError += SocketError;
             _transmitter.Start();
 
-            _receiver = new LetterReceiver(TcpClient.Client, _cancellationTokenSource);
+            _receiver = new LetterReceiver(_hyperSocket.LetterSerializer, TcpClient.Client, _cancellationTokenSource);
             _receiver.Received += ReceiverReceived;
             _receiver.SocketError += SocketError;
             _receiver.Start();
 
             _initalizationCount = 0;
 
-            Enqueue(new Letter.Letter { Type = LetterType.Initialize, Options = LetterOptions.Ack, Parts = new[] { _hyperSocketId.ToByteArray() } });
+            Enqueue(new Letter.Letter { Type = LetterType.Initialize, Options = LetterOptions.Ack, Parts = new[] { _hyperSocket.Options.Id.ToByteArray() } });
             ChannelConnected(this);
         }
 

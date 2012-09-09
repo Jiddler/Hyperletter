@@ -1,6 +1,6 @@
 using System;
 
-namespace Hyperletter.Dispatcher {
+namespace Hyperletter.Typed {
     public class NoMatchingConstructorException : Exception {
     }
 }

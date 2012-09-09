@@ -1,6 +1,6 @@
 using System;
 
-namespace Hyperletter.Dispatcher {
+namespace Hyperletter {
     public class Metadata {
         public Metadata() {
         }

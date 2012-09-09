@@ -3,7 +3,8 @@ using System.Net.Sockets;
 
 namespace Hyperletter.Channel {
     public class InboundChannel : AbstractChannel {
-        public InboundChannel(Guid socketId, TcpClient tcpClient, Binding binding) : base(socketId, binding) {
+        public InboundChannel(AbstractHyperSocket hyperSocket, TcpClient tcpClient, Binding binding) : base(hyperSocket, binding)
+        {
             TcpClient = tcpClient;
         }
 

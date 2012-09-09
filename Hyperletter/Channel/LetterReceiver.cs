@@ -22,10 +22,10 @@ namespace Hyperletter.Channel {
         public event Action<ILetter> Received;
         public event Action SocketError;
 
-        public LetterReceiver(Socket socket, CancellationTokenSource cancellationTokenSource) {
+        public LetterReceiver(LetterSerializer letterSerializer, Socket socket, CancellationTokenSource cancellationTokenSource) {
             _socket = socket;
             _cancellationTokenSource = cancellationTokenSource;
-            _letterSerializer = new LetterSerializer();
+            _letterSerializer = letterSerializer;
         }
 
         public void Start() {

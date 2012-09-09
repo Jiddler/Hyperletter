@@ -17,7 +17,7 @@ namespace BindTest
             var stopwatch = new Stopwatch();
             
             int sent = 0;
-            unicastSocket.Sent += letter => {
+            unicastSocket.Sent += (socket, letter) => {
                 lock (SyncRoot) {
                     sent++;
                     if (sent%1000 == 0)
@@ -25,11 +25,11 @@ namespace BindTest
                 }
             };
 
-            unicastSocket.Disconnected += binding => Console.WriteLine("DISCONNECTED " + binding);
-            unicastSocket.Connected += binding => Console.WriteLine("CONNECTED " + binding);
+            unicastSocket.Disconnected += (socket, binding) => Console.WriteLine("DISCONNECTED " + binding);
+            unicastSocket.Connected += (socket, binding) => Console.WriteLine("CONNECTED " + binding);
 
             int received = 0;
-            unicastSocket.Received += letter => {
+            unicastSocket.Received += (socket, letter) => {
                 lock (unicastSocket) {
                     if (received == 0)
                         stopwatch.Restart();

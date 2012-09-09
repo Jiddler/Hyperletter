@@ -14,7 +14,7 @@ namespace ConnectTest {
 
             int sent = 0;
 
-            unicastSocket.Sent += letter => {
+            unicastSocket.Sent += (socket, letter) => {
                 lock (SyncRoot) {
                     sent++;
 
@@ -24,18 +24,18 @@ namespace ConnectTest {
             };
             
             int received = 0;
-            unicastSocket.Received += letter => {
+            unicastSocket.Received += (socket, letter) => {
                 received++;
 
                 if(received % 20000 == 0)
                     Console.WriteLine("RECEIVED: " + received);
             };
             
-            unicastSocket.Discarded += (binding, letter) => Console.WriteLine("DISCARDED: " + binding + " " + Encoding.Unicode.GetString(letter.Parts[0]));
+            unicastSocket.Discarded += (socket, binding, letter) => Console.WriteLine("DISCARDED: " + binding + " " + Encoding.Unicode.GetString(letter.Parts[0]));
             unicastSocket.Requeued += letter => Console.WriteLine("REQUEUED: " + letter) ;
 
-            unicastSocket.Disconnected += binding => Console.WriteLine("DISCONNECTED " + binding);
-            unicastSocket.Connected += binding => Console.WriteLine("CONNECTED " + binding);
+            unicastSocket.Disconnected += (socket, binding) => Console.WriteLine("DISCONNECTED " + binding);
+            unicastSocket.Connected += (socket, binding) => Console.WriteLine("CONNECTED " + binding);
 
             unicastSocket.Connect(IPAddress.Parse("127.0.0.1"), 8001);
             //unicastSocket.Connect(IPAddress.Parse("127.0.0.1"), 8002);

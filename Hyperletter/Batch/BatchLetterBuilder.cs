@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Concurrent;
 using Hyperletter.Extension;
 using Hyperletter.Letter;
@@ -16,9 +17,9 @@ namespace Hyperletter.Batch {
 
         private LetterOptions _batchOptions = LetterOptions.None;
 
-        public BatchLetterBuilder(int maxLetters) {
+        public BatchLetterBuilder(int maxLetters, LetterSerializer serializer) {
             _maxLetters = maxLetters;
-            _serializer = new LetterSerializer();
+            _serializer = serializer;
         }
 
         public void Add(ILetter letter) {

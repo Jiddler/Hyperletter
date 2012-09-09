@@ -11,7 +11,8 @@ namespace Hyperletter.Channel {
             get { return Direction.Outbound; }
         }
 
-        public OutboundChannel(Guid socketId, Binding binding) : base(socketId, binding) {
+        public OutboundChannel(AbstractHyperSocket hyperSocket, Binding binding) : base(hyperSocket, binding)
+        {
         }
 
         public void Connect() {

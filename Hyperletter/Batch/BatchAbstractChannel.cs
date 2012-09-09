@@ -34,12 +34,12 @@ namespace Hyperletter.Batch {
         public Binding Binding { get { return _channel.Binding; } }
         public Direction Direction { get { return _channel.Direction; } }
 
-        public BatchAbstractChannel(IAbstractChannel channel, BatchOptions options) {
+        public BatchAbstractChannel(AbstractHyperSocket hyperSocket, IAbstractChannel channel) {
             _channel = channel;
-            _options = options;
+            _options = hyperSocket.Options.BatchOptions;
 
-            _letterSerializer = new LetterSerializer();
-            _batchBuilder = new BatchLetterBuilder(_options.MaxLetters);
+            _letterSerializer = new LetterSerializer(hyperSocket.Options.Id);
+            _batchBuilder = new BatchLetterBuilder(_options.MaxLetters, _letterSerializer);
 
             _channel.ChannelConnected += abstractChannel => ChannelConnected(this);
             _channel.ChannelDisconnected += ChannelOnDisconnected;
