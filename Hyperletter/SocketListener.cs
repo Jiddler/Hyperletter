@@ -5,17 +5,21 @@ using Hyperletter.Channel;
 
 namespace Hyperletter {
     internal class SocketListener : IDisposable {
-        private readonly AbstractHyperSocket _hyperSocket;
         private readonly Binding _binding;
-        private TcpListener _listener;
+        private readonly AbstractHyperSocket _hyperSocket;
         private bool _disposed;
-
-        public event Action<InboundChannel> IncomingChannel;
+        private TcpListener _listener;
 
         public SocketListener(AbstractHyperSocket hyperSocket, Binding binding) {
             _hyperSocket = hyperSocket;
             _binding = binding;
         }
+
+        public void Dispose() {
+            _disposed = true;
+        }
+
+        public event Action<InboundChannel> IncomingChannel;
 
         public void Start() {
             _listener = new TcpListener(_binding.IpAddress, _binding.Port);
@@ -24,7 +28,7 @@ namespace Hyperletter {
         }
 
         private void StartListen() {
-            if (_disposed)
+            if(_disposed)
                 return;
 
             _listener.BeginAcceptTcpClient(EndAccept, null);
@@ -33,13 +37,13 @@ namespace Hyperletter {
         private void EndAccept(IAsyncResult res) {
             StartListen();
 
-            if (_disposed)
+            if(_disposed)
                 return;
 
-            var tcpClient = _listener.EndAcceptTcpClient(res);
+            TcpClient tcpClient = _listener.EndAcceptTcpClient(res);
             tcpClient.NoDelay = true;
             tcpClient.LingerState = new LingerOption(true, 1);
-            var binding = GetBinding(tcpClient.Client.RemoteEndPoint);
+            Binding binding = GetBinding(tcpClient.Client.RemoteEndPoint);
             var boundChannel = new InboundChannel(_hyperSocket, tcpClient, binding);
             IncomingChannel(boundChannel);
         }
@@ -47,10 +51,6 @@ namespace Hyperletter {
         private Binding GetBinding(EndPoint endPoint) {
             var ipEndpoint = ((IPEndPoint) endPoint);
             return new Binding(ipEndpoint.Address, ipEndpoint.Port);
-        }
-
-        public void Dispose() {
-            _disposed = true;
         }
     }
 }

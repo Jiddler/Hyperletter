@@ -14,8 +14,8 @@ namespace Hyperletter {
         }
 
         public override void Send(ILetter letter) {
-            foreach (var channel in Channels.Values) {
-                if (channel.IsConnected)
+            foreach(IAbstractChannel channel in Channels.Values) {
+                if(channel.IsConnected)
                     channel.Enqueue(letter);
                 else
                     ChannelFailedToSend(channel, letter);

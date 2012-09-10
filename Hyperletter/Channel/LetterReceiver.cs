@@ -6,18 +6,18 @@ using Hyperletter.Letter;
 
 namespace Hyperletter.Channel {
     internal class LetterReceiver {
-        private readonly Socket _socket;
         private readonly CancellationTokenSource _cancellationTokenSource;
+        private readonly byte[] _lengthBuffer = new byte[4];
         private readonly LetterSerializer _letterSerializer;
 
-        private readonly byte[] _tcpReceiveBuffer = new byte[4096];
         private readonly MemoryStream _receiveBuffer = new MemoryStream();
 
         private readonly SocketAsyncEventArgs _receiveEventArgs = new SocketAsyncEventArgs();
-        
-        private readonly byte[] _lengthBuffer = new byte[4];
-        private int _lengthPosition;
+        private readonly Socket _socket;
+        private readonly byte[] _tcpReceiveBuffer = new byte[4096];
+
         private int _currentLength;
+        private int _lengthPosition;
 
         public event Action<ILetter> Received;
         public event Action SocketError;
@@ -40,22 +40,22 @@ namespace Hyperletter.Channel {
         }
 
         private void BeginReceive() {
-            if (_cancellationTokenSource.IsCancellationRequested)
+            if(_cancellationTokenSource.IsCancellationRequested)
                 return;
 
             try {
-                var pending =_socket.ReceiveAsync(_receiveEventArgs);
+                bool pending = _socket.ReceiveAsync(_receiveEventArgs);
                 if(!pending)
                     EndReceived(_receiveEventArgs);
-            } catch (Exception) {
+            } catch(Exception) {
                 SocketError();
             }
         }
 
         private void EndReceived(SocketAsyncEventArgs socketAsyncEvent) {
             SocketError status = socketAsyncEvent.SocketError;
-            var read = socketAsyncEvent.BytesTransferred;
-            if (status != System.Net.Sockets.SocketError.Success || read == 0) {
+            int read = socketAsyncEvent.BytesTransferred;
+            if(status != System.Net.Sockets.SocketError.Success || read == 0) {
                 SocketError();
             } else {
                 HandleReceived(_tcpReceiveBuffer, read);
@@ -65,41 +65,41 @@ namespace Hyperletter.Channel {
 
         private void HandleReceived(byte[] buffer, int length) {
             int bufferPosition = 0;
-            while (bufferPosition < length) {
-                if (IsNewMessage()) {
-                    var lengthPositionBefore = _lengthPosition;
-                    var read = ReadNewLetterLength(buffer, bufferPosition);
+            while(bufferPosition < length) {
+                if(IsNewMessage()) {
+                    int lengthPositionBefore = _lengthPosition;
+                    int read = ReadNewLetterLength(buffer, bufferPosition);
                     if(read < 4) {
                         _receiveBuffer.Write(_lengthBuffer, lengthPositionBefore, read);
                     }
 
-                    if (_currentLength == 0)
+                    if(_currentLength == 0)
                         return;
                 }
 
-                var write = (int)Math.Min(_currentLength - _receiveBuffer.Length, length - bufferPosition);
+                var write = (int) Math.Min(_currentLength - _receiveBuffer.Length, length - bufferPosition);
                 _receiveBuffer.Write(buffer, bufferPosition, write);
                 bufferPosition += write;
 
-                if (!ReceivedFullLetter())
+                if(!ReceivedFullLetter())
                     return;
 
-                var letter = _letterSerializer.Deserialize(_receiveBuffer.ToArray());
+                ILetter letter = _letterSerializer.Deserialize(_receiveBuffer.ToArray());
                 _receiveBuffer.SetLength(0);
                 _currentLength = 0;
 
-                if (letter.Type != LetterType.Heartbeat)
+                if(letter.Type != LetterType.Heartbeat)
                     Received(letter);
             }
         }
 
         private int ReadNewLetterLength(byte[] buffer, int bufferPosition) {
-            var bytesToRead = (buffer.Length - bufferPosition);
-            if (bytesToRead < 4 || _lengthPosition != 0) {
-                for (; bufferPosition < buffer.Length && _lengthPosition < 4; bufferPosition++, _lengthPosition++)
+            int bytesToRead = (buffer.Length - bufferPosition);
+            if(bytesToRead < 4 || _lengthPosition != 0) {
+                for(; bufferPosition < buffer.Length && _lengthPosition < 4; bufferPosition++, _lengthPosition++)
                     _lengthBuffer[_lengthPosition] = buffer[bufferPosition];
 
-                if (_lengthPosition != 4)
+                if(_lengthPosition != 4)
                     return bytesToRead;
 
                 _lengthPosition = 0;

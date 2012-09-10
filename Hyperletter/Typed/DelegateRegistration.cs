@@ -4,8 +4,8 @@ using Hyperletter.Letter;
 namespace Hyperletter.Typed {
     internal class DelegateRegistration<TMessage> : Registration {
         private readonly Action<TypedSocket, IAnswerable<TMessage>> _callback;
-        private readonly TypedSocket _socket;
         private readonly ITransportSerializer _serializer;
+        private readonly TypedSocket _socket;
 
         public DelegateRegistration(Action<TypedSocket, IAnswerable<TMessage>> callback, TypedSocket socket, ITransportSerializer serializer) {
             _callback = callback;

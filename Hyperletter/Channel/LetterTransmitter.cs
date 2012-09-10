@@ -7,12 +7,12 @@ using Hyperletter.Letter;
 
 namespace Hyperletter.Channel {
     internal class LetterTransmitter {
-        private readonly Socket _socket;
-        private readonly LetterSerializer _letterSerializer;
         private readonly CancellationTokenSource _cancellationTokenSource;
+        private readonly LetterSerializer _letterSerializer;
 
         private readonly ConcurrentQueue<ILetter> _queue = new ConcurrentQueue<ILetter>();
         private readonly AutoResetEvent _resetEvent = new AutoResetEvent(false);
+        private readonly Socket _socket;
         private Task _transmitTask;
 
         public event Action<ILetter> Sent;
@@ -33,16 +33,16 @@ namespace Hyperletter.Channel {
             _queue.Enqueue(letter);
             _resetEvent.Set();
         }
-        
+
         private void Transmit() {
             try {
-                while (true) {
+                while(true) {
                     _resetEvent.WaitOne();
                     ILetter letter;
                     while(_queue.TryDequeue(out letter)) {
-                        var serializedLetter = _letterSerializer.Serialize(letter);
-                        
-                        if (!Send(serializedLetter)) {
+                        byte[] serializedLetter = _letterSerializer.Serialize(letter);
+
+                        if(!Send(serializedLetter)) {
                             SocketError();
                             return;
                         }
@@ -50,7 +50,7 @@ namespace Hyperletter.Channel {
                         Sent(letter);
                     }
                 }
-            } catch (OperationCanceledException) {
+            } catch(OperationCanceledException) {
             }
         }
 
@@ -58,12 +58,10 @@ namespace Hyperletter.Channel {
             SocketError status;
             try {
                 _socket.Send(serializedLetter, 0, serializedLetter.Length, SocketFlags.None, out status);
-            } catch (Exception) {
+            } catch(Exception) {
                 return false;
             }
             return status == System.Net.Sockets.SocketError.Success;
         }
-
-        
     }
 }

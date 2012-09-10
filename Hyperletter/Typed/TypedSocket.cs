@@ -1,8 +1,11 @@
 using System;
 using System.Collections.Generic;
+using System.Net;
 using Hyperletter.Letter;
 
 namespace Hyperletter.Typed {
+    public delegate void AnswerCallback<TRequest, TReply>(ITypedSocket socket, AnswerCallbackEventArgs<TRequest, TReply> args);
+
     public class TypedSocket : ITypedSocket {
         private readonly ITypedHandlerFactory _handlerFactory;
 
@@ -17,32 +20,21 @@ namespace Hyperletter.Typed {
             Serializer = serializer;
         }
 
-        public ITransportSerializer Serializer { get; private set; }
-
-        #region ITypedSocket Members
+        internal ITransportSerializer Serializer { get; private set; }
 
         public void Register<TMessage, THandler>() where THandler : ITypedHandler<TMessage> {
-            _registry.Add(typeof(TMessage),
-                          new HandlerRegistration<THandler, TMessage>(this, _handlerFactory, Serializer));
+            _registry.Add(typeof(TMessage), new HandlerRegistration<THandler, TMessage>(this, _handlerFactory, Serializer));
         }
 
         public void Register<TMessage>(Action<ITypedSocket, IAnswerable<TMessage>> handler) {
             _registry.Add(typeof(TMessage), new DelegateRegistration<TMessage>(handler, this, Serializer));
         }
 
-        public void Send<T>(T value) {
-            _socket.Send(CreateLetter(value, LetterOptions.None));
-        }
-
-        public void Send<T>(T value, LetterOptions options) {
+        public void Send<T>(T value, LetterOptions options = LetterOptions.None) {
             _socket.Send(CreateLetter(value, options));
         }
 
-        public IAnswerable<TReply> Send<TValue, TReply>(TValue value) {
-            return Send<TValue, TReply>(value, LetterOptions.None);
-        }
-
-        public IAnswerable<TReply> Send<TValue, TReply>(TValue value, LetterOptions options) {
+        public IAnswerable<TReply> Send<TValue, TReply>(TValue value, LetterOptions options = LetterOptions.None) {
             Letter.Letter letter = CreateLetter(value, options | LetterOptions.UniqueId);
             var outstanding = new BlockingOutstanding<TReply>(this);
             _outstandings.Add(letter.Id, outstanding);
@@ -58,20 +50,21 @@ namespace Hyperletter.Typed {
             return outstanding.Result;
         }
 
-        public void Send<TValue, TReply>(TValue value, Action<ITypedSocket, IAnswerable<TReply>> callback) {
-            Send(value, LetterOptions.None, callback);
-        }
-
-        public void Send<TValue, TReply>(TValue value, LetterOptions options,
-                                         Action<ITypedSocket, IAnswerable<TReply>> callback) {
-            Letter.Letter letter = CreateLetter(value, options | LetterOptions.UniqueId);
-            var outstanding = new DelegateOutstanding<TReply>(this, callback);
+        public void Send<TRequest, TReply>(TRequest request, AnswerCallback<TRequest, TReply> callback, LetterOptions options = LetterOptions.None) {
+            Letter.Letter letter = CreateLetter(request, options | LetterOptions.UniqueId);
+            var outstanding = new DelegateOutstanding<TRequest, TReply>(this, request, callback);
             _outstandings.Add(letter.Id, outstanding);
 
             _socket.Send(letter);
         }
 
-        #endregion
+        public void Bind(IPAddress ipAddress, int port) {
+            _socket.Bind(ipAddress, port);
+        }
+
+        public void Connect(IPAddress ipAddress, int port) {
+            _socket.Connect(ipAddress, port);
+        }
 
         private void SocketOnReceived(IHyperSocket hyperSocket, ILetter letter) {
             if(letter.Parts.Length != 2)
@@ -114,19 +107,19 @@ namespace Hyperletter.Typed {
             }
         }
 
-        public void Answer<T>(T value, ILetter answeringTo, LetterOptions options) {
+        internal void Answer<T>(T value, ILetter answeringTo, LetterOptions options) {
             _socket.Send(CreateAnswer(value, answeringTo, options));
         }
 
-        public void Answer<TValue, TReply>(TValue value, ILetter answeringTo, LetterOptions options, Action<ITypedSocket, IAnswerable<TReply>> callback) {
+        internal void Answer<TRequest, TReply>(TRequest value, ILetter answeringTo, LetterOptions options, AnswerCallback<TRequest, TReply> callback) {
             ILetter letter = CreateAnswer(value, answeringTo, options | LetterOptions.Answer | LetterOptions.UniqueId | LetterOptions.Ack);
-            var outstanding = new DelegateOutstanding<TReply>(this, callback);
+            var outstanding = new DelegateOutstanding<TRequest, TReply>(this, value, callback);
             _outstandings.Add(letter.Id, outstanding);
 
             _socket.Send(letter);
         }
 
-        public IAnswerable<TReply> Answer<TValue, TReply>(TValue value, ILetter answeringTo, LetterOptions options) {
+        internal IAnswerable<TReply> Answer<TValue, TReply>(TValue value, ILetter answeringTo, LetterOptions options) {
             ILetter letter = CreateAnswer(value, answeringTo, options);
             var outstanding = new BlockingOutstanding<TReply>(this);
             _outstandings.Add(letter.Id, outstanding);

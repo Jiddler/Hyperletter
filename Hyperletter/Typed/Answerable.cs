@@ -3,10 +3,10 @@ using Hyperletter.Letter;
 
 namespace Hyperletter.Typed {
     internal class Answerable<TMessage> : IAnswerable<TMessage> {
+        public static LetterOptions AnswerDefaultOptions = LetterOptions.Answer | LetterOptions.Ack | LetterOptions.UniqueId;
+
         private readonly ILetter _letter;
         private readonly TypedSocket _socket;
-
-        public static LetterOptions AnswerDefaultOptions = LetterOptions.Answer | LetterOptions.Ack | LetterOptions.UniqueId;
 
         public Answerable(TypedSocket socket, ILetter letter, TMessage value) {
             _socket = socket;
@@ -14,11 +14,7 @@ namespace Hyperletter.Typed {
             Message = value;
         }
 
-        #region IAnswerable<TMessage> Members
-
         public TMessage Message { get; private set; }
-
-        #endregion
 
         public void Answer<T>(T value) {
             _socket.Answer(value, _letter, AnswerDefaultOptions);

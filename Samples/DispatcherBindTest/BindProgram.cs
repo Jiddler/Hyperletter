@@ -1,39 +1,40 @@
 ﻿using System;
 using System.Net;
-using System.Threading;
 using DispatcherUtility;
-using Hyperletter;
 using Hyperletter.Typed;
 
 namespace DispatcherBindTest {
     public class BindProgram {
         public static void Main() {
-            var hyperSocket = new UnicastSocket();
-            var handleDispatcher = new TypedSocket(hyperSocket, new DefaultTypedHandlerFactory(),
-                                                   new JsonTransportSerializer());
-            handleDispatcher.Register<TestMessage>(IncomingTestMessage);
-            hyperSocket.Bind(IPAddress.Any, 8900);
+            var socket = new TypedUnicastSocket(new DefaultTypedHandlerFactory(), new JsonTransportSerializer());
+            socket.Register<TestMessage>(IncomingTestMessage);
+            socket.Bind(IPAddress.Any, 8900);
 
             for(int i = 0; i < 100; i++) {
                 string message = "Message from BindProgram " + i;
+
+                // Asynchronous
                 Console.WriteLine(DateTime.Now + " SENDING MESSAGE (NONBLOCKING): " + message);
-                handleDispatcher.Send<TestMessage, TestMessage>(new TestMessage {Message = message}, Callback);
+                socket.Send<TestMessage, TestMessage>(new TestMessage {Message = message}, AnswerCallback);
 
+                // Blocking
+                // By default batching is turned on with a timeout period of 1 second, this will throttle the speed in this demo
+                // To change this behaviour send custom settings into TypedUnicastSocket constructor
                 Console.WriteLine(DateTime.Now + " SENDING MESSAGE (BLOCKING)   : " + message);
-                IAnswerable<TestMessage> reply = handleDispatcher.Send<TestMessage, TestMessage>(new TestMessage {Message = message});
+                IAnswerable<TestMessage> reply = socket.Send<TestMessage, TestMessage>(new TestMessage {Message = message});
                 Console.WriteLine("RECEIVED ANSWER (BLOCKING): " + reply.Message.Message);
-
-                Thread.Sleep(1000);
             }
 
-            Console.WriteLine("Waiting for messages (Press any key to continue)...");
-            Console.ReadKey();
+            Console.WriteLine("Waiting for messages (Press enter to continue)...");
+            Console.ReadLine();
         }
 
-        private static void Callback(ITypedSocket socket, IAnswerable<TestMessage> answerable) {
-            Console.WriteLine("RECEIVED ANSWER (NONBLOCKING): " + answerable.Message.Message);
+        // Asynchronous answer callback
+        private static void AnswerCallback(ITypedSocket socket, AnswerCallbackEventArgs<TestMessage, TestMessage> args) {
+            Console.WriteLine("RECEIVED ANSWER (NONBLOCKING): " + args.Answer.Message.Message);
         }
 
+        // Generic delegate callback on incoming messages
         private static void IncomingTestMessage(ITypedSocket typedSocket, IAnswerable<TestMessage> answerable) {
             //Console.WriteLine(DateTime.Now + " RECEIVED MESSAGE: " + answerable.Message.Message);
         }

@@ -7,23 +7,27 @@ using Hyperletter.Letter;
 
 namespace Hyperletter.Channel {
     public abstract class AbstractChannel : IAbstractChannel {
-        private readonly AbstractHyperSocket _hyperSocket;
         private const int HeartbeatInterval = 1000;
-
-        protected TcpClient TcpClient;
-
-        private CancellationTokenSource _cancellationTokenSource;
-        private LetterTransmitter _transmitter;
-        private LetterReceiver _receiver;
+        private readonly Timer _heartbeat;
+        private readonly AbstractHyperSocket _hyperSocket;
 
         private readonly ConcurrentQueue<ILetter> _queue = new ConcurrentQueue<ILetter>();
         private readonly ConcurrentQueue<ILetter> _receivedQueue = new ConcurrentQueue<ILetter>();
+        protected bool Disposed;
+        protected TcpClient TcpClient;
 
-        private readonly Timer _heartbeat;
+        private CancellationTokenSource _cancellationTokenSource;
+        private int _initalizationCount;
+
         private int _lastAction;
         private int _lastActionHeartbeat;
-        private int _initalizationCount;
-        protected bool Disposed;
+        private LetterReceiver _receiver;
+        private LetterTransmitter _transmitter;
+
+        public bool IsConnected { get; private set; }
+        public Guid ConnectedTo { get; private set; }
+        public Binding Binding { get; private set; }
+        public abstract Direction Direction { get; }
 
         public event Action<IAbstractChannel> ChannelConnected;
         public event Action<IAbstractChannel> ChannelDisconnected;
@@ -34,11 +38,6 @@ namespace Hyperletter.Channel {
         public event Action<IAbstractChannel, ILetter> Sent;
         public event Action<IAbstractChannel, ILetter> FailedToSend;
 
-        public bool IsConnected { get; private set; }
-        public Guid ConnectedTo { get; private set; }
-        public Binding Binding { get; private set; }
-        public abstract Direction Direction { get; }
-
         protected AbstractChannel(AbstractHyperSocket hyperSocket, Binding binding) {
             _hyperSocket = hyperSocket;
             Binding = binding;
@@ -47,6 +46,18 @@ namespace Hyperletter.Channel {
         }
 
         public virtual void Initialize() {
+        }
+
+        public EnqueueResult Enqueue(ILetter letter) {
+            _queue.Enqueue(letter);
+            _transmitter.Enqueue(letter);
+
+            return EnqueueResult.CantEnqueueMore;
+        }
+
+        public void Dispose() {
+            Disposed = true;
+            DisconnectSocket();
         }
 
         protected void Connected() {
@@ -66,21 +77,14 @@ namespace Hyperletter.Channel {
 
             _initalizationCount = 0;
 
-            Enqueue(new Letter.Letter { Type = LetterType.Initialize, Options = LetterOptions.Ack, Parts = new[] { _hyperSocket.Options.Id.ToByteArray() } });
+            Enqueue(new Letter.Letter {Type = LetterType.Initialize, Options = LetterOptions.Ack, Parts = new[] {_hyperSocket.Options.Id.ToByteArray()}});
             ChannelConnected(this);
         }
 
-        public EnqueueResult Enqueue(ILetter letter) {
-            _queue.Enqueue(letter);
-            _transmitter.Enqueue(letter);
-            
-            return EnqueueResult.CantEnqueueMore;
-        }
-
         private void HandleInitialize() {
-            lock (this) {
+            lock(this) {
                 _initalizationCount++;
-                if (_initalizationCount == 2)
+                if(_initalizationCount == 2)
                     ChannelInitialized(this);
 
                 _heartbeat.Change(HeartbeatInterval, HeartbeatInterval);
@@ -88,20 +92,20 @@ namespace Hyperletter.Channel {
         }
 
         private void Heartbeat(object state) {
-            if (_lastAction != _lastActionHeartbeat) {
+            if(_lastAction != _lastActionHeartbeat) {
                 _lastActionHeartbeat = _lastAction;
             } else {
-                Enqueue(new Letter.Letter { Type = LetterType.Heartbeat, Options = LetterOptions.SilentDiscard });
+                Enqueue(new Letter.Letter {Type = LetterType.Heartbeat, Options = LetterOptions.SilentDiscard});
             }
         }
 
         private void ReceiverReceived(ILetter receivedLetter) {
             ResetHeartbeatTimer();
 
-            if (receivedLetter.Type == LetterType.Ack) {
+            if(receivedLetter.Type == LetterType.Ack) {
                 HandleLetterSent(_queue.Dequeue());
             } else {
-                if (receivedLetter.Options.IsSet(LetterOptions.Ack))
+                if(receivedLetter.Options.IsSet(LetterOptions.Ack))
                     QueueAck(receivedLetter);
                 else
                     HandleReceivedLetter(receivedLetter);
@@ -111,9 +115,9 @@ namespace Hyperletter.Channel {
         private void TransmitterOnSent(ILetter sentLetter) {
             ResetHeartbeatTimer();
 
-            if (sentLetter.Type == LetterType.Ack)
+            if(sentLetter.Type == LetterType.Ack)
                 HandleAckSent();
-            else if (!sentLetter.Options.IsSet(LetterOptions.Ack))
+            else if(!sentLetter.Options.IsSet(LetterOptions.Ack))
                 HandleLetterSent(_queue.Dequeue());
         }
 
@@ -125,37 +129,37 @@ namespace Hyperletter.Channel {
         private void HandleReceivedLetter(ILetter receivedLetter) {
             if(receivedLetter.Type == LetterType.Initialize) {
                 ConnectedTo = new Guid(receivedLetter.Parts[0]);
-                HandleInitialize();                
-            } else if (receivedLetter.Type == LetterType.User || receivedLetter.Type == LetterType.Batch) {
+                HandleInitialize();
+            } else if(receivedLetter.Type == LetterType.User || receivedLetter.Type == LetterType.Batch) {
                 Received(this, receivedLetter);
             }
         }
 
         private void HandleLetterSent(ILetter sentLetter) {
-            if (sentLetter.Type == LetterType.Initialize) {
+            if(sentLetter.Type == LetterType.Initialize) {
                 HandleInitialize();
-            } else if (sentLetter.Type == LetterType.User || sentLetter.Type == LetterType.Batch) {
+            } else if(sentLetter.Type == LetterType.User || sentLetter.Type == LetterType.Batch) {
                 Sent(this, sentLetter);
 
-                if (_queue.Count == 0 && ChannelQueueEmpty != null)
+                if(_queue.Count == 0 && ChannelQueueEmpty != null)
                     ChannelQueueEmpty(this);
             }
         }
 
         private void QueueAck(ILetter letter) {
             _receivedQueue.Enqueue(letter);
-            var ack = new Letter.Letter { Type = LetterType.Ack, Id = letter.Id, Options = (letter.Options & LetterOptions.UniqueId) == LetterOptions.UniqueId ? LetterOptions.UniqueId : LetterOptions.None };
+            var ack = new Letter.Letter {Type = LetterType.Ack, Id = letter.Id, Options = (letter.Options & LetterOptions.UniqueId) == LetterOptions.UniqueId ? LetterOptions.UniqueId : LetterOptions.None};
             _transmitter.Enqueue(ack);
         }
 
         private void SocketError() {
-            lock (this) {
+            lock(this) {
                 _heartbeat.Change(Timeout.Infinite, Timeout.Infinite);
                 _cancellationTokenSource.Cancel();
 
                 FailQueuedLetters();
 
-                if (IsConnected) {
+                if(IsConnected) {
                     DisconnectSocket();
                     ChannelDisconnected(this);
                 }
@@ -169,12 +173,13 @@ namespace Hyperletter.Channel {
                 TcpClient.Client.Disconnect(false);
                 TcpClient.Client.Dispose();
                 TcpClient.Close();
-            } catch (Exception) {}
+            } catch(Exception) {
+            }
         }
 
         private void FailQueuedLetters() {
             ILetter letter;
-            while (_queue.TryDequeue(out letter)) {
+            while(_queue.TryDequeue(out letter)) {
                 if(letter.Type == LetterType.User || letter.Type == LetterType.Batch)
                     FailedToSend(this, letter);
             }
@@ -182,13 +187,8 @@ namespace Hyperletter.Channel {
 
         private void ResetHeartbeatTimer() {
             _lastAction++;
-            if (_lastAction > 10000000)
+            if(_lastAction > 10000000)
                 _lastAction = 0;
-        }
-
-        public void Dispose() {
-            Disposed = true;
-            DisconnectSocket();
         }
     }
 }

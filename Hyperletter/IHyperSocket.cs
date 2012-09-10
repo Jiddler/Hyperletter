@@ -4,13 +4,12 @@ using Hyperletter.Letter;
 
 namespace Hyperletter {
     public interface IHyperSocket {
+        SocketOptions Options { get; set; }
         event Action<IHyperSocket, ILetter> Sent;
         event Action<IHyperSocket, ILetter> Received;
         event Action<IHyperSocket, Binding, ILetter> Discarded;
         event Action<IHyperSocket, Binding> Connected;
         event Action<IHyperSocket, Binding> Disconnected;
-
-        SocketOptions Options { get; set; }
 
         void Bind(IPAddress ipAddress, int port);
         void Connect(IPAddress ipAddress, int port);

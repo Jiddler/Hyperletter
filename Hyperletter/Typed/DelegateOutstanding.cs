@@ -2,19 +2,23 @@ using System;
 using Hyperletter.Letter;
 
 namespace Hyperletter.Typed {
-    internal class DelegateOutstanding<TResult> : Outstanding {
-        private readonly Action<ITypedSocket, IAnswerable<TResult>> _callback;
+    internal class DelegateOutstanding<TRequest, TReply> : Outstanding {
+        private readonly AnswerCallback<TRequest, TReply> _callback;
+        private readonly TRequest _request;
         private readonly TypedSocket _socket;
 
-        public DelegateOutstanding(TypedSocket socket, Action<ITypedSocket, IAnswerable<TResult>> callback) {
+        public DelegateOutstanding(TypedSocket socket, TRequest request, AnswerCallback<TRequest, TReply> callback) {
             _socket = socket;
+            _request = request;
             _callback = callback;
         }
 
         public override void SetResult(Metadata metadata, ILetter letter) {
-            var result = _socket.Serializer.Deserialize<TResult>(letter.Parts[1], Type.GetType(metadata.Type));
-            var answerable = new Answerable<TResult>(_socket, letter, result);
-            _callback(_socket, answerable);
+            var result = _socket.Serializer.Deserialize<TReply>(letter.Parts[1], Type.GetType(metadata.Type));
+            var answerable = new Answerable<TReply>(_socket, letter, result);
+
+            var eventArgs = new AnswerCallbackEventArgs<TRequest, TReply>(answerable, _request);
+            _callback(_socket, eventArgs);
         }
     }
 }

@@ -7,20 +7,19 @@ using Hyperletter.Letter;
 
 namespace Hyperletter {
     public abstract class AbstractHyperSocket : IDisposable, IHyperSocket {
+        protected readonly ConcurrentDictionary<Binding, IAbstractChannel> Channels = new ConcurrentDictionary<Binding, IAbstractChannel>();
+        protected readonly ConcurrentDictionary<Guid, IAbstractChannel> RouteChannels = new ConcurrentDictionary<Guid, IAbstractChannel>();
+        private readonly ConcurrentDictionary<Binding, SocketListener> _listeners = new ConcurrentDictionary<Binding, SocketListener>();
+        
+        internal LetterSerializer LetterSerializer { get; private set; }
+        public SocketOptions Options { get; set; }
+
         public event Action<IHyperSocket, ILetter> Sent;
         public event Action<IHyperSocket, ILetter> Received;
         public event Action<IHyperSocket, Binding, ILetter> Discarded;
 
         public event Action<IHyperSocket, Binding> Connected;
         public event Action<IHyperSocket, Binding> Disconnected;
-
-        private readonly ConcurrentDictionary<Binding, SocketListener> _listeners = new ConcurrentDictionary<Binding, SocketListener>();
-
-        protected readonly ConcurrentDictionary<Binding, IAbstractChannel> Channels = new ConcurrentDictionary<Binding, IAbstractChannel>();
-        protected readonly ConcurrentDictionary<Guid, IAbstractChannel> RouteChannels = new ConcurrentDictionary<Guid, IAbstractChannel>();
-
-        internal LetterSerializer LetterSerializer { get; private set; }
-        public SocketOptions Options { get; set; }
 
         protected AbstractHyperSocket() : this(new SocketOptions()) {
         }
@@ -30,9 +29,17 @@ namespace Hyperletter {
             LetterSerializer = new LetterSerializer(options.Id);
         }
 
+        public void Dispose() {
+            foreach(SocketListener listener in _listeners.Values)
+                listener.Dispose();
+
+            foreach(IAbstractChannel channel in Channels.Values)
+                channel.Dispose();
+        }
+
         public void Bind(IPAddress ipAddress, int port) {
             var binding = new Binding(ipAddress, port);
-            
+
             var listener = new SocketListener(this, binding);
             _listeners[binding] = listener;
             listener.IncomingChannel += HookupChannel;
@@ -46,8 +53,19 @@ namespace Hyperletter {
             channel.Connect();
         }
 
+        public void Answer(ILetter answer, ILetter answeringTo) {
+            Guid address = answeringTo.Address[0];
+
+            IAbstractChannel channel;
+            if(RouteChannels.TryGetValue(address, out channel)) {
+                channel.Enqueue(answer);
+            }
+        }
+
+        public abstract void Send(ILetter letter);
+
         private void HookupChannel(IAbstractChannel channel) {
-            var preparedChannel = PrepareChannel(channel);
+            IAbstractChannel preparedChannel = PrepareChannel(channel);
 
             preparedChannel.Received += ChannelReceived;
             preparedChannel.FailedToSend += ChannelFailedToSend;
@@ -69,7 +87,7 @@ namespace Hyperletter {
         }
 
         private void ChannelConnected(IAbstractChannel obj) {
-            if (Connected != null)
+            if(Connected != null)
                 Connected(this, obj.Binding);
         }
 
@@ -78,53 +96,33 @@ namespace Hyperletter {
             Channels.TryRemove(obj.Binding, out value);
             RouteChannels.TryRemove(obj.ConnectedTo, out value);
 
-            if (Disconnected != null)
+            if(Disconnected != null)
                 Disconnected(this, obj.Binding);
 
-            if (obj.Direction == Direction.Outbound)
+            if(obj.Direction == Direction.Outbound)
                 Connect(obj.Binding.IpAddress, obj.Binding.Port);
 
             obj.Dispose();
         }
 
         private void ChannelReceived(IAbstractChannel channel, ILetter letter) {
-            if (Received != null)
+            if(Received != null)
                 Received(this, letter);
         }
 
         private void ChannelSent(IAbstractChannel channel, ILetter letter) {
-            if (Sent != null)
+            if(Sent != null)
                 Sent(this, letter);
         }
-        
+
         protected void Discard(IAbstractChannel abstractChannel, ILetter letter) {
-            if (Discarded != null && !letter.Options.IsSet(LetterOptions.SilentDiscard))
+            if(Discarded != null && !letter.Options.IsSet(LetterOptions.SilentDiscard))
                 Discarded(this, abstractChannel.Binding, letter);
         }
 
-        public void Answer(ILetter answer, ILetter answeringTo) {
-            var address = answeringTo.Address[0];
-
-            IAbstractChannel channel;
-            if(RouteChannels.TryGetValue(address, out channel)) {
-                channel.Enqueue(answer);
-            }
-        }
-
         protected void SendRoutedLetter(ILetter letter) {
-            
-            
         }
 
-        public abstract void Send(ILetter letter);
         protected abstract void ChannelFailedToSend(IAbstractChannel abstractChannel, ILetter letter);
-        
-        public void Dispose() {
-            foreach (var listener in _listeners.Values)
-                listener.Dispose();
-
-            foreach(var channel in Channels.Values)
-                channel.Dispose();
-        }
     }
 }

@@ -65,6 +65,7 @@
     <Compile Include="SocketListener.cs" />
     <Compile Include="SocketOptions.cs" />
     <Compile Include="Typed\Answerable.cs" />
+    <Compile Include="Typed\AnswerCallbackEventArgs.cs" />
     <Compile Include="Typed\BlockingOutstanding.cs" />
     <Compile Include="Typed\DefaultTypedHandlerFactory.cs" />
     <Compile Include="Typed\DelegateOutstanding.cs" />
@@ -78,7 +79,9 @@
     <Compile Include="Typed\NoMatchingConstructorException.cs" />
     <Compile Include="Typed\Outstanding.cs" />
     <Compile Include="Typed\Registration.cs" />
+    <Compile Include="Typed\TypedMulticastSocket.cs" />
     <Compile Include="Typed\TypedSocket.cs" />
+    <Compile Include="Typed\TypedUnicastSocket.cs" />
     <Compile Include="UnicastSocket.cs" />
   </ItemGroup>
   <ItemGroup />

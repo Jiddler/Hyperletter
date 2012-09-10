@@ -22,10 +22,10 @@ namespace Hyperletter.Letter {
 
         private void WriteAddress(ILetter letter, Stream ms) {
             ms.Write(BitConverter.GetBytes(letter.Address.Length + 1), 0, 2);
-            
+
             ms.Write(_address.ToByteArray(), 0, 16);
 
-            for(int i=0; i<letter.Address.Length; i++)
+            for(int i = 0; i < letter.Address.Length; i++)
                 ms.Write(letter.Address[i].ToByteArray(), 0, 16);
         }
 
@@ -36,8 +36,8 @@ namespace Hyperletter.Letter {
 
         private static void WriteMetadata(ILetter letter, Stream ms) {
             ms.Position = 4;
-            ms.WriteByte((byte)letter.Type);
-            ms.WriteByte((byte)letter.Options);
+            ms.WriteByte((byte) letter.Type);
+            ms.WriteByte((byte) letter.Options);
             if(letter.Options.IsSet(LetterOptions.UniqueId))
                 ms.Write(letter.Id.ToByteArray(), 0, 16);
         }
@@ -45,7 +45,7 @@ namespace Hyperletter.Letter {
         private static void WriteParts(ILetter letter, MemoryStream ms) {
             ms.Write(BitConverter.GetBytes(letter.Parts == null ? 0x000000 : letter.Parts.Length), 0, 4);
 
-            for (int i = 0; letter.Parts != null && i < letter.Parts.Length; i++)
+            for(int i = 0; letter.Parts != null && i < letter.Parts.Length; i++)
                 WritePart(letter.Parts[i], ms);
         }
 
@@ -73,11 +73,11 @@ namespace Hyperletter.Letter {
         }
 
         private Guid[] ReadAddress(byte[] serializedLetter, ref int position) {
-            var addressCount = BitConverter.ToInt16(serializedLetter, position);
+            short addressCount = BitConverter.ToInt16(serializedLetter, position);
             position += 2;
 
             var address = new Guid[addressCount];
-            for(int i=0; i<addressCount; i++) {
+            for(int i = 0; i < addressCount; i++) {
                 address[i] = new Guid(GetByteRange(serializedLetter, position, 16));
                 position += 16;
             }
@@ -86,16 +86,16 @@ namespace Hyperletter.Letter {
         }
 
         private byte[][] ReadParts(byte[] serializedLetter, ref int position) {
-            var partCount = BitConverter.ToInt32(serializedLetter, position);
+            int partCount = BitConverter.ToInt32(serializedLetter, position);
             var parts = new byte[partCount][];
 
-            if (partCount == 0)
+            if(partCount == 0)
                 return parts;
 
             position += 4;
             int i = 0;
-            while (position < serializedLetter.Length) {
-                var partLength = GetLength(serializedLetter, position);
+            while(position < serializedLetter.Length) {
+                int partLength = GetLength(serializedLetter, position);
                 position += 4;
 
                 parts[i++] = GetByteRange(serializedLetter, position, partLength);
