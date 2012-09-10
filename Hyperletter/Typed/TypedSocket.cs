@@ -13,6 +13,8 @@ namespace Hyperletter.Typed {
         private readonly DictionaryList<Type, Registration> _registry = new DictionaryList<Type, Registration>();
         private readonly IHyperSocket _socket;
 
+        public SocketOptions Options { get { return _socket.Options; } }
+
         public TypedSocket(IHyperSocket socket, ITypedHandlerFactory handlerFactory, ITransportSerializer serializer) {
             _socket = socket;
             _socket.Received += SocketOnReceived;
@@ -108,7 +110,7 @@ namespace Hyperletter.Typed {
         }
 
         internal void Answer<T>(T value, ILetter answeringTo, LetterOptions options) {
-            _socket.Send(CreateAnswer(value, answeringTo, options));
+            _socket.Answer(CreateAnswer(value, answeringTo, options), answeringTo);
         }
 
         internal void Answer<TRequest, TReply>(TRequest value, ILetter answeringTo, LetterOptions options, AnswerCallback<TRequest, TReply> callback) {
@@ -116,7 +118,7 @@ namespace Hyperletter.Typed {
             var outstanding = new DelegateOutstanding<TRequest, TReply>(this, value, callback);
             _outstandings.Add(letter.Id, outstanding);
 
-            _socket.Send(letter);
+            _socket.Answer(letter, answeringTo);
         }
 
         internal IAnswerable<TReply> Answer<TValue, TReply>(TValue value, ILetter answeringTo, LetterOptions options) {
@@ -124,7 +126,7 @@ namespace Hyperletter.Typed {
             var outstanding = new BlockingOutstanding<TReply>(this);
             _outstandings.Add(letter.Id, outstanding);
 
-            _socket.Send(letter);
+            _socket.Answer(letter, answeringTo);
 
             try {
                 outstanding.Wait();
