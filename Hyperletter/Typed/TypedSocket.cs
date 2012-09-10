@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net;
+using System.Timers;
 using Hyperletter.Letter;
 
 namespace Hyperletter.Typed {
@@ -11,15 +13,39 @@ namespace Hyperletter.Typed {
 
         private readonly Dictionary<Guid, Outstanding> _outstandings = new Dictionary<Guid, Outstanding>();
         private readonly DictionaryList<Type, Registration> _registry = new DictionaryList<Type, Registration>();
+        private readonly Timer _cleanUpTimer;
+        private readonly TypedSocketOptions _options;
         private readonly IHyperSocket _socket;
 
-        public SocketOptions Options { get { return _socket.Options; } }
+        public TypedSocketOptions Options { get { return _options; } }
+        public IHyperSocket Socket { get { return _socket; } }
 
-        public TypedSocket(IHyperSocket socket, ITypedHandlerFactory handlerFactory, ITransportSerializer serializer) {
+        public TypedSocket(TypedSocketOptions options, IHyperSocket socket, ITypedHandlerFactory handlerFactory, ITransportSerializer serializer) {
+            _options = options;
             _socket = socket;
             _socket.Received += SocketOnReceived;
             _handlerFactory = handlerFactory;
+
+            _cleanUpTimer = new Timer(options.AnswerTimeout.TotalMilliseconds/4);
+            _cleanUpTimer.Elapsed += CleanUp;
+            _cleanUpTimer.Start();
+
             Serializer = serializer;
+        }
+
+        private void CleanUp(object sender, ElapsedEventArgs elapsedEventArgs) {
+            _cleanUpTimer.Stop();
+
+            foreach (var pair in _outstandings.Where(x => (x.Value.Created + _options.AnswerTimeout) < DateTime.UtcNow)) {
+                var outstanding = pair.Value as DelegateOutstanding;
+                if(outstanding == null)
+                    continue;
+
+                outstanding.SetResult(new TimeoutException());
+                _outstandings.Remove(pair.Key);
+            }
+
+            _cleanUpTimer.Start();
         }
 
         internal ITransportSerializer Serializer { get; private set; }

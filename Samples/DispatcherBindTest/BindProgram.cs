@@ -7,7 +7,6 @@ namespace DispatcherBindTest {
     public class BindProgram {
         public static void Main() {
             var socket = new TypedUnicastSocket(new DefaultTypedHandlerFactory(), new JsonTransportSerializer());
-            Console.WriteLine(socket.Options.Id);
             socket.Register<TestMessage, MessageHandler>();
             socket.Bind(IPAddress.Any, 8900);
 

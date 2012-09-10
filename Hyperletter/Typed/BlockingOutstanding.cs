@@ -20,7 +20,7 @@ namespace Hyperletter.Typed {
         }
 
         public void Wait() {
-            if(!_waitLock.Wait(10000)) {
+            if(!_waitLock.Wait(_socket.Options.AnswerTimeout)) {
                 throw new TimeoutException();
             }
         }

@@ -7,9 +7,8 @@ namespace Hyperletter.Typed {
             AnswerFor = answerFor;
         }
 
-        public AnswerCallbackEventArgs(TRequest answerFor, IAnswerable<TReply> answer, Exception exception) {
+        public AnswerCallbackEventArgs(TRequest answerFor, Exception exception) {
             AnswerFor = answerFor;
-            Answer = answer;
             Exception = exception;
         }
 

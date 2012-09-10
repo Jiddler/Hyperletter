@@ -80,6 +80,7 @@
     <Compile Include="Typed\Outstanding.cs" />
     <Compile Include="Typed\Registration.cs" />
     <Compile Include="Typed\TypedMulticastSocket.cs" />
+    <Compile Include="Typed\TypedSocketOptions.cs" />
     <Compile Include="Typed\TypedSocket.cs" />
     <Compile Include="Typed\TypedUnicastSocket.cs" />
     <Compile Include="UnicastSocket.cs" />

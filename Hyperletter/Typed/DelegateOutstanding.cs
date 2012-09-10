@@ -2,7 +2,11 @@ using System;
 using Hyperletter.Letter;
 
 namespace Hyperletter.Typed {
-    internal class DelegateOutstanding<TRequest, TReply> : Outstanding {
+    internal abstract class DelegateOutstanding : Outstanding {
+        public abstract void SetResult(Exception exception);
+    }
+
+    internal class DelegateOutstanding<TRequest, TReply> : DelegateOutstanding {
         private readonly AnswerCallback<TRequest, TReply> _callback;
         private readonly TRequest _request;
         private readonly TypedSocket _socket;
@@ -18,6 +22,11 @@ namespace Hyperletter.Typed {
             var answerable = new Answerable<TReply>(_socket, letter, result);
 
             var eventArgs = new AnswerCallbackEventArgs<TRequest, TReply>(answerable, _request);
+            _callback(_socket, eventArgs);
+        }
+
+        public override void SetResult(Exception exception) {
+            var eventArgs = new AnswerCallbackEventArgs<TRequest, TReply>(_request, exception);
             _callback(_socket, eventArgs);
         }
     }
