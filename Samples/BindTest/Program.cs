@@ -17,31 +17,31 @@ namespace BindTest {
 
             int sent = 0;
             unicastSocket.Sent += (socket, letter) => {
-                                      lock(SyncRoot) {
-                                          sent++;
-                                          if(sent%1000 == 0)
-                                              Console.WriteLine("->" + sent);
-                                      }
-                                  };
+                lock(SyncRoot) {
+                    sent++;
+                    if(sent%1000 == 0)
+                        Console.WriteLine("->" + sent);
+                }
+            };
 
             unicastSocket.Disconnected += (socket, binding) => Console.WriteLine("DISCONNECTED " + binding);
             unicastSocket.Connected += (socket, binding) => Console.WriteLine("CONNECTED " + binding);
 
             int received = 0;
             unicastSocket.Received += (socket, letter) => {
-                                          lock(unicastSocket) {
-                                              if(received == 0)
-                                                  stopwatch.Restart();
-                                              received++;
+                lock(unicastSocket) {
+                    if(received == 0)
+                        stopwatch.Restart();
+                    received++;
 
-                                              if(received%20000 == 0)
-                                                  Console.WriteLine("<-" + received);
-                                              if(received%100000 == 0) {
-                                                  Console.WriteLine("Received: " + received + " in " + stopwatch.ElapsedMilliseconds + " ms" + ". " + (received/stopwatch.ElapsedMilliseconds) + " letter/millisecond");
-                                                  received = 0;
-                                              }
-                                          }
-                                      };
+                    if(received%20000 == 0)
+                        Console.WriteLine("<-" + received);
+                    if(received%100000 == 0) {
+                        Console.WriteLine("Received: " + received + " in " + stopwatch.ElapsedMilliseconds + " ms" + ". " + (received/stopwatch.ElapsedMilliseconds) + " letter/millisecond");
+                        received = 0;
+                    }
+                }
+            };
 
             int port = int.Parse(args[0]);
             unicastSocket.Bind(IPAddress.Any, port);
