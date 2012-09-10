@@ -32,7 +32,7 @@ Even with the NoAck option Hyperletter will still detect network most failures (
 ## Bindings
 So far there is only a .NET-binding, if you like the protocol please submit language bindings for your language.
 
-## .NET example
+## Raw .NET example
 See BindTest and ConnectTest in the source for more details
 
     public class Transmitter {
@@ -67,27 +67,25 @@ See BindTest and ConnectTest in the source for more details
         }        
     }
 
-## .NET Example with dispatchers
-There is two different kinds of dispatchers. The DelegateDispatcher which runs a delegate when a message of a certain type is received and the HandlerDispatcher which creates a class (of type IHandler) and then executes the Execute()-method.
+## Typed .NET Example
+See BindDispatcherTest and ConnectDispatcherTest in source for more details (See WIKI for example of IHandlerFactory and ITransportSerializer).
 
-	public static void Main() {
-		var hyperSocket = new UnicastSocket();
-        var handleDispatcher = new DelegateDispatcher(hyperSocket, new JsonTransportSerializer());
-        handleDispatcher.Register<TestMessage>(IncomingTestMessage);
-        hyperSocket.Bind(IPAddress.Any, 8900);
+    public class ConnectProgram {
+        public static void Main() {
+            var socket = new TypedUnicastSocket(new DefaultTypedHandlerFactory(), new JsonTransportSerializer());
+            socket.Connect(IPAddress.Parse("127.0.0.1"), 8900);
+            
+            for (int i = 0; i < 100; i++) {
+                string message = "Message from BindProgram " + i;
 
-        for (int i = 0; i < 100; i++) {
-            handleDispatcher.Send(new TestMessage { Message = "Message from BindProgram "});
-            Console.WriteLine(DateTime.Now + " SENT MESSAGE");
-            Thread.Sleep(1000);
+                Console.WriteLine(DateTime.Now + " SENDING MESSAGE (BLOCKING)   : " + message);
+                IAnswerable<TestMessage> reply = socket.Send<TestMessage, TestMessage>(new TestMessage { Message = message });
+                Console.WriteLine("RECEIVED ANSWER (BLOCKING): " + reply.Message.Message);
+            }
+
+            Console.WriteLine("Waiting for messages (Press enter to continue)...");
+            Console.ReadLine();
         }
-
-        Console.WriteLine("Waiting for messages (Press any key to continue)...");
-        Console.ReadKey();
-    }
-
-    private static void IncomingTestMessage(TestMessage message) {
-        Console.WriteLine(DateTime.Now + " RECEIVED MESSAGE: " + message.Message);
     }
 
 ## Whats next
