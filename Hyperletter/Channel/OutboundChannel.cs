@@ -1,3 +1,4 @@
+using System;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
@@ -22,24 +23,35 @@ namespace Hyperletter.Channel {
                 return;
 
             _connecting = true;
-            var task = new Task(() => {
-                TcpClient = new TcpClient();
 
-                while(!TcpClient.Connected) {
-                    try {
-                        TcpClient.Connect(Binding.IpAddress, Binding.Port);
-                        _connecting = false;
-                        TcpClient.NoDelay = true;
-                        TcpClient.LingerState = new LingerOption(true, 1);
+            TcpClient = new TcpClient();
+            try {
+                TcpClient.BeginConnect(Binding.IpAddress, Binding.Port, EndConnect, null);
+            } catch(Exception) {
+                TryReconnect();
+            }
+        }
 
-                        Connected();
-                    } catch(SocketException) {
-                        Thread.Sleep(1000);
-                    }
-                }
-            });
+        private void EndConnect(IAsyncResult ar) {
+            try {
+                TcpClient.EndConnect(ar);
+            } catch (Exception) {
+                TryReconnect();
+                return;
+            }
 
-            task.Start();
+            _connecting = false;
+            TcpClient.NoDelay = true;
+            TcpClient.LingerState = new LingerOption(true, 1);
+            
+            Connected();
+        }
+
+        private void TryReconnect() {
+            _connecting = false;
+
+            Thread.Sleep(1000);
+            TryConnect();
         }
     }
 }
