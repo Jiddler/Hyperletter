@@ -91,18 +91,19 @@ namespace Hyperletter {
                 Connected(this, obj.Binding);
         }
 
-        private void ChannelDisconnected(IAbstractChannel obj) {
+        private void ChannelDisconnected(IAbstractChannel channel) {
+            channel.Dispose();
+
+            var binding = channel.Binding;
             IAbstractChannel value;
-            Channels.TryRemove(obj.Binding, out value);
-            RouteChannels.TryRemove(obj.ConnectedTo, out value);
+            Channels.TryRemove(binding, out value);
+            RouteChannels.TryRemove(channel.ConnectedTo, out value);
 
             if(Disconnected != null)
-                Disconnected(this, obj.Binding);
+                Disconnected(this, binding);
 
-            if(obj.Direction == Direction.Outbound)
-                Connect(obj.Binding.IpAddress, obj.Binding.Port);
-
-            obj.Dispose();
+            if(channel.Direction == Direction.Outbound)
+                Connect(binding.IpAddress, binding.Port);
         }
 
         private void ChannelReceived(IAbstractChannel channel, ILetter letter) {

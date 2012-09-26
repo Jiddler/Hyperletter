@@ -56,6 +56,9 @@ namespace Hyperletter {
             lock(_syncRoot) {
                 while(CanSend()) {
                     IAbstractChannel channel = GetNextChannel();
+                    if(!channel.IsConnected)
+                        continue;
+
                     ILetter letter = GetNextLetter();
                     EnqueueResult result = channel.Enqueue(letter);
                     if(result == EnqueueResult.CanEnqueueMore)
