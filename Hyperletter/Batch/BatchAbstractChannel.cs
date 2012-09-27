@@ -33,7 +33,7 @@ namespace Hyperletter.Batch {
             _channel = channel;
             _options = hyperSocket.Options.BatchOptions;
 
-            _letterSerializer = new LetterSerializer(hyperSocket.Options.Id);
+            _letterSerializer = hyperSocket.LetterSerializer;
             _batchBuilder = new BatchLetterBuilder(_options.MaxLetters, _letterSerializer);
 
             _channel.ChannelConnected += abstractChannel => ChannelConnected(this);
@@ -159,7 +159,7 @@ namespace Hyperletter.Batch {
         }
 
         private void UnpackBatch(ILetter letter, Action<byte[]> callback) {
-            for(int i = 0; i < letter.Parts.Length; i++)
+            for(var i = 0; i < letter.Parts.Length; i++)
                 callback(letter.Parts[i]);
         }
     }

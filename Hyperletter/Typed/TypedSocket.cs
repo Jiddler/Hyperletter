@@ -170,7 +170,7 @@ namespace Hyperletter.Typed {
         }
 
         private Letter.Letter CreateLetter<T>(T value, LetterOptions options) {
-            var letter = new Letter.Letter(options);
+            var letter = new Letter.Letter(options) { Type = LetterType.User };
             var metadata = new Metadata(value.GetType());
             letter.Parts = new byte[2][];
             letter.Parts[0] = Serializer.Serialize(metadata);
