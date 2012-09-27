@@ -6,9 +6,9 @@ using Hyperletter.Extension;
 using Hyperletter.Letter;
 
 namespace Hyperletter.Batch {
-    public class BatchAbstractChannel : IAbstractChannel {
+    public class BatchChannel : IChannel {
         private readonly BatchLetterBuilder _batchBuilder;
-        private readonly IAbstractChannel _channel;
+        private readonly IChannel _channel;
         private readonly LetterSerializer _letterSerializer;
         private readonly BatchOptions _options;
         private readonly ConcurrentQueue<ILetter> _queue = new ConcurrentQueue<ILetter>();
@@ -20,16 +20,16 @@ namespace Hyperletter.Batch {
         private DateTime _firstEnqueueAt;
         private bool _sentBatch;
 
-        public event Action<IAbstractChannel> ChannelConnected;
-        public event Action<IAbstractChannel> ChannelDisconnected;
-        public event Action<IAbstractChannel> ChannelQueueEmpty;
-        public event Action<IAbstractChannel> ChannelInitialized;
+        public event Action<IChannel> ChannelConnected;
+        public event Action<IChannel> ChannelDisconnected;
+        public event Action<IChannel> ChannelQueueEmpty;
+        public event Action<IChannel> ChannelInitialized;
 
-        public event Action<IAbstractChannel, ILetter> Received;
-        public event Action<IAbstractChannel, ILetter> Sent;
-        public event Action<IAbstractChannel, ILetter> FailedToSend;
+        public event Action<IChannel, ILetter> Received;
+        public event Action<IChannel, ILetter> Sent;
+        public event Action<IChannel, ILetter> FailedToSend;
 
-        public BatchAbstractChannel(AbstractHyperSocket hyperSocket, IAbstractChannel channel) {
+        public BatchChannel(AbstractHyperSocket hyperSocket, IChannel channel) {
             _channel = channel;
             _options = hyperSocket.Options.BatchOptions;
 
@@ -88,12 +88,12 @@ namespace Hyperletter.Batch {
             _channel.Dispose();
         }
 
-        private void ChannelOnInitialized(IAbstractChannel abstractChannel) {
+        private void ChannelOnInitialized(IChannel channel) {
             _canSend = true;
             ChannelInitialized(this);
         }
 
-        private void ChannelOnDisconnected(IAbstractChannel channel) {
+        private void ChannelOnDisconnected(IChannel channel) {
             _canSend = false;
 
             FailedQueuedLetters();
@@ -128,7 +128,7 @@ namespace Hyperletter.Batch {
             return _batchBuilder.Count > 0;
         }
 
-        private void ChannelOnSent(IAbstractChannel abstractChannel, ILetter letter) {
+        private void ChannelOnSent(IChannel channel, ILetter letter) {
             if(letter.Type == LetterType.Batch) {
                 _sentBatch = false;
 
@@ -140,7 +140,7 @@ namespace Hyperletter.Batch {
             TrySendBatch(false);
         }
 
-        private void ChannelOnReceived(IAbstractChannel abstractChannel, ILetter letter) {
+        private void ChannelOnReceived(IChannel channel, ILetter letter) {
             if(letter.Type == LetterType.Batch) {
                 UnpackBatch(letter, data => Received(this, _letterSerializer.Deserialize(data)));
             } else {
@@ -148,7 +148,7 @@ namespace Hyperletter.Batch {
             }
         }
 
-        private void ChannelOnFailedToSend(IAbstractChannel abstractChannel, ILetter letter) {
+        private void ChannelOnFailedToSend(IChannel channel, ILetter letter) {
             _canSend = false;
             _sentBatch = false;
 

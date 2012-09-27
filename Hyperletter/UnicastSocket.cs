@@ -8,8 +8,8 @@ using Hyperletter.Letter;
 
 namespace Hyperletter {
     public class UnicastSocket : AbstractHyperSocket {
-        private readonly ConcurrentDictionary<Binding, IAbstractChannel> _availableChannels = new ConcurrentDictionary<Binding, IAbstractChannel>();
-        private readonly ConcurrentQueue<IAbstractChannel> _channelQueue = new ConcurrentQueue<IAbstractChannel>();
+        private readonly ConcurrentDictionary<Binding, IChannel> _availableChannels = new ConcurrentDictionary<Binding, IChannel>();
+        private readonly ConcurrentQueue<IChannel> _channelQueue = new ConcurrentQueue<IChannel>();
         private readonly LinkedList<ILetter> _sendQueue = new LinkedList<ILetter>();
 
         private readonly object _syncRoot = new object();
@@ -22,20 +22,20 @@ namespace Hyperletter {
         public UnicastSocket(SocketOptions options) : base(options) {
         }
 
-        protected override void ChannelFailedToSend(IAbstractChannel abstractChannel, ILetter letter) {
+        protected override void ChannelFailedToSend(IChannel channel, ILetter letter) {
             if(letter.Options.IsSet(LetterOptions.Requeue)) {
                 _sendQueue.AddFirst(letter);
                 TrySend();
                 if(Requeued != null)
                     Requeued(letter);
             } else {
-                Discard(abstractChannel, letter);
+                Discard(channel, letter);
             }
         }
 
-        protected override IAbstractChannel PrepareChannel(IAbstractChannel channel) {
+        protected override IChannel PrepareChannel(IChannel channel) {
             if(Options.BatchOptions.Enabled)
-                channel = new BatchAbstractChannel(this, channel);
+                channel = new BatchChannel(this, channel);
 
             channel.ChannelQueueEmpty += ChannelCanSend;
             channel.ChannelInitialized += ChannelCanSend;
@@ -43,9 +43,9 @@ namespace Hyperletter {
             return channel;
         }
 
-        private void ChannelCanSend(IAbstractChannel abstractChannel) {
-            if (_availableChannels.TryAdd(abstractChannel.Binding, abstractChannel)) {
-                _channelQueue.Enqueue(abstractChannel);
+        private void ChannelCanSend(IChannel channel) {
+            if (_availableChannels.TryAdd(channel.Binding, channel)) {
+                _channelQueue.Enqueue(channel);
             }
 
             TrySend();
@@ -59,7 +59,7 @@ namespace Hyperletter {
         protected void TrySend() {
             lock(_syncRoot) {
                 while(CanSend()) {
-                    IAbstractChannel channel = GetNextChannel();
+                    IChannel channel = GetNextChannel();
                     _availableChannels.TryRemove(channel.Binding, out channel);
 
                     if(!channel.IsConnected)
@@ -76,12 +76,12 @@ namespace Hyperletter {
         }
 
         private bool CanSend() {
-            IAbstractChannel channel;
+            IChannel channel;
             return _channelQueue.TryPeek(out channel) && _sendQueue.Count> 0;
         }
 
-        private IAbstractChannel GetNextChannel() {
-            IAbstractChannel channel;
+        private IChannel GetNextChannel() {
+            IChannel channel;
             _channelQueue.TryDequeue(out channel);
             return channel;
         }

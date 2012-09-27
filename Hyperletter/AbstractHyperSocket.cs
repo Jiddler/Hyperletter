@@ -7,8 +7,8 @@ using Hyperletter.Letter;
 
 namespace Hyperletter {
     public abstract class AbstractHyperSocket : IDisposable, IHyperSocket {
-        protected readonly ConcurrentDictionary<Binding, IAbstractChannel> Channels = new ConcurrentDictionary<Binding, IAbstractChannel>();
-        protected readonly ConcurrentDictionary<Guid, IAbstractChannel> RouteChannels = new ConcurrentDictionary<Guid, IAbstractChannel>();
+        protected readonly ConcurrentDictionary<Binding, IChannel> Channels = new ConcurrentDictionary<Binding, IChannel>();
+        protected readonly ConcurrentDictionary<Guid, IChannel> RouteChannels = new ConcurrentDictionary<Guid, IChannel>();
         private readonly ConcurrentDictionary<Binding, SocketListener> _listeners = new ConcurrentDictionary<Binding, SocketListener>();
         
         internal LetterSerializer LetterSerializer { get; private set; }
@@ -33,7 +33,7 @@ namespace Hyperletter {
             foreach(SocketListener listener in _listeners.Values)
                 listener.Dispose();
 
-            foreach(IAbstractChannel channel in Channels.Values)
+            foreach(IChannel channel in Channels.Values)
                 channel.Dispose();
         }
 
@@ -56,7 +56,7 @@ namespace Hyperletter {
         public void Answer(ILetter answer, ILetter answeringTo) {
             Guid address = answeringTo.Address[0];
 
-            IAbstractChannel channel;
+            IChannel channel;
             if(RouteChannels.TryGetValue(address, out channel)) {
                 channel.Enqueue(answer);
             }
@@ -64,8 +64,8 @@ namespace Hyperletter {
 
         public abstract void Send(ILetter letter);
 
-        private void HookupChannel(IAbstractChannel channel) {
-            IAbstractChannel preparedChannel = PrepareChannel(channel);
+        private void HookupChannel(IChannel channel) {
+            IChannel preparedChannel = PrepareChannel(channel);
 
             preparedChannel.Received += ChannelReceived;
             preparedChannel.FailedToSend += ChannelFailedToSend;
@@ -78,24 +78,24 @@ namespace Hyperletter {
             preparedChannel.Initialize();
         }
 
-        private void ChannelInitialized(IAbstractChannel obj) {
+        private void ChannelInitialized(IChannel obj) {
             RouteChannels.TryAdd(obj.ConnectedTo, obj);
         }
 
-        protected virtual IAbstractChannel PrepareChannel(IAbstractChannel channel) {
+        protected virtual IChannel PrepareChannel(IChannel channel) {
             return channel;
         }
 
-        private void ChannelConnected(IAbstractChannel obj) {
+        private void ChannelConnected(IChannel obj) {
             if(Connected != null)
                 Connected(this, obj.Binding);
         }
 
-        private void ChannelDisconnected(IAbstractChannel channel) {
+        private void ChannelDisconnected(IChannel channel) {
             channel.Dispose();
 
             var binding = channel.Binding;
-            IAbstractChannel value;
+            IChannel value;
             Channels.TryRemove(binding, out value);
             RouteChannels.TryRemove(channel.ConnectedTo, out value);
 
@@ -106,24 +106,24 @@ namespace Hyperletter {
                 Connect(binding.IpAddress, binding.Port);
         }
 
-        private void ChannelReceived(IAbstractChannel channel, ILetter letter) {
+        private void ChannelReceived(IChannel channel, ILetter letter) {
             if(Received != null)
                 Received(this, letter);
         }
 
-        private void ChannelSent(IAbstractChannel channel, ILetter letter) {
+        private void ChannelSent(IChannel channel, ILetter letter) {
             if(Sent != null)
                 Sent(this, letter);
         }
 
-        protected void Discard(IAbstractChannel abstractChannel, ILetter letter) {
+        protected void Discard(IChannel channel, ILetter letter) {
             if(Discarded != null && !letter.Options.IsSet(LetterOptions.SilentDiscard))
-                Discarded(this, abstractChannel.Binding, letter);
+                Discarded(this, channel.Binding, letter);
         }
 
         protected void SendRoutedLetter(ILetter letter) {
         }
 
-        protected abstract void ChannelFailedToSend(IAbstractChannel abstractChannel, ILetter letter);
+        protected abstract void ChannelFailedToSend(IChannel channel, ILetter letter);
     }
 }

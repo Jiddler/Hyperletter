@@ -4,7 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 
 namespace Hyperletter.Channel {
-    public class OutboundChannel : AbstractChannel {
+    public class OutboundChannel : Channel {
         private bool _connecting;
 
         public OutboundChannel(AbstractHyperSocket hyperSocket, Binding binding) : base(hyperSocket, binding) {

@@ -9,12 +9,12 @@ namespace Hyperletter {
         public MulticastSocket(SocketOptions options) : base(options) {
         }
 
-        protected override void ChannelFailedToSend(IAbstractChannel abstractChannel, ILetter letter) {
-            Discard(abstractChannel, letter);
+        protected override void ChannelFailedToSend(IChannel channel, ILetter letter) {
+            Discard(channel, letter);
         }
 
         public override void Send(ILetter letter) {
-            foreach(IAbstractChannel channel in Channels.Values) {
+            foreach(IChannel channel in Channels.Values) {
                 if(channel.IsConnected)
                     channel.Enqueue(letter);
                 else

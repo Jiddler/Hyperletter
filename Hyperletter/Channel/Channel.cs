@@ -6,7 +6,7 @@ using Hyperletter.Extension;
 using Hyperletter.Letter;
 
 namespace Hyperletter.Channel {
-    public abstract class AbstractChannel : IAbstractChannel {
+    public abstract class Channel : IChannel {
         private const int HeartbeatInterval = 1000;
         private readonly Timer _heartbeat;
         private readonly AbstractHyperSocket _hyperSocket;
@@ -29,16 +29,16 @@ namespace Hyperletter.Channel {
         public Binding Binding { get; private set; }
         public abstract Direction Direction { get; }
 
-        public event Action<IAbstractChannel> ChannelConnected;
-        public event Action<IAbstractChannel> ChannelDisconnected;
-        public event Action<IAbstractChannel> ChannelQueueEmpty;
-        public event Action<IAbstractChannel> ChannelInitialized;
+        public event Action<IChannel> ChannelConnected;
+        public event Action<IChannel> ChannelDisconnected;
+        public event Action<IChannel> ChannelQueueEmpty;
+        public event Action<IChannel> ChannelInitialized;
 
-        public event Action<IAbstractChannel, ILetter> Received;
-        public event Action<IAbstractChannel, ILetter> Sent;
-        public event Action<IAbstractChannel, ILetter> FailedToSend;
+        public event Action<IChannel, ILetter> Received;
+        public event Action<IChannel, ILetter> Sent;
+        public event Action<IChannel, ILetter> FailedToSend;
 
-        protected AbstractChannel(AbstractHyperSocket hyperSocket, Binding binding) {
+        protected Channel(AbstractHyperSocket hyperSocket, Binding binding) {
             _hyperSocket = hyperSocket;
             Binding = binding;
 

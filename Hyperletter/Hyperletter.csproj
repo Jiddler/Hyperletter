@@ -38,12 +38,12 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Batch\BatchLetterBuilder.cs" />
-    <Compile Include="Batch\BatchAbstractChannel.cs" />
+    <Compile Include="Batch\BatchChannel.cs" />
     <Compile Include="Batch\BatchOptions.cs" />
     <Compile Include="Binding.cs" />
-    <Compile Include="Channel\AbstractChannel.cs" />
+    <Compile Include="Channel\Channel.cs" />
     <Compile Include="Channel\ChannelStatus.cs" />
-    <Compile Include="Channel\IAbstractChannel.cs" />
+    <Compile Include="Channel\IChannel.cs" />
     <Compile Include="Channel\InboundChannel.cs" />
     <Compile Include="Channel\LetterReceiver.cs" />
     <Compile Include="Channel\LetterTransmitter.cs" />
