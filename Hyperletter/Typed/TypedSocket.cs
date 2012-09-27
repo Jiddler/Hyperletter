@@ -1,9 +1,11 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Timers;
 using Hyperletter.Letter;
+using Hyperletter.Extension;
 
 namespace Hyperletter.Typed {
     public delegate void AnswerCallback<TRequest, TReply>(ITypedSocket socket, AnswerCallbackEventArgs<TRequest, TReply> args);
@@ -11,7 +13,7 @@ namespace Hyperletter.Typed {
     public class TypedSocket : ITypedSocket {
         private readonly ITypedHandlerFactory _handlerFactory;
 
-        private readonly Dictionary<Guid, Outstanding> _outstandings = new Dictionary<Guid, Outstanding>();
+        private readonly ConcurrentDictionary<Guid, Outstanding> _outstandings = new ConcurrentDictionary<Guid, Outstanding>();
         private readonly DictionaryList<Type, Registration> _registry = new DictionaryList<Type, Registration>();
         private readonly Timer _cleanUpTimer;
         private readonly TypedSocketOptions _options;
@@ -66,7 +68,6 @@ namespace Hyperletter.Typed {
             Letter.Letter letter = CreateLetter(value, options | LetterOptions.UniqueId);
             var outstanding = new BlockingOutstanding<TReply>(this);
             _outstandings.Add(letter.Id, outstanding);
-
             _socket.Send(letter);
 
             try {
