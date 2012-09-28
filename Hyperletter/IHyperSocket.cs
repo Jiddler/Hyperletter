@@ -4,7 +4,7 @@ using Hyperletter.Letter;
 
 namespace Hyperletter {
     public interface IHyperSocket {
-        SocketOptions Options { get; set; }
+        SocketOptions Options { get; }
         event Action<IHyperSocket, ILetter> Sent;
         event Action<IHyperSocket, ILetter> Received;
         event Action<IHyperSocket, Binding, ILetter> Discarded;

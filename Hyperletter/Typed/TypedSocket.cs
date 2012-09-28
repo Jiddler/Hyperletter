@@ -22,9 +22,9 @@ namespace Hyperletter.Typed {
         public TypedSocketOptions Options { get { return _options; } }
         public IHyperSocket Socket { get { return _socket; } }
 
-        public TypedSocket(TypedSocketOptions options, IHyperSocket socket, ITypedHandlerFactory handlerFactory, ITransportSerializer serializer) {
+        public TypedSocket(TypedSocketOptions options, ITypedHandlerFactory handlerFactory, ITransportSerializer serializer) {
             _options = options;
-            _socket = socket;
+            _socket = new HyperSocket(options.SocketOptions);
             _socket.Received += SocketOnReceived;
             _handlerFactory = handlerFactory;
 

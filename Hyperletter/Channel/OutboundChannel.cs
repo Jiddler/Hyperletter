@@ -4,10 +4,10 @@ using System.Threading;
 using System.Threading.Tasks;
 
 namespace Hyperletter.Channel {
-    public class OutboundChannel : Channel {
+    public class OutboundChannel : AbstractChannel {
         private bool _connecting;
 
-        public OutboundChannel(AbstractHyperSocket hyperSocket, Binding binding) : base(hyperSocket, binding) {
+        public OutboundChannel(HyperSocket hyperSocket, Binding binding) : base(hyperSocket, binding) {
         }
 
         public override Direction Direction {

@@ -29,7 +29,7 @@ namespace Hyperletter.Batch {
         public event Action<IChannel, ILetter> Sent;
         public event Action<IChannel, ILetter> FailedToSend;
 
-        public BatchChannel(AbstractHyperSocket hyperSocket, IChannel channel) {
+        public BatchChannel(HyperSocket hyperSocket, IChannel channel) {
             _channel = channel;
             _options = hyperSocket.Options.BatchOptions;
 

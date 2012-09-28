@@ -9,6 +9,7 @@ namespace Hyperletter.Letter {
         Ack = 4,
         UniqueId = 8,
         Routed = 16,
-        Answer = 32
+        Answer = 32,
+        Multicast = 64
     }
 }

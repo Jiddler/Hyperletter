@@ -6,11 +6,11 @@ using Hyperletter.Channel;
 namespace Hyperletter {
     internal class SocketListener : IDisposable {
         private readonly Binding _binding;
-        private readonly AbstractHyperSocket _hyperSocket;
+        private readonly HyperSocket _hyperSocket;
         private bool _disposed;
         private TcpListener _listener;
 
-        public SocketListener(AbstractHyperSocket hyperSocket, Binding binding) {
+        public SocketListener(HyperSocket hyperSocket, Binding binding) {
             _hyperSocket = hyperSocket;
             _binding = binding;
         }

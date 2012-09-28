@@ -11,7 +11,7 @@ namespace BindTest {
 
         private static void Main(string[] args) {
             var options = new SocketOptions();
-            var unicastSocket = new UnicastSocket(options);
+            var unicastSocket = new HyperSocket(options);
 
             var stopwatch = new Stopwatch();
 

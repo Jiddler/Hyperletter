@@ -6,10 +6,10 @@ using Hyperletter.Extension;
 using Hyperletter.Letter;
 
 namespace Hyperletter.Channel {
-    public abstract class Channel : IChannel {
+    public abstract class AbstractChannel : IChannel {
         private const int HeartbeatInterval = 1000;
         private readonly Timer _heartbeat;
-        private readonly AbstractHyperSocket _hyperSocket;
+        private readonly HyperSocket _hyperSocket;
 
         private readonly ConcurrentQueue<ILetter> _queue = new ConcurrentQueue<ILetter>();
         private readonly ConcurrentQueue<ILetter> _receivedQueue = new ConcurrentQueue<ILetter>();
@@ -38,7 +38,7 @@ namespace Hyperletter.Channel {
         public event Action<IChannel, ILetter> Sent;
         public event Action<IChannel, ILetter> FailedToSend;
 
-        protected Channel(AbstractHyperSocket hyperSocket, Binding binding) {
+        protected AbstractChannel(HyperSocket hyperSocket, Binding binding) {
             _hyperSocket = hyperSocket;
             Binding = binding;
 
@@ -49,6 +49,9 @@ namespace Hyperletter.Channel {
         }
 
         public EnqueueResult Enqueue(ILetter letter) {
+            if (!IsConnected)
+                FailedToSend(this, letter);
+
             _queue.Enqueue(letter);
             _transmitter.Enqueue(letter);
 

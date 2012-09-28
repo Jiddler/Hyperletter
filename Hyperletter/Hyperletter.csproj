@@ -41,7 +41,7 @@
     <Compile Include="Batch\BatchChannel.cs" />
     <Compile Include="Batch\BatchOptions.cs" />
     <Compile Include="Binding.cs" />
-    <Compile Include="Channel\Channel.cs" />
+    <Compile Include="Channel\AbstractChannel.cs" />
     <Compile Include="Channel\ChannelStatus.cs" />
     <Compile Include="Channel\IChannel.cs" />
     <Compile Include="Channel\InboundChannel.cs" />
@@ -52,16 +52,16 @@
     <Compile Include="Extension\ConcurrentDictionaryExtensions.cs" />
     <Compile Include="Extension\ConcurrentQueueExtensions.cs" />
     <Compile Include="Extension\FlagsEnumExtensions.cs" />
-    <Compile Include="AbstractHyperSocket.cs" />
+    <Compile Include="HyperSocket.cs" />
     <Compile Include="IHyperSocket.cs" />
     <Compile Include="ITransportSerializer.cs" />
+    <Compile Include="LetterDispatcher.cs" />
     <Compile Include="Letter\ILetter.cs" />
     <Compile Include="Letter\Letter.cs" />
     <Compile Include="Letter\LetterOptions.cs" />
     <Compile Include="Letter\LetterSerializer.cs" />
     <Compile Include="Letter\LetterType.cs" />
     <Compile Include="Metadata.cs" />
-    <Compile Include="MulticastSocket.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SocketListener.cs" />
     <Compile Include="SocketOptions.cs" />
@@ -80,11 +80,8 @@
     <Compile Include="Typed\NoMatchingConstructorException.cs" />
     <Compile Include="Typed\Outstanding.cs" />
     <Compile Include="Typed\Registration.cs" />
-    <Compile Include="Typed\TypedMulticastSocket.cs" />
     <Compile Include="Typed\TypedSocketOptions.cs" />
     <Compile Include="Typed\TypedSocket.cs" />
-    <Compile Include="Typed\TypedUnicastSocket.cs" />
-    <Compile Include="UnicastSocket.cs" />
   </ItemGroup>
   <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
