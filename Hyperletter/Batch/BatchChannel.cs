@@ -18,8 +18,7 @@ namespace Hyperletter.Batch {
         private readonly object _syncRoot = new object();
         private bool _canSend;
 
-        private Stopwatch _stopwatch = new Stopwatch();
-        private DateTime __firstEnqueueAt;
+        private readonly Stopwatch _stopwatch = new Stopwatch();
         private bool _sentBatch;
 
         public event Action<IChannel> ChannelConnected;
@@ -143,11 +142,7 @@ namespace Hyperletter.Batch {
         }
 
         private void ChannelOnReceived(IChannel channel, ILetter letter) {
-            if(letter.Type == LetterType.Batch) {
-                UnpackBatch(letter, data => Received(this, _letterSerializer.Deserialize(data)));
-            } else {
-                Received(this, letter);
-            }
+            Received(this, letter);
         }
 
         private void ChannelOnFailedToSend(IChannel channel, ILetter letter) {
@@ -158,11 +153,6 @@ namespace Hyperletter.Batch {
                 FailedQueuedLetters();
             else
                 FailedToSend(this, letter);
-        }
-
-        private void UnpackBatch(ILetter letter, Action<byte[]> callback) {
-            for(var i = 0; i < letter.Parts.Length; i++)
-                callback(letter.Parts[i]);
         }
     }
 }

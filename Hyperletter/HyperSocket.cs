@@ -12,8 +12,9 @@ namespace Hyperletter {
         private readonly ConcurrentDictionary<Binding, SocketListener> _listeners = new ConcurrentDictionary<Binding, SocketListener>();
         private readonly ConcurrentDictionary<Binding, IChannel> _channels = new ConcurrentDictionary<Binding, IChannel>();
         private readonly ConcurrentDictionary<Guid, IChannel> _routeChannels = new ConcurrentDictionary<Guid, IChannel>();
-       
+
         private readonly LetterDispatcher _letterDispatcher;
+
         internal LetterSerializer LetterSerializer { get; private set; }
 
         public SocketOptions Options { get; private set; }
@@ -71,7 +72,7 @@ namespace Hyperletter {
         }
 
         private void HookupChannel(IChannel channel) {
-            if (Options.Batch.Enabled)
+            if(Options.Batch.Enabled)
                 channel = new BatchChannel(this, channel);
 
             channel.Received += ChannelReceived;
@@ -99,7 +100,7 @@ namespace Hyperletter {
         private void ChannelDisconnected(IChannel channel) {
             channel.Dispose();
 
-            var binding = channel.Binding;
+            Binding binding = channel.Binding;
             _channels.Remove(binding);
             _routeChannels.Remove(channel.ConnectedTo);
 
@@ -111,7 +112,15 @@ namespace Hyperletter {
         }
 
         private void ChannelReceived(IChannel channel, ILetter letter) {
-            if(Received != null) Received(this, letter);
+            if(Received == null)
+                return;
+
+            if(letter.Type == LetterType.Batch) {
+                for(int i = 0; i < letter.Parts.Length; i++)
+                    Received(this, LetterSerializer.Deserialize(letter.Parts[i]));
+            } else {
+                Received(this, letter);
+            }
         }
 
         private void ChannelSent(IChannel channel, ILetter letter) {
