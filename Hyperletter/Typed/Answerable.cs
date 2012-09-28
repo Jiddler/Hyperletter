@@ -6,9 +6,9 @@ namespace Hyperletter.Typed {
         public static LetterOptions AnswerDefaultOptions = LetterOptions.Answer | LetterOptions.Ack | LetterOptions.UniqueId;
 
         private readonly ILetter _letter;
-        private readonly TypedSocket _socket;
+        private readonly TypedHyperSocket _socket;
 
-        public Answerable(TypedSocket socket, ILetter letter, TMessage value) {
+        public Answerable(TypedHyperSocket socket, ILetter letter, TMessage value) {
             _socket = socket;
             _letter = letter;
             Message = value;

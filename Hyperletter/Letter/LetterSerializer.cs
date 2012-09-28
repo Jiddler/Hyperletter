@@ -38,7 +38,7 @@ namespace Hyperletter.Letter {
             ms.Position = 4;
             ms.WriteByte((byte) letter.Type);
             ms.WriteByte((byte) letter.Options);
-            if(letter.Options.IsSet(LetterOptions.UniqueId))
+            if(letter.Options.HasFlag(LetterOptions.UniqueId))
                 ms.Write(letter.Id.ToByteArray(), 0, 16);
         }
 
@@ -61,7 +61,7 @@ namespace Hyperletter.Letter {
             letter.Type = (LetterType) serializedLetter[position++];
             letter.Options = (LetterOptions) serializedLetter[position++];
 
-            if(letter.Options.IsSet(LetterOptions.UniqueId)) {
+            if(letter.Options.HasFlag(LetterOptions.UniqueId)) {
                 letter.Id = new Guid(GetByteRange(serializedLetter, 6, 16));
                 position += 16;
             }

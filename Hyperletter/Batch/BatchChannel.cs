@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Concurrent;
+using System.Diagnostics;
 using System.Timers;
 using Hyperletter.Channel;
 using Hyperletter.Extension;
@@ -17,7 +18,8 @@ namespace Hyperletter.Batch {
         private readonly object _syncRoot = new object();
         private bool _canSend;
 
-        private DateTime _firstEnqueueAt;
+        private Stopwatch _stopwatch = new Stopwatch();
+        private DateTime __firstEnqueueAt;
         private bool _sentBatch;
 
         public event Action<IChannel> ChannelConnected;
@@ -31,7 +33,7 @@ namespace Hyperletter.Batch {
 
         public BatchChannel(HyperSocket hyperSocket, IChannel channel) {
             _channel = channel;
-            _options = hyperSocket.Options.BatchOptions;
+            _options = hyperSocket.Options.Batch;
 
             _letterSerializer = hyperSocket.LetterSerializer;
             _batchBuilder = new BatchLetterBuilder(_options.MaxLetters, _letterSerializer);
@@ -73,8 +75,8 @@ namespace Hyperletter.Batch {
             _slidingTimeoutTimer.Enabled = false;
             _slidingTimeoutTimer.Enabled = true;
 
-            if(_queue.Count == 0)
-                _firstEnqueueAt = DateTime.Now;
+            if(!_sentBatch)
+                _stopwatch.Restart();
 
             _queue.Enqueue(letter);
             _batchBuilder.Add(letter);
@@ -117,7 +119,7 @@ namespace Hyperletter.Batch {
                 if(_sentBatch)
                     return;
 
-                if(HasSomethingToSend() && (timeout || _batchBuilder.Count >= _options.MaxLetters || (DateTime.Now - _firstEnqueueAt).TotalMilliseconds >= _options.MaxExtend.TotalMilliseconds)) {
+                if(HasSomethingToSend() && (timeout || _batchBuilder.Count >= _options.MaxLetters || _stopwatch.ElapsedMilliseconds >= _options.MaxExtend.TotalMilliseconds)) {
                     _sentBatch = true;
                     _channel.Enqueue(_batchBuilder.Build());
                 }

@@ -71,7 +71,7 @@ namespace Hyperletter {
         }
 
         private void HookupChannel(IChannel channel) {
-            if (Options.BatchOptions.Enabled)
+            if (Options.Batch.Enabled)
                 channel = new BatchChannel(this, channel);
 
             channel.Received += ChannelReceived;
@@ -119,14 +119,14 @@ namespace Hyperletter {
         }
 
         protected void Discard(IChannel channel, ILetter letter) {
-            if(Discarded != null && !letter.Options.IsSet(LetterOptions.SilentDiscard))
+            if(Discarded != null && !letter.Options.HasFlag(LetterOptions.SilentDiscard))
                 Discarded(this, channel.Binding, letter);
         }
 
         protected void ChannelFailedToSend(IChannel channel, ILetter letter) {
-            if(letter.Options.IsSet(LetterOptions.Multicast)) {
+            if(letter.Options.HasFlag(LetterOptions.Multicast)) {
                 Discard(channel, letter);
-            } else if(letter.Options.IsSet(LetterOptions.Requeue)) {
+            } else if(letter.Options.HasFlag(LetterOptions.Requeue)) {
                 _letterDispatcher.EnqueueLetter(letter);
                 if(Requeued != null) Requeued(letter);
             } else {

@@ -49,8 +49,10 @@ namespace Hyperletter.Channel {
         }
 
         public EnqueueResult Enqueue(ILetter letter) {
-            if (!IsConnected)
+            if (!IsConnected) {
                 FailedToSend(this, letter);
+                return EnqueueResult.CantEnqueueMore;
+            }
 
             _queue.Enqueue(letter);
             _transmitter.Enqueue(letter);
@@ -108,7 +110,7 @@ namespace Hyperletter.Channel {
             if(receivedLetter.Type == LetterType.Ack) {
                 HandleLetterSent(_queue.Dequeue());
             } else {
-                if(receivedLetter.Options.IsSet(LetterOptions.Ack))
+                if(receivedLetter.Options.HasFlag(LetterOptions.Ack))
                     QueueAck(receivedLetter);
                 else
                     HandleReceivedLetter(receivedLetter);
@@ -120,7 +122,7 @@ namespace Hyperletter.Channel {
 
             if(sentLetter.Type == LetterType.Ack)
                 HandleAckSent();
-            else if(!sentLetter.Options.IsSet(LetterOptions.Ack))
+            else if(!sentLetter.Options.HasFlag(LetterOptions.Ack))
                 HandleLetterSent(_queue.Dequeue());
         }
 
@@ -173,8 +175,10 @@ namespace Hyperletter.Channel {
             IsConnected = false;
 
             try {
-                TcpClient.Client.Disconnect(false);
-                TcpClient.Client.Dispose();
+                if (TcpClient.Client != null) {
+                    TcpClient.Client.Disconnect(false);
+                    TcpClient.Client.Dispose();
+                }
                 TcpClient.Close();
             } catch(Exception) {
             }

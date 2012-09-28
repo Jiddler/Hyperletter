@@ -10,7 +10,7 @@ using Hyperletter.Extension;
 namespace Hyperletter.Typed {
     public delegate void AnswerCallback<TRequest, TReply>(ITypedSocket socket, AnswerCallbackEventArgs<TRequest, TReply> args);
 
-    public class TypedSocket : ITypedSocket {
+    public class TypedHyperSocket : ITypedSocket {
         private readonly ITypedHandlerFactory _handlerFactory;
 
         private readonly ConcurrentDictionary<Guid, Outstanding> _outstandings = new ConcurrentDictionary<Guid, Outstanding>();
@@ -22,9 +22,12 @@ namespace Hyperletter.Typed {
         public TypedSocketOptions Options { get { return _options; } }
         public IHyperSocket Socket { get { return _socket; } }
 
-        public TypedSocket(TypedSocketOptions options, ITypedHandlerFactory handlerFactory, ITransportSerializer serializer) {
+        public TypedHyperSocket(ITypedHandlerFactory handlerFactory, ITransportSerializer serializer) : this(new TypedSocketOptions(), handlerFactory, serializer) {
+        }
+
+        public TypedHyperSocket(TypedSocketOptions options, ITypedHandlerFactory handlerFactory, ITransportSerializer serializer) {
             _options = options;
-            _socket = new HyperSocket(options.SocketOptions);
+            _socket = new HyperSocket(options.Socket);
             _socket.Received += SocketOnReceived;
             _handlerFactory = handlerFactory;
 

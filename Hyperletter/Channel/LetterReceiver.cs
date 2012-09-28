@@ -10,11 +10,11 @@ namespace Hyperletter.Channel {
         private readonly byte[] _lengthBuffer = new byte[4];
         private readonly LetterSerializer _letterSerializer;
 
-        private readonly MemoryStream _receiveBuffer = new MemoryStream();
-
         private readonly SocketAsyncEventArgs _receiveEventArgs = new SocketAsyncEventArgs();
         private readonly Socket _socket;
         private readonly byte[] _tcpReceiveBuffer = new byte[4096];
+
+        private MemoryStream _receiveBuffer = new MemoryStream();
 
         private int _currentLength;
         private int _lengthPosition;
@@ -85,7 +85,7 @@ namespace Hyperletter.Channel {
                     return;
 
                 ILetter letter = _letterSerializer.Deserialize(_receiveBuffer.ToArray());
-                _receiveBuffer.SetLength(0);
+                _receiveBuffer = new MemoryStream();
                 _currentLength = 0;
 
                 if(letter.Type != LetterType.Heartbeat)

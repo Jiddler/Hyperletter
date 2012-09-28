@@ -9,9 +9,9 @@ namespace Hyperletter.Typed {
     internal class DelegateOutstanding<TRequest, TReply> : DelegateOutstanding {
         private readonly AnswerCallback<TRequest, TReply> _callback;
         private readonly TRequest _request;
-        private readonly TypedSocket _socket;
+        private readonly TypedHyperSocket _socket;
 
-        public DelegateOutstanding(TypedSocket socket, TRequest request, AnswerCallback<TRequest, TReply> callback) {
+        public DelegateOutstanding(TypedHyperSocket socket, TRequest request, AnswerCallback<TRequest, TReply> callback) {
             _socket = socket;
             _request = request;
             _callback = callback;

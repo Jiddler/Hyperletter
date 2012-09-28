@@ -10,7 +10,7 @@ namespace ConnectTest {
 
         private static void Main() {
             var socketOptions = new SocketOptions();
-            var unicastSocket = new UnicastSocket(socketOptions);
+            var unicastSocket = new HyperSocket(socketOptions);
 
             int sent = 0;
 
@@ -67,10 +67,9 @@ namespace ConnectTest {
             Console.WriteLine("RECEIVED: " + received);
         }
 
-        private static void SendXLetters(UnicastSocket unicastSocket, int numberToSend) {
+        private static void SendXLetters(HyperSocket unicastSocket, int numberToSend) {
             for(int i = 0; i < numberToSend; i++)
-                unicastSocket.Send(new Letter
-                                   {Options = LetterOptions.Ack | LetterOptions.Requeue, Type = LetterType.User, Parts = new[] {Encoding.Unicode.GetBytes("Hej " + i)}});
+                unicastSocket.Send(new Letter {Options = LetterOptions.Ack | LetterOptions.Requeue, Type = LetterType.User, Parts = new[] {Encoding.Unicode.GetBytes("Hej " + i)}});
         }
     }
 }

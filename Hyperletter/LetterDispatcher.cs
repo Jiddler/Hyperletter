@@ -71,7 +71,7 @@ namespace Hyperletter {
         }
 
         private static bool IsMulticastLetter(ILetter letter) {
-            return letter.Options == LetterOptions.Multicast;
+            return letter.Options.HasFlag(LetterOptions.Multicast);
         }
 
         private void SendMulticastLetter(ILetter letter) {

@@ -4,10 +4,10 @@ using Hyperletter.Letter;
 
 namespace Hyperletter.Typed {
     internal class BlockingOutstanding<TResult> : Outstanding {
-        private readonly TypedSocket _socket;
+        private readonly TypedHyperSocket _socket;
         private readonly ManualResetEventSlim _waitLock = new ManualResetEventSlim();
 
-        public BlockingOutstanding(TypedSocket socket) {
+        public BlockingOutstanding(TypedHyperSocket socket) {
             _socket = socket;
         }
 
