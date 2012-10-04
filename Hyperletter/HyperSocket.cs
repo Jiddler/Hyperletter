@@ -38,14 +38,6 @@ namespace Hyperletter {
             _letterDispatcher = new LetterDispatcher(this);
         }
 
-        public void Dispose() {
-            foreach(var listener in _listeners.Values)
-                listener.Dispose();
-
-            foreach(var channel in _channels.Values)
-                channel.Dispose();
-        }
-
         public void Bind(IPAddress ipAddress, int port) {
             var binding = new Binding(ipAddress, port);
 
@@ -62,6 +54,10 @@ namespace Hyperletter {
             channel.Connect();
         }
 
+        public void Send(ILetter letter) {
+            _letterDispatcher.EnqueueLetter(letter);
+        }
+
         public void Answer(ILetter answer, ILetter answeringTo) {
             Guid address = answeringTo.Address[0];
 
@@ -69,6 +65,14 @@ namespace Hyperletter {
             if(_routeChannels.TryGetValue(address, out channel)) {
                 channel.Enqueue(answer);
             }
+        }
+
+        public void Dispose() {
+            foreach(var listener in _listeners.Values)
+                listener.Dispose();
+
+            foreach(var channel in _channels.Values)
+                channel.Dispose();
         }
 
         private void HookupChannel(IChannel channel) {
@@ -81,8 +85,8 @@ namespace Hyperletter {
             channel.ChannelDisconnected += ChannelDisconnected;
             channel.ChannelConnected += ChannelConnected;
             channel.ChannelInitialized += ChannelInitialized;
-            channel.ChannelQueueEmpty += ChannelCanSend;
-            channel.ChannelInitialized += ChannelCanSend;
+            channel.ChannelQueueEmpty += ChannelAvailable;
+            channel.ChannelInitialized += ChannelAvailable;
 
             _channels[channel.Binding] = channel;
             channel.Initialize();
@@ -100,7 +104,7 @@ namespace Hyperletter {
         private void ChannelDisconnected(IChannel channel) {
             channel.Dispose();
 
-            Binding binding = channel.Binding;
+            var binding = channel.Binding;
             _channels.Remove(binding);
             _routeChannels.Remove(channel.ConnectedTo);
 
@@ -127,28 +131,29 @@ namespace Hyperletter {
             if(Sent != null) Sent(this, letter);
         }
 
-        protected void Discard(IChannel channel, ILetter letter) {
-            if(Discarded != null && !letter.Options.HasFlag(LetterOptions.SilentDiscard))
-                Discarded(this, channel.Binding, letter);
-        }
-
-        protected void ChannelFailedToSend(IChannel channel, ILetter letter) {
+        private void ChannelFailedToSend(IChannel channel, ILetter letter) {
             if(letter.Options.HasFlag(LetterOptions.Multicast)) {
                 Discard(channel, letter);
             } else if(letter.Options.HasFlag(LetterOptions.Requeue)) {
-                _letterDispatcher.EnqueueLetter(letter);
-                if(Requeued != null) Requeued(letter);
+                Requeue(letter);
             } else {
                 Discard(channel, letter);
             }
         }
 
-        private void ChannelCanSend(IChannel channel) {
-            _letterDispatcher.EnqueueChannel(channel);
+        private void Discard(IChannel channel, ILetter letter) {
+            if(Discarded != null && !letter.Options.HasFlag(LetterOptions.SilentDiscard))
+                Discarded(this, channel.Binding, letter);
         }
 
-        public void Send(ILetter letter) {
+        private void Requeue(ILetter letter) {
             _letterDispatcher.EnqueueLetter(letter);
+            if(Requeued != null)
+                Requeued(letter);
+        }
+
+        private void ChannelAvailable(IChannel channel) {
+            _letterDispatcher.EnqueueChannel(channel);
         }
     }
 }
