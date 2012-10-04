@@ -36,7 +36,7 @@ namespace Hyperletter {
 
         private void SendTask() {
             while(true) {
-                ILetter letter = GetNextLetter();
+                var letter = GetNextLetter();
                 if(IsMulticastLetter(letter))
                     SendMulticastLetter(letter);
                 else
@@ -45,10 +45,10 @@ namespace Hyperletter {
         }
 
         private void SendUnicastLetter(ILetter letter) {
-            IChannel channel = GetNextChannel();
+            var channel = GetNextChannel();
 
             _queuedChannels.Remove(channel.Binding);
-            EnqueueResult result = channel.Enqueue(letter);
+            var result = channel.Enqueue(letter);
 
             if(result == EnqueueResult.CanEnqueueMore) {
                 _channelQueue.Add(channel);
@@ -62,7 +62,7 @@ namespace Hyperletter {
 
         private IChannel GetNextChannel() {
             while(true) {
-                IChannel channel = _channelQueue.Take();
+                var channel = _channelQueue.Take();
                 if(!channel.IsConnected)
                     continue;
 
@@ -75,7 +75,7 @@ namespace Hyperletter {
         }
 
         private void SendMulticastLetter(ILetter letter) {
-            foreach(IChannel channel in _hyperSocket.Channels) {
+            foreach(var channel in _hyperSocket.Channels) {
                 channel.Enqueue(letter);
             }
         }
