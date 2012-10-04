@@ -1,6 +1,6 @@
 using System;
 
-namespace Hyperletter {
+namespace Hyperletter.Typed {
     public class Metadata {
         public Metadata() {
         }
