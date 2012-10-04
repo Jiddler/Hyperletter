@@ -1,6 +1,5 @@
 using System;
 using System.IO;
-using Hyperletter.Extension;
 
 namespace Hyperletter.Letter {
     internal class LetterSerializer {

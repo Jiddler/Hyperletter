@@ -61,7 +61,6 @@
     <Compile Include="Letter\LetterOptions.cs" />
     <Compile Include="Letter\LetterSerializer.cs" />
     <Compile Include="Letter\LetterType.cs" />
-    <Compile Include="Metadata.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SocketListener.cs" />
     <Compile Include="SocketOptions.cs" />
@@ -77,6 +76,7 @@
     <Compile Include="Typed\ITypedHandler.cs" />
     <Compile Include="Typed\ITypedHandlerFactory.cs" />
     <Compile Include="Typed\ITypedSocket.cs" />
+    <Compile Include="Typed\Metadata.cs" />
     <Compile Include="Typed\NoMatchingConstructorException.cs" />
     <Compile Include="Typed\Outstanding.cs" />
     <Compile Include="Typed\Registration.cs" />

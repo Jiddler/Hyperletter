@@ -2,9 +2,7 @@ using System;
 using Hyperletter.Letter;
 
 namespace Hyperletter.Typed {
-    internal class Answerable<TMessage> : IAnswerable<TMessage> {
-        public static LetterOptions AnswerDefaultOptions = LetterOptions.Answer | LetterOptions.Ack | LetterOptions.UniqueId;
-
+    internal class Answerable<TMessage> : AbstractAnswerable, IAnswerable<TMessage> {
         private readonly ILetter _letter;
         private readonly TypedHyperSocket _socket;
 
