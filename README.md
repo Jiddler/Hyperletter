@@ -1,16 +1,19 @@
 # Hyperletter
 
+Thanks to Jetbrains for supporting Hyperletter with ReSharper!  
+[![The Most Intelligent Add-In To Visual Studio](http://www.jetbrains.com/resharper/features/rs/rs1/rs125x37_violet.gif)](http://www.jetbrains.com/)
+
 ## Version
-We´re currently on V1.3. See below for product roadmap under "Whats next".
+Weï¿½re currently on V1.3. See below for product roadmap under "Whats next".
 
 ## Concept
 You can think of Hyperletter as a mix between ZMQ and WCF. ZMQ is great for speedy applications but is you need to do a lot of extra work to make sure its reliable. WCF on the other hand is reliable but is a hassle to work with.
 
 In ZMQ you have a lot of different socket pairs, in Hyperletter you have only two. HyperSocket and TypedHyperSocket. All sockets can receive and transmit. No matter who is bound or connected.
 
-In ZMQ you´re working with a black box, you put something in and you have no clue when it was delivered or discarded. You don’t even know if somebody are connected to you or if you´re connected to someone else.
+In ZMQ youï¿½re working with a black box, you put something in and you have no clue when it was delivered or discarded. You donï¿½t even know if somebody are connected to you or if youï¿½re connected to someone else.
 
-Hyperletter tries to be as transparent as possible with callbacks for all events so you´re code can act on them.
+Hyperletter tries to be as transparent as possible with callbacks for all events so youï¿½re code can act on them.
 
 ## Reliability
 Hyperletter lets you decide what delivery guarantee you want. You have options like:  
@@ -20,11 +23,11 @@ This options is per letter (not per socket) so you can send one message which yo
 
 Hyperletter can queue letters until a connection is established.
 
-Hyperletter _does not_ persist the queues on disk (see what’s next below), so if you´re application crashes you´re queued data is lost.
-You can build disk caching if you want to; listen to the Sent-event to know when to delete it from you´re persistence. We´re going to include this feature in the future.
+Hyperletter _does not_ persist the queues on disk (see whatï¿½s next below), so if youï¿½re application crashes youï¿½re queued data is lost.
+You can build disk caching if you want to; listen to the Sent-event to know when to delete it from youï¿½re persistence. Weï¿½re going to include this feature in the future.
 
 ## Multicast
-If socket A is connected to B and C and want to send a letter to both of them, just put LetterOptions.Multicast on the letter you´re sending and Hyperletter will handle the rest.
+If socket A is connected to B and C and want to send a letter to both of them, just put LetterOptions.Multicast on the letter youï¿½re sending and Hyperletter will handle the rest.
 
 ## Answering
 Hyperletter supports answering to letters, like WCF-calls. You can choose between send and block until answer is received or send and callback when answer is received.
@@ -34,7 +37,7 @@ On my laptop, I5 something.
 
 _With TCP-batching turned off:_ Hyperletter can send around 20k letters/second with application level ACKs and around 60k letters/second with the NoAck option.
 
-_With TCP-batching turned on:_ Depends on configuration, we´ve seen results between 90k and 900k letters/second. If one of the batched letters requires and ACK the batch as a whole will be ACK:ed and therefore its no big performance difference between ack:ed or non-ack:ed mode.
+_With TCP-batching turned on:_ Depends on configuration, weï¿½ve seen results between 90k and 900k letters/second. If one of the batched letters requires and ACK the batch as a whole will be ACK:ed and therefore its no big performance difference between ack:ed or non-ack:ed mode.
 
 Even in no-ack mode Hyperletter will still detect network most failures (on the TCP-level) and requeue those letters if the Requeue option is set on the letter.
 
@@ -106,7 +109,7 @@ V1 is considered complete, and stable. Bug fixes will be done on a regular basis
 Internal refactoring of the core queuing parts
 
 ### V3. Make use of the addresses
-if you´re building chains of sockets and you send a letter from A via B to C and C decides to answer, the letter should get back to A no matter if B is connected to multiple sockets.
+if youï¿½re building chains of sockets and you send a letter from A via B to C and C decides to answer, the letter should get back to A no matter if B is connected to multiple sockets.
 
 ## Protocol specification
 ### Header
