@@ -46,8 +46,6 @@ namespace Hyperletter {
 
         private void SendUnicastLetter(ILetter letter) {
             var channel = GetNextChannel();
-
-            _queuedChannels.Remove(channel.Binding);
             var result = channel.Enqueue(letter);
 
             if(result == EnqueueResult.CanEnqueueMore) {
@@ -63,6 +61,8 @@ namespace Hyperletter {
         private IChannel GetNextChannel() {
             while(true) {
                 var channel = _channelQueue.Take();
+                _queuedChannels.Remove(channel.Binding);
+
                 if(!channel.IsConnected)
                     continue;
 
