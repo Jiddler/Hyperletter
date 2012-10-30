@@ -24,7 +24,7 @@ namespace BindTest {
                 }
             };
 
-            unicastSocket.Disconnected += (socket, binding) => Console.WriteLine("DISCONNECTED " + binding);
+            unicastSocket.Disconnected += (socket, binding, reason) => Console.WriteLine("DISCONNECTED " + binding);
             unicastSocket.Connected += (socket, binding) => Console.WriteLine("CONNECTED " + binding);
 
             int received = 0;
@@ -56,7 +56,7 @@ namespace BindTest {
                     Console.WriteLine("KILLED SOCKET");
                 } else
                     for(int m = 0; m < 1000; m++)
-                        unicastSocket.Send(new Letter {Type = LetterType.User, Parts = new[] {new[] {(byte) 'A'}}});
+                        unicastSocket.Send(new Letter {Type = LetterType.User, Options = LetterOptions.Multicast, Parts = new[] {new[] {(byte) 'A'}}});
             }
 
             unicastSocket.Dispose();

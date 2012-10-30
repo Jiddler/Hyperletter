@@ -64,28 +64,30 @@ namespace Hyperletter.Typed {
         }
 
         public void Send<T>(T value, LetterOptions options = LetterOptions.None) {
-            _socket.Send(CreateLetter(value, options));
+            _socket.Send(CreateLetter(value, options, Guid.NewGuid()));
         }
 
         public IAnswerable<TReply> Send<TValue, TReply>(TValue value, LetterOptions options = LetterOptions.None) {
-            Letter.Letter letter = CreateLetter(value, options | LetterOptions.UniqueId);
+            var conversationId = Guid.NewGuid();
+            var letter = CreateLetter(value, options, conversationId);
             var outstanding = new BlockingOutstanding<TReply>(this);
-            _outstandings.Add(letter.Id, outstanding);
+            _outstandings.Add(conversationId, outstanding);
             _socket.Send(letter);
 
             try {
                 outstanding.Wait();
             } finally {
-                _outstandings.Remove(letter.Id);
+                _outstandings.Remove(conversationId);
             }
 
             return outstanding.Result;
         }
 
         public void Send<TRequest, TReply>(TRequest request, AnswerCallback<TRequest, TReply> callback, LetterOptions options = LetterOptions.None) {
-            Letter.Letter letter = CreateLetter(request, options | LetterOptions.UniqueId);
+            var conversationId = Guid.NewGuid();
+            var letter = CreateLetter(request, options, conversationId);
             var outstanding = new DelegateOutstanding<TRequest, TReply>(this, request, callback);
-            _outstandings.Add(letter.Id, outstanding);
+            _outstandings.Add(conversationId, outstanding);
 
             _socket.Send(letter);
         }
@@ -103,82 +105,75 @@ namespace Hyperletter.Typed {
                 return;
 
             var metadata = Serializer.Deserialize<Metadata>(letter.Parts[0]);
-            Type messageType = Type.GetType(metadata.Type);
+            var messageType = Type.GetType(metadata.Type);
             if(messageType == null)
                 return;
 
             TriggerOutstanding(metadata, letter);
-            TriggerRegistrations(messageType, letter);
+            TriggerRegistrations(messageType, metadata, letter);
         }
 
-        private void TriggerRegistrations(Type type, ILetter letter) {
-            IEnumerable<Registration> registrations = GetMatchingRegistrations(type);
+        private void TriggerRegistrations(Type type, Metadata metadata, ILetter letter) {
+            var registrations = GetMatchingRegistrations(type);
 
-            foreach(Registration registration in registrations)
-                registration.Invoke(this, letter, type);
+            foreach(var registration in registrations)
+                registration.Invoke(this, letter, metadata, type);
         }
 
         private IEnumerable<Registration> GetMatchingRegistrations(Type type) {
-            foreach(Registration registration in _registry.Get(type))
+            foreach(var registration in _registry.Get(type))
                 yield return registration;
 
-            foreach(Type interfaceType in type.GetInterfaces()) {
-                foreach(Registration registration in _registry.Get(interfaceType))
+            foreach(var interfaceType in type.GetInterfaces()) {
+                foreach(var registration in _registry.Get(interfaceType))
                     yield return registration;
             }
         }
 
         private void TriggerOutstanding(Metadata metadata, ILetter letter) {
-            if(letter.Id == Guid.Empty)
-                return;
-
             Outstanding outstanding;
-            if(_outstandings.TryGetValue(letter.Id, out outstanding)) {
+            if (_outstandings.TryGetValue(metadata.ConversationId, out outstanding)) {
                 outstanding.SetResult(metadata, letter);
-                _outstandings.Remove(letter.Id);
+                _outstandings.Remove(metadata.ConversationId);
             }
         }
 
-        internal void Answer<T>(T value, ILetter answeringTo, LetterOptions options) {
-            _socket.Answer(CreateAnswer(value, answeringTo, options), answeringTo);
+        internal void Answer<T>(T value, AbstractAnswerable answerable, LetterOptions options) {
+            _socket.SendTo(CreateLetter(value, options, answerable.ConversationId), answerable.ReceivedFrom);
         }
 
-        internal void Answer<TRequest, TReply>(TRequest value, ILetter answeringTo, LetterOptions options, AnswerCallback<TRequest, TReply> callback) {
-            ILetter letter = CreateAnswer(value, answeringTo, options | LetterOptions.Answer | LetterOptions.UniqueId | LetterOptions.Ack);
+        internal void Answer<TRequest, TReply>(TRequest value, AbstractAnswerable answerable, LetterOptions options, AnswerCallback<TRequest, TReply> callback) {
+            var letter = CreateLetter(value, options | LetterOptions.Ack, answerable.ConversationId);
             var outstanding = new DelegateOutstanding<TRequest, TReply>(this, value, callback);
-            _outstandings.Add(letter.Id, outstanding);
+            _outstandings.Add(answerable.ConversationId, outstanding);
 
-            _socket.Answer(letter, answeringTo);
+            _socket.SendTo(letter, answerable.ReceivedFrom);
         }
 
-        internal IAnswerable<TReply> Answer<TValue, TReply>(TValue value, ILetter answeringTo, LetterOptions options) {
-            ILetter letter = CreateAnswer(value, answeringTo, options);
+        internal IAnswerable<TReply> Answer<TValue, TReply>(TValue value, AbstractAnswerable answerable, LetterOptions options) {
+            var letter = CreateLetter(value, options, answerable.ConversationId);
             var outstanding = new BlockingOutstanding<TReply>(this);
-            _outstandings.Add(letter.Id, outstanding);
+            _outstandings.Add(answerable.ConversationId, outstanding);
 
-            _socket.Answer(letter, answeringTo);
+            _socket.SendTo(letter, answerable.ReceivedFrom);
 
             try {
                 outstanding.Wait();
             } finally {
-                _outstandings.Remove(letter.Id);
+                _outstandings.Remove(answerable.ConversationId);
             }
 
             return outstanding.Result;
         }
 
-        internal ILetter CreateAnswer<TAnswer>(TAnswer answer, ILetter answeringTo, LetterOptions options) {
-            Letter.Letter letter = CreateLetter(answer, options);
-            letter.Id = answeringTo.Id;
-            return letter;
-        }
+        private ILetter CreateLetter<T>(T value, LetterOptions options, Guid conversationId) {
+            var metadata = new Metadata(value.GetType()) { ConversationId = conversationId };
 
-        private Letter.Letter CreateLetter<T>(T value, LetterOptions options) {
-            var letter = new Letter.Letter(options) { Type = LetterType.User };
-            var metadata = new Metadata(value.GetType());
-            letter.Parts = new byte[2][];
-            letter.Parts[0] = Serializer.Serialize(metadata);
-            letter.Parts[1] = Serializer.Serialize(value);
+            var parts = new byte[2][];
+            parts[0] = Serializer.Serialize(metadata);
+            parts[1] = Serializer.Serialize(value);
+            
+            var letter = new Letter.Letter(options) { Type = LetterType.User, Parts = parts };
 
             return letter;
         }

@@ -1,12 +1,15 @@
 using System;
 using System.Net.Sockets;
 using System.Threading;
+using Hyperletter.Letter;
 
 namespace Hyperletter.Channel {
-    public class OutboundChannel : AbstractChannel {
+    internal class OutboundChannel : AbstractChannel {
         private bool _connecting;
 
-        public OutboundChannel(HyperSocket hyperSocket, Binding binding) : base(hyperSocket, binding) {
+        public event Action<IChannel> ChannelConnecting;
+
+        public OutboundChannel(SocketOptions options, Binding binding, LetterDeserializer letterDeserializer, HyperletterFactory factory) : base(options, binding, letterDeserializer, factory) {
         }
 
         public override Direction Direction {
@@ -22,6 +25,7 @@ namespace Hyperletter.Channel {
                 return;
 
             _connecting = true;
+            ChannelConnecting(this);
 
             TcpClient = new TcpClient();
             try {

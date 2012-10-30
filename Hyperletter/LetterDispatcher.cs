@@ -1,4 +1,7 @@
-﻿using System.Collections.Concurrent;
+﻿using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using Hyperletter.Channel;
 using Hyperletter.Letter;
@@ -7,16 +10,19 @@ using Hyperletter.Extension;
 namespace Hyperletter {
     internal class LetterDispatcher {
         private readonly HyperSocket _hyperSocket;
+        private readonly CancellationToken _cancellationToken;
 
-        private readonly ConcurrentDictionary<Binding, IChannel> _queuedChannels;
+        private readonly HashSet<IChannel> _queuedChannels;
         private readonly BlockingCollection<IChannel> _channelQueue;
 
         private readonly BlockingCollection<ILetter> _blockingSendQueue;
         private readonly ConcurrentQueue<ILetter> _sendQueue;
 
-        public LetterDispatcher(HyperSocket hyperSocket) {
+        public LetterDispatcher(HyperSocket hyperSocket, CancellationToken cancellationToken) {
             _hyperSocket = hyperSocket;
-            _queuedChannels = new ConcurrentDictionary<Binding, IChannel>();
+            _cancellationToken = cancellationToken;
+
+            _queuedChannels = new HashSet<IChannel>();
             _channelQueue = new BlockingCollection<IChannel>();
 
             _sendQueue = new ConcurrentQueue<ILetter>();
@@ -30,17 +36,20 @@ namespace Hyperletter {
         }
 
         public void EnqueueChannel(IChannel channel) {
-            if (_queuedChannels.TryAdd(channel.Binding, channel))
+            if (_queuedChannels.Add(channel))
                 _channelQueue.Add(channel);
         }
 
         private void SendTask() {
-            while(true) {
-                var letter = GetNextLetter();
-                if(IsMulticastLetter(letter))
-                    SendMulticastLetter(letter);
-                else
-                    SendUnicastLetter(letter);
+            try {
+                while(true) {
+                    var letter = GetNextLetter();
+                    if(IsMulticastLetter(letter))
+                        SendMulticastLetter(letter);
+                    else
+                        SendUnicastLetter(letter);
+                }
+            } catch(OperationCanceledException) {
             }
         }
 
@@ -50,18 +59,18 @@ namespace Hyperletter {
 
             if(result == EnqueueResult.CanEnqueueMore) {
                 _channelQueue.Add(channel);
-                _queuedChannels.Add(channel.Binding, channel);
+                _queuedChannels.Add(channel);
             }
         }
 
         private ILetter GetNextLetter() {
-            return _blockingSendQueue.Take();
+            return _blockingSendQueue.Take(_cancellationToken);
         }
 
         private IChannel GetNextChannel() {
             while(true) {
-                var channel = _channelQueue.Take();
-                _queuedChannels.Remove(channel.Binding);
+                var channel = _channelQueue.Take(_cancellationToken);
+                _queuedChannels.Remove(channel);
 
                 if(!channel.IsConnected)
                     continue;

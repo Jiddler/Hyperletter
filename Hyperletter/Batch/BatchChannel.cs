@@ -7,10 +7,9 @@ using Hyperletter.Extension;
 using Hyperletter.Letter;
 
 namespace Hyperletter.Batch {
-    public class BatchChannel : IChannel {
+    internal class BatchChannel : IChannel {
         private readonly BatchLetterBuilder _batchBuilder;
         private readonly IChannel _channel;
-        private readonly LetterSerializer _letterSerializer;
         private readonly BatchOptions _options;
         private readonly ConcurrentQueue<ILetter> _queue = new ConcurrentQueue<ILetter>();
 
@@ -22,7 +21,7 @@ namespace Hyperletter.Batch {
         private bool _sentBatch;
 
         public event Action<IChannel> ChannelConnected;
-        public event Action<IChannel> ChannelDisconnected;
+        public event Action<IChannel, DisconnectReason> ChannelDisconnected;
         public event Action<IChannel> ChannelQueueEmpty;
         public event Action<IChannel> ChannelInitialized;
 
@@ -30,12 +29,10 @@ namespace Hyperletter.Batch {
         public event Action<IChannel, ILetter> Sent;
         public event Action<IChannel, ILetter> FailedToSend;
 
-        public BatchChannel(HyperSocket hyperSocket, IChannel channel) {
+        public BatchChannel(SocketOptions options, IChannel channel, BatchLetterBuilder batchBuilder) {
             _channel = channel;
-            _options = hyperSocket.Options.Batch;
-
-            _letterSerializer = hyperSocket.LetterSerializer;
-            _batchBuilder = new BatchLetterBuilder(_options.MaxLetters, _letterSerializer);
+            _options = options.Batch;
+            _batchBuilder = batchBuilder;
 
             _channel.ChannelConnected += abstractChannel => ChannelConnected(this);
             _channel.ChannelDisconnected += ChannelOnDisconnected;
@@ -54,8 +51,8 @@ namespace Hyperletter.Batch {
             get { return _channel.IsConnected; }
         }
 
-        public Guid ConnectedTo {
-            get { return _channel.ConnectedTo; }
+        public Guid RemoteNodeId {
+            get { return _channel.RemoteNodeId; }
         }
 
         public Binding Binding {
@@ -85,20 +82,24 @@ namespace Hyperletter.Batch {
             return _canSend ? EnqueueResult.CanEnqueueMore : EnqueueResult.CantEnqueueMore;
         }
 
-        public void Dispose() {
-            _channel.Dispose();
+        public void Heartbeat() {
+            _channel.Heartbeat();
         }
 
+        public void Disconnect() {
+            _channel.Disconnect();
+        }
+        
         private void ChannelOnInitialized(IChannel channel) {
             _canSend = true;
             ChannelInitialized(this);
         }
 
-        private void ChannelOnDisconnected(IChannel channel) {
+        private void ChannelOnDisconnected(IChannel channel, DisconnectReason reason) {
             _canSend = false;
 
             FailedQueuedLetters();
-            ChannelDisconnected(this);
+            ChannelDisconnected(this, reason);
         }
 
         private void FailedQueuedLetters() {

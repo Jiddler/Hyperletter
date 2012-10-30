@@ -6,13 +6,18 @@ using Hyperletter.Extension;
 using Hyperletter.Letter;
 
 namespace Hyperletter.Channel {
-    public abstract class AbstractChannel : IChannel {
-        private const int HeartbeatInterval = 1000;
-        private readonly Timer _heartbeat;
-        private readonly HyperSocket _hyperSocket;
+    internal abstract class AbstractChannel : IChannel {
+        private static readonly Letter.Letter AckLetter = new Letter.Letter { Type = LetterType.Ack };
+        private static readonly Letter.Letter HeartbeatLetter = new Letter.Letter {Type = LetterType.Heartbeat, Options = LetterOptions.SilentDiscard};
+
+        private readonly SocketOptions _options;
 
         private readonly ConcurrentQueue<ILetter> _queue = new ConcurrentQueue<ILetter>();
         private readonly ConcurrentQueue<ILetter> _receivedQueue = new ConcurrentQueue<ILetter>();
+        
+        private readonly LetterDeserializer _letterDeserializer;
+        private readonly HyperletterFactory _factory;
+
         protected bool Disposed;
         protected TcpClient TcpClient;
 
@@ -25,12 +30,12 @@ namespace Hyperletter.Channel {
         private LetterTransmitter _transmitter;
 
         public bool IsConnected { get; private set; }
-        public Guid ConnectedTo { get; private set; }
+        public Guid RemoteNodeId { get; private set; }
         public Binding Binding { get; private set; }
         public abstract Direction Direction { get; }
-
+        
         public event Action<IChannel> ChannelConnected;
-        public event Action<IChannel> ChannelDisconnected;
+        public event Action<IChannel, DisconnectReason> ChannelDisconnected;
         public event Action<IChannel> ChannelQueueEmpty;
         public event Action<IChannel> ChannelInitialized;
 
@@ -38,11 +43,11 @@ namespace Hyperletter.Channel {
         public event Action<IChannel, ILetter> Sent;
         public event Action<IChannel, ILetter> FailedToSend;
 
-        protected AbstractChannel(HyperSocket hyperSocket, Binding binding) {
-            _hyperSocket = hyperSocket;
+        protected AbstractChannel(SocketOptions options, Binding binding, LetterDeserializer letterDeserializer, HyperletterFactory factory) {
+            _options = options;
+            _letterDeserializer = letterDeserializer;
+            _factory = factory;
             Binding = binding;
-
-            _heartbeat = new Timer(Heartbeat);
         }
 
         public virtual void Initialize() {
@@ -62,27 +67,27 @@ namespace Hyperletter.Channel {
 
         public void Dispose() {
             Disposed = true;
-            DisconnectSocket();
+            DisconnectChannel(DisconnectReason.Requested);
         }
 
         protected void Connected() {
             IsConnected = true;
 
             _cancellationTokenSource = new CancellationTokenSource();
-
-            _transmitter = new LetterTransmitter(_hyperSocket.LetterSerializer, TcpClient, _cancellationTokenSource);
+            
+            _transmitter = _factory.CreateLetterTransmitter(TcpClient.Client, _cancellationTokenSource);
             _transmitter.Sent += TransmitterOnSent;
             _transmitter.SocketError += SocketError;
             _transmitter.Start();
 
-            _receiver = new LetterReceiver(_hyperSocket.LetterSerializer, TcpClient.Client, _cancellationTokenSource);
+            _receiver = _factory.CreateLetterReceiver(TcpClient.Client, _cancellationTokenSource);
             _receiver.Received += ReceiverReceived;
             _receiver.SocketError += SocketError;
             _receiver.Start();
 
             _initalizationCount = 0;
 
-            Enqueue(new Letter.Letter {Type = LetterType.Initialize, Options = LetterOptions.Ack, Parts = new[] {_hyperSocket.Options.Id.ToByteArray()}});
+            Enqueue(new Letter.Letter { Type = LetterType.Initialize, Options = LetterOptions.Ack, Parts = new[] { _options.NodeId.ToByteArray() } });
             ChannelConnected(this);
         }
 
@@ -91,17 +96,21 @@ namespace Hyperletter.Channel {
                 _initalizationCount++;
                 if(_initalizationCount == 2)
                     ChannelInitialized(this);
-
-                _heartbeat.Change(HeartbeatInterval, HeartbeatInterval);
             }
         }
 
-        private void Heartbeat(object state) {
-            if(_lastAction != _lastActionHeartbeat) {
+        public void Heartbeat() {
+            if (_initalizationCount != 2 || !IsConnected)
+                return;
+
+            if(_lastAction != _lastActionHeartbeat)
                 _lastActionHeartbeat = _lastAction;
-            } else {
-                Enqueue(new Letter.Letter {Type = LetterType.Heartbeat, Options = LetterOptions.SilentDiscard});
-            }
+            else
+                Enqueue(HeartbeatLetter);
+        }
+
+        public void Disconnect() {
+            DisconnectChannel(DisconnectReason.Requested);
         }
 
         private void ReceiverReceived(ILetter receivedLetter) {
@@ -127,55 +136,74 @@ namespace Hyperletter.Channel {
         }
 
         private void HandleAckSent() {
-            ILetter receivedLetter = _receivedQueue.Dequeue();
+            var receivedLetter = _receivedQueue.Dequeue();
             HandleReceivedLetter(receivedLetter);
         }
 
         private void HandleReceivedLetter(ILetter receivedLetter) {
-            if(receivedLetter.Type == LetterType.Initialize) {
-                ConnectedTo = new Guid(receivedLetter.Parts[0]);
-                HandleInitialize();
-            } else if(receivedLetter.Type == LetterType.User || receivedLetter.Type == LetterType.Batch) {
-                Received(this, receivedLetter);
+            switch(receivedLetter.Type) {
+                case LetterType.Initialize:
+                    RemoteNodeId = receivedLetter.RemoteNodeId;
+                    HandleInitialize();
+                    break;
+
+                case LetterType.User:
+                    Received(this, receivedLetter);
+                    break;
+
+                case LetterType.Batch:
+                    for(var i = 0; i < receivedLetter.Parts.Length; i++)
+                        Received(this, _letterDeserializer.Deserialize(RemoteNodeId, receivedLetter.Parts[i]));
+                    break;
             }
         }
 
         private void HandleLetterSent(ILetter sentLetter) {
-            if(sentLetter.Type == LetterType.Initialize) {
-                HandleInitialize();
-            } else if(sentLetter.Type == LetterType.User || sentLetter.Type == LetterType.Batch) {
-                Sent(this, sentLetter);
+            switch(sentLetter.Type) {
+                case LetterType.Initialize:
+                    HandleInitialize();
+                    break;
 
-                if(_queue.Count == 0 && ChannelQueueEmpty != null)
-                    ChannelQueueEmpty(this);
+                case LetterType.Batch:
+                case LetterType.User:
+                    Sent(this, sentLetter);
+                    if(_queue.Count == 0 && ChannelQueueEmpty != null)
+                        ChannelQueueEmpty(this);
+                    break;
             }
         }
 
         private void QueueAck(ILetter letter) {
             _receivedQueue.Enqueue(letter);
-            var ack = new Letter.Letter {Type = LetterType.Ack, Id = letter.Id, Options = (letter.Options & LetterOptions.UniqueId) == LetterOptions.UniqueId ? LetterOptions.UniqueId : LetterOptions.None};
-            _transmitter.Enqueue(ack);
+            _transmitter.Enqueue(AckLetter);
         }
 
-        private void SocketError() {
-            lock(this) {
-                _heartbeat.Change(Timeout.Infinite, Timeout.Infinite);
+        private void SocketError(DisconnectReason reason) {
+            DisconnectChannel(reason);
+        }
+
+        private void DisconnectChannel(DisconnectReason reason) {
+            lock (this) {
+                if (_cancellationTokenSource.IsCancellationRequested)
+                    return;
+
+                var wasConnected = IsConnected;
+                IsConnected = false;
+
                 _cancellationTokenSource.Cancel();
 
+                DisconnectSocket();
                 FailQueuedLetters();
 
-                if(IsConnected) {
-                    DisconnectSocket();
-                    ChannelDisconnected(this);
+                if (wasConnected) {
+                    ChannelDisconnected(this, reason);
                 }
             }
         }
 
         private void DisconnectSocket() {
-            IsConnected = false;
-
             try {
-                if (TcpClient.Client != null) {
+                if(TcpClient.Client != null) {
                     TcpClient.Client.Disconnect(false);
                     TcpClient.Client.Dispose();
                 }

@@ -106,10 +106,8 @@ See BindDispatcherTest and ConnectDispatcherTest in source for more details (See
 V1 is considered complete, and stable. Bug fixes will be done on a regular basis.
 
 ### V2. Persistence
-Internal refactoring of the core queuing parts
+Hyperletter is core part of FirefliesMQ which will give you a persisted queues and routes.
 
-### V3. Make use of the addresses
-if you�re building chains of sockets and you send a letter from A via B to C and C decides to answer, the letter should get back to A no matter if B is connected to multiple sockets.
 
 ## Protocol specification
 ### Header

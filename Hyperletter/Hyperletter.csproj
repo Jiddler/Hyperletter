@@ -9,7 +9,7 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>Hyperletter</RootNamespace>
     <AssemblyName>Hyperletter</AssemblyName>
-    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <TargetFrameworkProfile />
   </PropertyGroup>
@@ -50,11 +50,19 @@
     <Compile Include="Channel\LetterTransmitter.cs" />
     <Compile Include="Channel\OutboundChannel.cs" />
     <Compile Include="Direction.cs" />
+    <Compile Include="DisconnectReason.cs" />
     <Compile Include="Extension\ConcurrentDictionaryExtensions.cs" />
     <Compile Include="Extension\ConcurrentQueueExtensions.cs" />
+    <Compile Include="HeartbeatOptions.cs" />
+    <Compile Include="HyperletterFactory.cs" />
     <Compile Include="HyperSocket.cs" />
     <Compile Include="IHyperSocket.cs" />
-    <Compile Include="ITransportSerializer.cs" />
+    <Compile Include="IoC\Container.cs" />
+    <Compile Include="IoC\DependencyResolver.cs" />
+    <Compile Include="IoC\InstanceResolver.cs" />
+    <Compile Include="IoC\NoRegistrationException.cs" />
+    <Compile Include="IoC\ResolveException.cs" />
+    <Compile Include="IoC\Resolver.cs" />
     <Compile Include="LetterDispatcher.cs" />
     <Compile Include="Letter\ILetter.cs" />
     <Compile Include="Letter\Letter.cs" />
@@ -74,6 +82,7 @@
     <Compile Include="Typed\DictionaryList.cs" />
     <Compile Include="Typed\HandlerRegistration.cs" />
     <Compile Include="Typed\IAnswerable.cs" />
+    <Compile Include="Typed\ITransportSerializer.cs" />
     <Compile Include="Typed\ITypedHandler.cs" />
     <Compile Include="Typed\ITypedHandlerFactory.cs" />
     <Compile Include="Typed\ITypedSocket.cs" />

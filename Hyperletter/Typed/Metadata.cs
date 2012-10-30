@@ -10,5 +10,6 @@ namespace Hyperletter.Typed {
         }
 
         public string Type { get; set; }
+        public Guid ConversationId { get; set; }
     }
 }

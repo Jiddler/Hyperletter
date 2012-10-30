@@ -15,14 +15,14 @@ namespace Hyperletter.Channel {
         private ILetter _currentLetter;
         private bool _sending;
 
-        public LetterTransmitter(LetterSerializer letterSerializer, TcpClient client, CancellationTokenSource cancellationTokenSource) {
-            _socket = client.Client;
-            _cancellationTokenSource = cancellationTokenSource;
+        public LetterTransmitter(Socket socket,  LetterSerializer letterSerializer, CancellationTokenSource cancellationTokenSource) {
+            _socket = socket;
             _letterSerializer = letterSerializer;
+            _cancellationTokenSource = cancellationTokenSource;
         }
 
         public event Action<ILetter> Sent;
-        public event Action SocketError;
+        public event Action<DisconnectReason> SocketError;
 
         public void Start() {
             _sendEventArgs.Completed += SendEventArgsOnCompleted;
@@ -64,11 +64,11 @@ namespace Hyperletter.Channel {
             byte[] serializedLetter = _letterSerializer.Serialize(letter);
             _sendEventArgs.SetBuffer(serializedLetter, 0, serializedLetter.Length);
             try {
-                bool pending = _socket.SendAsync(_sendEventArgs);
+                var pending = _socket.SendAsync(_sendEventArgs);
                 if(!pending)
                     EndSend(_sendEventArgs);
             } catch(Exception) {
-                SocketError();
+                SocketError(DisconnectReason.Socket);
             }
         }
 
@@ -80,7 +80,7 @@ namespace Hyperletter.Channel {
             SocketError status = socketAsyncEvent.SocketError;
             int sent = socketAsyncEvent.BytesTransferred;
             if(status != System.Net.Sockets.SocketError.Success || sent == 0) {
-                SocketError();
+                SocketError(DisconnectReason.Socket);
             } else {
                 Sent(_currentLetter);
                 _sending = false;

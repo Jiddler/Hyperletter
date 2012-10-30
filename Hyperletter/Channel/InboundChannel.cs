@@ -1,8 +1,10 @@
 using System.Net.Sockets;
+using Hyperletter.Letter;
 
 namespace Hyperletter.Channel {
-    public class InboundChannel : AbstractChannel {
-        public InboundChannel(HyperSocket hyperSocket, TcpClient tcpClient, Binding binding) : base(hyperSocket, binding) {
+    internal class InboundChannel : AbstractChannel {
+        public InboundChannel(SocketOptions options, TcpClient tcpClient, Binding binding, LetterDeserializer letterDeserializer, HyperletterFactory factory)
+            : base(options, binding, letterDeserializer, factory) {
             TcpClient = tcpClient;
         }
 

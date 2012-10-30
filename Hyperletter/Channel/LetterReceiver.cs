@@ -8,24 +8,26 @@ namespace Hyperletter.Channel {
     internal class LetterReceiver {
         private readonly CancellationTokenSource _cancellationTokenSource;
         private readonly byte[] _lengthBuffer = new byte[4];
-        private readonly LetterSerializer _letterSerializer;
+        private readonly LetterDeserializer _letterDeserializer;
 
         private readonly SocketAsyncEventArgs _receiveEventArgs = new SocketAsyncEventArgs();
         private readonly Socket _socket;
+        private Guid _connectedTo;
         private readonly byte[] _tcpReceiveBuffer = new byte[4096];
 
         private MemoryStream _receiveBuffer = new MemoryStream();
 
         private int _currentLength;
         private int _lengthPosition;
+        private bool _initalized;
 
         public event Action<ILetter> Received;
-        public event Action SocketError;
+        public event Action<DisconnectReason> SocketError;
 
-        public LetterReceiver(LetterSerializer letterSerializer, Socket socket, CancellationTokenSource cancellationTokenSource) {
+        public LetterReceiver(Socket socket, LetterDeserializer letterDeserializer, CancellationTokenSource cancellationTokenSource) {
             _socket = socket;
+            _letterDeserializer = letterDeserializer;
             _cancellationTokenSource = cancellationTokenSource;
-            _letterSerializer = letterSerializer;
         }
 
         public void Start() {
@@ -48,7 +50,7 @@ namespace Hyperletter.Channel {
                 if(!pending)
                     EndReceived(_receiveEventArgs);
             } catch(Exception) {
-                SocketError();
+                SocketError(DisconnectReason.Socket);
             }
         }
 
@@ -56,10 +58,14 @@ namespace Hyperletter.Channel {
             SocketError status = socketAsyncEvent.SocketError;
             int read = socketAsyncEvent.BytesTransferred;
             if(status != System.Net.Sockets.SocketError.Success || read == 0) {
-                SocketError();
+                SocketError(DisconnectReason.Socket);
             } else {
-                HandleReceived(_tcpReceiveBuffer, read);
-                BeginReceive();
+                try {
+                    HandleReceived(_tcpReceiveBuffer, read);
+                    BeginReceive();
+                } catch(Exception) {
+                    SocketError(DisconnectReason.Incompatible);
+                }
             }
         }
 
@@ -77,6 +83,11 @@ namespace Hyperletter.Channel {
                         return;
                 }
 
+                if(!_initalized && _currentLength != 30) {
+                    SocketError(DisconnectReason.Incompatible);
+                    return;
+                }
+
                 var write = (int) Math.Min(_currentLength - _receiveBuffer.Length, length - bufferPosition);
                 _receiveBuffer.Write(buffer, bufferPosition, write);
                 bufferPosition += write;
@@ -84,9 +95,14 @@ namespace Hyperletter.Channel {
                 if(!ReceivedFullLetter())
                     return;
 
-                ILetter letter = _letterSerializer.Deserialize(_receiveBuffer.ToArray());
+                var letter = _letterDeserializer.Deserialize(_connectedTo, _receiveBuffer.ToArray());
                 _receiveBuffer = new MemoryStream();
                 _currentLength = 0;
+
+                if (letter.Type == LetterType.Initialize) {
+                    _initalized = true;
+                    _connectedTo = letter.RemoteNodeId;
+                }
 
                 if(letter.Type != LetterType.Heartbeat)
                     Received(letter);

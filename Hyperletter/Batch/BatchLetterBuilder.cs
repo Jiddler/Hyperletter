@@ -11,8 +11,8 @@ namespace Hyperletter.Batch {
 
         private LetterOptions _batchOptions = LetterOptions.None;
 
-        public BatchLetterBuilder(int maxLetters, LetterSerializer serializer) {
-            _maxLetters = maxLetters;
+        public BatchLetterBuilder(SocketOptions socketOptions, LetterSerializer serializer) {
+            _maxLetters = socketOptions.Batch.MaxLetters;
             _serializer = serializer;
         }
 

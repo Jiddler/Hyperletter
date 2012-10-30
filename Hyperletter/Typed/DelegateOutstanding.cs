@@ -19,7 +19,7 @@ namespace Hyperletter.Typed {
 
         public override void SetResult(Metadata metadata, ILetter letter) {
             var result = _socket.Serializer.Deserialize<TReply>(letter.Parts[1], Type.GetType(metadata.Type));
-            var answerable = new Answerable<TReply>(_socket, letter, result);
+            var answerable = new Answerable<TReply>(_socket, result, letter.RemoteNodeId, metadata.ConversationId);
 
             var eventArgs = new AnswerCallbackEventArgs<TRequest, TReply>(answerable, _request);
             _callback(_socket, eventArgs);

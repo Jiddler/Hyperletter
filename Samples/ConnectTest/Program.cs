@@ -34,9 +34,9 @@ namespace ConnectTest {
             unicastSocket.Discarded += (socket, binding, letter) => Console.WriteLine("DISCARDED: " + binding + " " + Encoding.Unicode.GetString(letter.Parts[0]));
             unicastSocket.Requeued += letter => Console.WriteLine("REQUEUED: " + letter);
 
-            unicastSocket.Disconnected += (socket, binding) => Console.WriteLine("DISCONNECTED " + binding);
+            unicastSocket.Disconnected += (socket, binding, reason) => Console.WriteLine("DISCONNECTED " + binding);
             unicastSocket.Connected += (socket, binding) => Console.WriteLine("CONNECTED " + binding);
-
+            
             unicastSocket.Connect(IPAddress.Parse("127.0.0.1"), 8001);
             //unicastSocket.Connect(IPAddress.Parse("127.0.0.1"), 8002);
 
@@ -53,7 +53,10 @@ namespace ConnectTest {
                     return;
                 else if(line == "status")
                     WriteStatus(sent, received);
-                else if(line != "")
+                else if (line == "reconnect") {
+                    unicastSocket.Disconnect(IPAddress.Parse("127.0.0.1"), 8001);
+                    unicastSocket.Connect(IPAddress.Parse("127.0.0.1"), 8001);
+                } else if (line != "")
                     SendXLetters(unicastSocket, int.Parse(line));
                 else
                     SendXLetters(unicastSocket, 1000000);

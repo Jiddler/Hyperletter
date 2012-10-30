@@ -15,7 +15,7 @@ namespace Hyperletter.Typed {
 
         public override void SetResult(Metadata metadata, ILetter letter) {
             var result = _socket.Serializer.Deserialize<TResult>(letter.Parts[1], Type.GetType(metadata.Type));
-            Result = new Answerable<TResult>(_socket, letter, result);
+            Result = new Answerable<TResult>(_socket, result, letter.RemoteNodeId, metadata.ConversationId);
             _waitLock.Set();
         }
 

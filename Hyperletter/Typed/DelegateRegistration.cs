@@ -13,9 +13,9 @@ namespace Hyperletter.Typed {
             _serializer = serializer;
         }
 
-        public override void Invoke(TypedHyperSocket socket, ILetter letter, Type concreteType) {
+        public override void Invoke(TypedHyperSocket socket, ILetter letter, Metadata metadata, Type concreteType) {
             var message = _serializer.Deserialize<TMessage>(letter.Parts[1], concreteType);
-            var answerable = new Answerable<TMessage>(_socket, letter, message);
+            var answerable = new Answerable<TMessage>(_socket, message, letter.RemoteNodeId, metadata.ConversationId);
             _callback(socket, answerable);
         }
     }
