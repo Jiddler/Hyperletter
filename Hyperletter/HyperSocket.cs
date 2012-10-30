@@ -31,7 +31,6 @@ namespace Hyperletter {
 
         public event Action<IHyperSocket, Binding> Connecting;
         public event Action<IHyperSocket, Binding> Connected;
-        public event Action<IHyperSocket, Binding> InitalizationFailed;
         public event Action<IHyperSocket, Binding, DisconnectReason> Disconnected;
 
         public HyperSocket() : this(new SocketOptions()) {
@@ -160,10 +159,11 @@ namespace Hyperletter {
 
         private void ChannelDisconnected(IChannel channel, DisconnectReason reason) {
             var binding = channel.Binding;
-            if(channel.Direction == Direction.Inbound || reason == DisconnectReason.Requested)
-                _channels.Remove(binding);
 
             _routeChannels.Remove(channel.RemoteNodeId);
+
+            if(channel.Direction == Direction.Inbound || reason == DisconnectReason.Requested)
+                _channels.Remove(binding);
 
             if(Disconnected != null)
                 Disconnected(this, binding, reason);
