@@ -197,8 +197,12 @@ namespace Hyperletter.Channel {
 
                 if (wasConnected) {
                     ChannelDisconnected(this, reason);
+                    AfterDisconnectHook(reason);
                 }
             }
+        }
+
+        protected virtual void AfterDisconnectHook(DisconnectReason reason) {
         }
 
         private void DisconnectSocket() {

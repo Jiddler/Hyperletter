@@ -5,11 +5,13 @@ using Hyperletter.Letter;
 
 namespace Hyperletter.Channel {
     internal class OutboundChannel : AbstractChannel {
+        private readonly SocketOptions _options;
         private bool _connecting;
 
         public event Action<IChannel> ChannelConnecting;
 
         public OutboundChannel(SocketOptions options, Binding binding, LetterDeserializer letterDeserializer, HyperletterFactory factory) : base(options, binding, letterDeserializer, factory) {
+            _options = options;
         }
 
         public override Direction Direction {
@@ -53,8 +55,13 @@ namespace Hyperletter.Channel {
         private void TryReconnect() {
             _connecting = false;
 
-            Thread.Sleep(1000);
+            Thread.Sleep(_options.ReconnectIntervall);
             TryConnect();
+        }
+
+        protected override void AfterDisconnectHook(DisconnectReason reason) {
+            if(reason != DisconnectReason.Requested)
+                TryReconnect();
         }
     }
 }

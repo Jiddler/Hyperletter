@@ -87,8 +87,9 @@ namespace Hyperletter {
 
         public void Unbind(IPAddress ipAddress, int port) {
             var binding = new Binding(ipAddress, port);
-            var listener = _listeners[binding];
-            listener.Stop();
+            SocketListener listener;
+            if(_listeners.TryRemove(binding, out listener))
+                listener.Stop();
         }
 
         public void Connect(IPAddress ipAddress, int port) {
@@ -101,7 +102,9 @@ namespace Hyperletter {
 
         public void Disconnect(IPAddress ipAddress, int port) {
             var binding = new Binding(ipAddress, port);
-            _channels[binding].Disconnect();
+            IChannel channel;
+            if(_channels.TryGetValue(binding, out channel))
+                channel.Disconnect();
         }
 
         public void Send(ILetter letter) {
@@ -157,14 +160,13 @@ namespace Hyperletter {
 
         private void ChannelDisconnected(IChannel channel, DisconnectReason reason) {
             var binding = channel.Binding;
-            _channels.Remove(binding);
+            if(channel.Direction == Direction.Inbound || reason == DisconnectReason.Requested)
+                _channels.Remove(binding);
+
             _routeChannels.Remove(channel.RemoteNodeId);
 
             if(Disconnected != null)
                 Disconnected(this, binding, reason);
-
-            if(channel.Direction == Direction.Outbound && reason != DisconnectReason.Requested)
-                Connect(binding.IpAddress, binding.Port);
         }
 
         private void ChannelReceived(IChannel channel, ILetter letter) {
