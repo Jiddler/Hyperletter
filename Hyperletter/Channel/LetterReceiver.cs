@@ -1,12 +1,10 @@
 using System;
 using System.IO;
 using System.Net.Sockets;
-using System.Threading;
 using Hyperletter.Letter;
 
 namespace Hyperletter.Channel {
     internal class LetterReceiver {
-        private readonly CancellationTokenSource _cancellationTokenSource;
         private readonly byte[] _lengthBuffer = new byte[4];
         private readonly LetterDeserializer _letterDeserializer;
 
@@ -20,14 +18,14 @@ namespace Hyperletter.Channel {
         private int _currentLength;
         private int _lengthPosition;
         private bool _initalized;
+        private bool _shutdownRequested;
 
         public event Action<ILetter> Received;
         public event Action<DisconnectReason> SocketError;
 
-        public LetterReceiver(Socket socket, LetterDeserializer letterDeserializer, CancellationTokenSource cancellationTokenSource) {
+        public LetterReceiver(Socket socket, LetterDeserializer letterDeserializer) {
             _socket = socket;
             _letterDeserializer = letterDeserializer;
-            _cancellationTokenSource = cancellationTokenSource;
         }
 
         public void Start() {
@@ -37,12 +35,16 @@ namespace Hyperletter.Channel {
             BeginReceive();
         }
 
+        public void Stop() {
+            _shutdownRequested = true;
+        }
+
         private void ReceiveEventArgsOnCompleted(object sender, SocketAsyncEventArgs socketAsyncEventArgs) {
             EndReceived(socketAsyncEventArgs);
         }
 
         private void BeginReceive() {
-            if(_cancellationTokenSource.IsCancellationRequested)
+            if (_shutdownRequested)
                 return;
 
             try {

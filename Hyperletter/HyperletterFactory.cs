@@ -1,5 +1,4 @@
 ﻿using System.Net.Sockets;
-using System.Threading;
 using Hyperletter.Batch;
 using Hyperletter.Channel;
 using Hyperletter.IoC;
@@ -12,12 +11,12 @@ namespace Hyperletter {
             _container = container;
         }
 
-        public LetterTransmitter CreateLetterTransmitter(Socket socket, CancellationTokenSource cancellationTokenSource) {
-            return _container.Resolve<LetterTransmitter>(socket, cancellationTokenSource);
+        public LetterTransmitter CreateLetterTransmitter(Socket socket) {
+            return _container.Resolve<LetterTransmitter>(socket);
         }
 
-        public LetterReceiver CreateLetterReceiver(Socket socket, CancellationTokenSource cancellationTokenSource) {
-            return _container.Resolve<LetterReceiver>(socket, cancellationTokenSource);
+        public LetterReceiver CreateLetterReceiver(Socket socket) {
+            return _container.Resolve<LetterReceiver>(socket);
         }
 
         public LetterDispatcher CreateLetterDispatcher() {

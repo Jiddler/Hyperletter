@@ -6,19 +6,19 @@ using Hyperletter.Letter;
 
 namespace Hyperletter.Channel {
     internal class LetterTransmitter {
-        private readonly CancellationTokenSource _cancellationTokenSource;
         private readonly LetterSerializer _letterSerializer;
 
         private readonly ConcurrentQueue<ILetter> _queue = new ConcurrentQueue<ILetter>();
         private readonly SocketAsyncEventArgs _sendEventArgs = new SocketAsyncEventArgs();
         private readonly Socket _socket;
         private ILetter _currentLetter;
-        private bool _sending;
+        private bool _shutdownRequested;
 
-        public LetterTransmitter(Socket socket,  LetterSerializer letterSerializer, CancellationTokenSource cancellationTokenSource) {
+        public bool Sending { get; private set; }
+
+        public LetterTransmitter(Socket socket,  LetterSerializer letterSerializer) {
             _socket = socket;
             _letterSerializer = letterSerializer;
-            _cancellationTokenSource = cancellationTokenSource;
         }
 
         public event Action<ILetter> Sent;
@@ -28,16 +28,20 @@ namespace Hyperletter.Channel {
             _sendEventArgs.Completed += SendEventArgsOnCompleted;
         }
 
+        public void Stop() {
+            _shutdownRequested = true;
+        }
+
         public void Enqueue(ILetter letter) {
             TrySend(letter);
         }
 
         private void TrySend(ILetter letter = null) {
-            if(_cancellationTokenSource.IsCancellationRequested)
-                return;
-
             lock(this) {
-                if(_sending) {
+                if (_shutdownRequested)
+                    return;
+
+                if(Sending) {
                     if(letter != null)
                         _queue.Enqueue(letter);
 
@@ -53,7 +57,7 @@ namespace Hyperletter.Channel {
                     _currentLetter = letter;
                 }
 
-                _sending = true;
+                Sending = true;
 
                 BeginSend(_currentLetter);
             }
@@ -83,7 +87,7 @@ namespace Hyperletter.Channel {
                 SocketError(DisconnectReason.Socket);
             } else {
                 Sent(_currentLetter);
-                _sending = false;
+                Sending = false;
                 TrySend();
             }
         }

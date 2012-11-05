@@ -28,6 +28,9 @@ namespace Hyperletter.Channel {
         private int _lastActionHeartbeat;
         private LetterReceiver _receiver;
         private LetterTransmitter _transmitter;
+        private DisconnectReason _shutdownReason;
+        private bool _wasConnected;
+        private bool _shutdownRequested;
 
         public bool IsConnected { get; private set; }
         public Guid RemoteNodeId { get; private set; }
@@ -67,20 +70,19 @@ namespace Hyperletter.Channel {
 
         public void Dispose() {
             Disposed = true;
-            DisconnectChannel(DisconnectReason.Requested);
+            Disconnect();
         }
 
         protected void Connected() {
             IsConnected = true;
-
-            _cancellationTokenSource = new CancellationTokenSource();
-            
-            _transmitter = _factory.CreateLetterTransmitter(TcpClient.Client, _cancellationTokenSource);
+            _shutdownRequested = false;
+          
+            _transmitter = _factory.CreateLetterTransmitter(TcpClient.Client);
             _transmitter.Sent += TransmitterOnSent;
             _transmitter.SocketError += SocketError;
             _transmitter.Start();
 
-            _receiver = _factory.CreateLetterReceiver(TcpClient.Client, _cancellationTokenSource);
+            _receiver = _factory.CreateLetterReceiver(TcpClient.Client);
             _receiver.Received += ReceiverReceived;
             _receiver.SocketError += SocketError;
             _receiver.Start();
@@ -110,7 +112,7 @@ namespace Hyperletter.Channel {
         }
 
         public void Disconnect() {
-            DisconnectChannel(DisconnectReason.Requested);
+            BeginShutdown(DisconnectReason.Requested);
         }
 
         private void ReceiverReceived(ILetter receivedLetter) {
@@ -133,6 +135,9 @@ namespace Hyperletter.Channel {
                 HandleAckSent();
             else if(!sentLetter.Options.HasFlag(LetterOptions.Ack))
                 HandleLetterSent(_queue.Dequeue());
+
+            if(_shutdownRequested)
+                EndShutdown(false);
         }
 
         private void HandleAckSent() {
@@ -179,25 +184,45 @@ namespace Hyperletter.Channel {
         }
 
         private void SocketError(DisconnectReason reason) {
-            DisconnectChannel(reason);
+            BeginShutdown(reason);
         }
 
-        private void DisconnectChannel(DisconnectReason reason) {
-            lock (this) {
-                if (_cancellationTokenSource.IsCancellationRequested)
+        private void BeginShutdown(DisconnectReason reason) {
+            lock(this) {
+                if (_shutdownRequested)
                     return;
 
-                var wasConnected = IsConnected;
+                _shutdownRequested = true;
+                _shutdownReason = reason;
+                _wasConnected = IsConnected;
                 IsConnected = false;
 
-                _cancellationTokenSource.Cancel();
+                _transmitter.Stop();
+                _receiver.Stop();
 
                 DisconnectSocket();
+                EndShutdown(_transmitter.Sending);
+            }
+        }
+
+        private void EndShutdown(bool transmitterSending) {
+            lock(this) {
+                if (transmitterSending)
+                    return;
+
                 FailQueuedLetters();
 
-                if (wasConnected) {
-                    ChannelDisconnected(this, reason);
-                    AfterDisconnectHook(reason);
+                _transmitter.Sent -= TransmitterOnSent;
+                _transmitter.SocketError -= SocketError;
+                _transmitter = null;
+
+                _receiver.Received -= ReceiverReceived;
+                _receiver.SocketError -= SocketError;
+                _receiver = null;
+
+                if (_wasConnected) {
+                    ChannelDisconnected(this, _shutdownReason);
+                    AfterDisconnectHook(_shutdownReason);
                 }
             }
         }
