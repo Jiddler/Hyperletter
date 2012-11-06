@@ -6,13 +6,14 @@ using System.Threading.Tasks;
 using Hyperletter.Channel;
 using Hyperletter.Letter;
 using Hyperletter.Extension;
+using Hyperletter.Utility;
 
 namespace Hyperletter {
     internal class LetterDispatcher {
         private readonly HyperSocket _hyperSocket;
         private readonly CancellationToken _cancellationToken;
 
-        private readonly HashSet<IChannel> _queuedChannels;
+        private readonly ConcurrentHashSet<IChannel> _queuedChannels;
         private readonly BlockingCollection<IChannel> _channelQueue;
 
         private readonly BlockingCollection<ILetter> _blockingSendQueue;
@@ -22,7 +23,7 @@ namespace Hyperletter {
             _hyperSocket = hyperSocket;
             _cancellationToken = cancellationToken;
 
-            _queuedChannels = new HashSet<IChannel>();
+            _queuedChannels = new ConcurrentHashSet<IChannel>();
             _channelQueue = new BlockingCollection<IChannel>();
 
             _sendQueue = new ConcurrentQueue<ILetter>();

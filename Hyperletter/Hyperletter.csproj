@@ -92,6 +92,7 @@
     <Compile Include="Typed\Registration.cs" />
     <Compile Include="Typed\TypedSocketOptions.cs" />
     <Compile Include="Typed\TypedHyperSocket.cs" />
+    <Compile Include="Utility\ConcurrentHashSet.cs" />
   </ItemGroup>
   <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
