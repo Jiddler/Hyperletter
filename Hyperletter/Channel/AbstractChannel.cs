@@ -21,7 +21,6 @@ namespace Hyperletter.Channel {
         protected bool Disposed;
         protected TcpClient TcpClient;
 
-        private CancellationTokenSource _cancellationTokenSource;
         private int _initalizationCount;
 
         private int _lastAction;
@@ -77,20 +76,36 @@ namespace Hyperletter.Channel {
             IsConnected = true;
             _shutdownRequested = false;
           
-            _transmitter = _factory.CreateLetterTransmitter(TcpClient.Client);
-            _transmitter.Sent += TransmitterOnSent;
-            _transmitter.SocketError += SocketError;
-            _transmitter.Start();
-
-            _receiver = _factory.CreateLetterReceiver(TcpClient.Client);
-            _receiver.Received += ReceiverReceived;
-            _receiver.SocketError += SocketError;
-            _receiver.Start();
+            CreateTransmitter();
+            CreateReceiver();
 
             _initalizationCount = 0;
 
             Enqueue(new Letter.Letter { Type = LetterType.Initialize, Options = LetterOptions.Ack, Parts = new[] { _options.NodeId.ToByteArray() } });
             ChannelConnected(this);
+        }
+
+        private void CreateReceiver() {
+            if(_receiver != null) {
+                _receiver.Received -= ReceiverReceived;
+                _receiver.SocketError -= Shutdown;
+            }
+            _receiver = _factory.CreateLetterReceiver(TcpClient.Client);
+            _receiver.Received += ReceiverReceived;
+            _receiver.SocketError += Shutdown;
+            _receiver.Start();
+        }
+
+        private void CreateTransmitter() {
+            if(_transmitter != null) {
+                _transmitter.Sent -= TransmitterOnSent;
+                _transmitter.SocketError -= Shutdown;
+            }
+
+            _transmitter = _factory.CreateLetterTransmitter(TcpClient.Client);
+            _transmitter.Sent += TransmitterOnSent;
+            _transmitter.SocketError += Shutdown;
+            _transmitter.Start();
         }
 
         private void HandleInitialize() {
@@ -112,7 +127,7 @@ namespace Hyperletter.Channel {
         }
 
         public void Disconnect() {
-            BeginShutdown(DisconnectReason.Requested);
+            Shutdown(DisconnectReason.Requested);
         }
 
         private void ReceiverReceived(ILetter receivedLetter) {
@@ -130,14 +145,12 @@ namespace Hyperletter.Channel {
 
         private void TransmitterOnSent(ILetter sentLetter) {
             ResetHeartbeatTimer();
-
             if(sentLetter.Type == LetterType.Ack)
                 HandleAckSent();
             else if(!sentLetter.Options.HasFlag(LetterOptions.Ack))
                 HandleLetterSent(_queue.Dequeue());
-
             if(_shutdownRequested)
-                EndShutdown(false);
+                Shutdown(DisconnectReason.Requested);
         }
 
         private void HandleAckSent() {
@@ -172,8 +185,9 @@ namespace Hyperletter.Channel {
                 case LetterType.Batch:
                 case LetterType.User:
                     Sent(this, sentLetter);
-                    if(_queue.Count == 0 && ChannelQueueEmpty != null)
+                    if (_queue.Count == 0 && ChannelQueueEmpty != null) {
                         ChannelQueueEmpty(this);
+                    }
                     break;
             }
         }
@@ -183,42 +197,29 @@ namespace Hyperletter.Channel {
             _transmitter.Enqueue(AckLetter);
         }
 
-        private void SocketError(DisconnectReason reason) {
-            BeginShutdown(reason);
-        }
+        private void Shutdown(DisconnectReason reason) {
+            if (_shutdownRequested)
+                return;
 
-        private void BeginShutdown(DisconnectReason reason) {
             lock(this) {
-                if (_shutdownRequested)
-                    return;
-
-                _shutdownRequested = true;
                 _shutdownReason = reason;
+                _shutdownRequested = true;
                 _wasConnected = IsConnected;
                 IsConnected = false;
 
-                _transmitter.Stop();
-                _receiver.Stop();
+                if(_transmitter != null)
+                    _transmitter.Stop();
+
+                if(_receiver != null)
+                    _receiver.Stop();
 
                 DisconnectSocket();
-                EndShutdown(_transmitter.Sending);
-            }
-        }
 
-        private void EndShutdown(bool transmitterSending) {
-            lock(this) {
-                if (transmitterSending)
-                    return;
+                while (_transmitter.Sending || _receiver.Receiving) {
+                    Thread.Sleep(10);
+                };
 
                 FailQueuedLetters();
-
-                _transmitter.Sent -= TransmitterOnSent;
-                _transmitter.SocketError -= SocketError;
-                _transmitter = null;
-
-                _receiver.Received -= ReceiverReceived;
-                _receiver.SocketError -= SocketError;
-                _receiver = null;
 
                 if (_wasConnected) {
                     ChannelDisconnected(this, _shutdownReason);

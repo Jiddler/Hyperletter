@@ -6,7 +6,6 @@ using Hyperletter.Letter;
 namespace Hyperletter.Channel {
     internal class OutboundChannel : AbstractChannel {
         private readonly SocketOptions _options;
-        private bool _connecting;
 
         public event Action<IChannel> ChannelConnecting;
 
@@ -23,10 +22,9 @@ namespace Hyperletter.Channel {
         }
 
         private void TryConnect() {
-            if(IsConnected || _connecting || Disposed)
+            if(Disposed)
                 return;
 
-            _connecting = true;
             ChannelConnecting(this);
 
             TcpClient = new TcpClient();
@@ -45,7 +43,6 @@ namespace Hyperletter.Channel {
                 return;
             }
 
-            _connecting = false;
             TcpClient.NoDelay = true;
             TcpClient.LingerState = new LingerOption(true, 1);
             
@@ -53,8 +50,6 @@ namespace Hyperletter.Channel {
         }
 
         private void TryReconnect() {
-            _connecting = false;
-
             Thread.Sleep(_options.ReconnectIntervall);
             TryConnect();
         }

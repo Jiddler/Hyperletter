@@ -28,6 +28,8 @@ namespace Hyperletter.Channel {
             _letterDeserializer = letterDeserializer;
         }
 
+        public bool Receiving { get; private set; }
+
         public void Start() {
             _receiveEventArgs.SetBuffer(_tcpReceiveBuffer, 0, _tcpReceiveBuffer.Length);
             _receiveEventArgs.Completed += ReceiveEventArgsOnCompleted;
@@ -44,15 +46,18 @@ namespace Hyperletter.Channel {
         }
 
         private void BeginReceive() {
-            if (_shutdownRequested)
+            if (_shutdownRequested) {
+                HandleSocketError(DisconnectReason.Requested);
                 return;
+            }
 
             try {
+                Receiving = true;
                 bool pending = _socket.ReceiveAsync(_receiveEventArgs);
                 if(!pending)
                     EndReceived(_receiveEventArgs);
             } catch(Exception) {
-                SocketError(DisconnectReason.Socket);
+                HandleSocketError(DisconnectReason.Socket);
             }
         }
 
@@ -60,15 +65,21 @@ namespace Hyperletter.Channel {
             SocketError status = socketAsyncEvent.SocketError;
             int read = socketAsyncEvent.BytesTransferred;
             if(status != System.Net.Sockets.SocketError.Success || read == 0) {
-                SocketError(DisconnectReason.Socket);
+                HandleSocketError(DisconnectReason.Socket);
             } else {
                 try {
                     HandleReceived(_tcpReceiveBuffer, read);
+                    Receiving = false;
                     BeginReceive();
                 } catch(Exception) {
-                    SocketError(DisconnectReason.Incompatible);
+                    HandleSocketError(DisconnectReason.Incompatible);
                 }
             }
+        }
+
+        private void HandleSocketError(DisconnectReason reason) {
+            Receiving = false;
+            if(SocketError != null) SocketError(reason);
         }
 
         private void HandleReceived(byte[] buffer, int length) {
@@ -85,8 +96,8 @@ namespace Hyperletter.Channel {
                         return;
                 }
 
-                if(!_initalized && _currentLength != 30) {
-                    SocketError(DisconnectReason.Incompatible);
+                if(!_initalized && (_currentLength != 30 && _currentLength != 10)) {
+                    HandleSocketError(DisconnectReason.Incompatible);
                     return;
                 }
 
