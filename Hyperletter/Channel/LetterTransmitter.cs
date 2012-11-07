@@ -22,7 +22,7 @@ namespace Hyperletter.Channel {
         }
 
         public event Action<ILetter> Sent;
-        public event Action<DisconnectReason> SocketError;
+        public event Action<ShutdownReason> SocketError;
 
         public void Start() {
             _sendEventArgs.Completed += SendEventArgsOnCompleted;
@@ -38,7 +38,7 @@ namespace Hyperletter.Channel {
 
         private void TrySend(ILetter letter = null) {
             if (_shutdownRequested) {
-                HandleSocketError(DisconnectReason.Requested);
+                HandleSocketError(ShutdownReason.Requested);
                 return;
             }
 
@@ -64,7 +64,7 @@ namespace Hyperletter.Channel {
             }
         }
 
-        private void HandleSocketError(DisconnectReason reason) {
+        private void HandleSocketError(ShutdownReason reason) {
             Sending = false;
             if(SocketError != null) SocketError(reason);
         }
@@ -79,7 +79,7 @@ namespace Hyperletter.Channel {
                 if(!pending)
                     EndSend(_sendEventArgs);
             } catch(Exception) {
-                HandleSocketError(DisconnectReason.Socket);
+                HandleSocketError(ShutdownReason.Socket);
             }
         }
 
@@ -92,7 +92,7 @@ namespace Hyperletter.Channel {
             int sent = socketAsyncEvent.BytesTransferred;
             
             if(status != System.Net.Sockets.SocketError.Success || sent == 0) {
-                HandleSocketError(DisconnectReason.Socket);
+                HandleSocketError(ShutdownReason.Socket);
             } else {
                 var sentLetter = _currentLetter;
                 Sending = false;

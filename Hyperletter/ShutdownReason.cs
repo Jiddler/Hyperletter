@@ -1,5 +1,5 @@
 namespace Hyperletter {
-    public enum DisconnectReason {
+    public enum ShutdownReason {
         Socket,
         Incompatible,
         Requested

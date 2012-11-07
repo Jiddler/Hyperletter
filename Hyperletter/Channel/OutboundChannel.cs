@@ -54,8 +54,8 @@ namespace Hyperletter.Channel {
             TryConnect();
         }
 
-        protected override void AfterDisconnectHook(DisconnectReason reason) {
-            if(reason != DisconnectReason.Requested)
+        protected override void AfterDisconnectHook(ShutdownReason reason) {
+            if(reason != ShutdownReason.Requested)
                 TryReconnect();
         }
     }

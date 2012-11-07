@@ -6,7 +6,7 @@ namespace Hyperletter {
     public interface IHyperSocket {
         event Action<IHyperSocket, Binding> Connecting;
         event Action<IHyperSocket, Binding> Connected;
-        event Action<IHyperSocket, Binding, DisconnectReason> Disconnected;
+        event Action<IHyperSocket, Binding, ShutdownReason> Disconnected;
 
         event Action<IHyperSocket, ILetter> Sent;
         event Action<IHyperSocket, Binding, ILetter> Discarded;

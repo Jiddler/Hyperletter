@@ -27,7 +27,7 @@ namespace Hyperletter.Channel {
         private int _lastActionHeartbeat;
         private LetterReceiver _receiver;
         private LetterTransmitter _transmitter;
-        private DisconnectReason _shutdownReason;
+        private ShutdownReason _shutdownReason;
         private bool _wasConnected;
         private bool _shutdownRequested;
 
@@ -37,7 +37,7 @@ namespace Hyperletter.Channel {
         public abstract Direction Direction { get; }
         
         public event Action<IChannel> ChannelConnected;
-        public event Action<IChannel, DisconnectReason> ChannelDisconnected;
+        public event Action<IChannel, ShutdownReason> ChannelDisconnected;
         public event Action<IChannel> ChannelQueueEmpty;
         public event Action<IChannel> ChannelInitialized;
 
@@ -127,7 +127,7 @@ namespace Hyperletter.Channel {
         }
 
         public void Disconnect() {
-            Shutdown(DisconnectReason.Requested);
+            Shutdown(ShutdownReason.Requested);
         }
 
         private void ReceiverReceived(ILetter receivedLetter) {
@@ -150,7 +150,7 @@ namespace Hyperletter.Channel {
             else if(!sentLetter.Options.HasFlag(LetterOptions.Ack))
                 HandleLetterSent(_queue.Dequeue());
             if(_shutdownRequested)
-                Shutdown(DisconnectReason.Requested);
+                Shutdown(ShutdownReason.Requested);
         }
 
         private void HandleAckSent() {
@@ -197,7 +197,7 @@ namespace Hyperletter.Channel {
             _transmitter.Enqueue(AckLetter);
         }
 
-        private void Shutdown(DisconnectReason reason) {
+        private void Shutdown(ShutdownReason reason) {
             if (_shutdownRequested)
                 return;
 
@@ -228,7 +228,7 @@ namespace Hyperletter.Channel {
             }
         }
 
-        protected virtual void AfterDisconnectHook(DisconnectReason reason) {
+        protected virtual void AfterDisconnectHook(ShutdownReason reason) {
         }
 
         private void DisconnectSocket() {

@@ -21,7 +21,7 @@ namespace Hyperletter.Batch {
         private bool _sentBatch;
 
         public event Action<IChannel> ChannelConnected;
-        public event Action<IChannel, DisconnectReason> ChannelDisconnected;
+        public event Action<IChannel, ShutdownReason> ChannelDisconnected;
         public event Action<IChannel> ChannelQueueEmpty;
         public event Action<IChannel> ChannelInitialized;
 
@@ -95,7 +95,7 @@ namespace Hyperletter.Batch {
             ChannelInitialized(this);
         }
 
-        private void ChannelOnDisconnected(IChannel channel, DisconnectReason reason) {
+        private void ChannelOnDisconnected(IChannel channel, ShutdownReason reason) {
             _canSend = false;
 
             FailedQueuedLetters();

@@ -21,7 +21,7 @@ namespace Hyperletter.Channel {
         private bool _shutdownRequested;
 
         public event Action<ILetter> Received;
-        public event Action<DisconnectReason> SocketError;
+        public event Action<ShutdownReason> SocketError;
 
         public LetterReceiver(Socket socket, LetterDeserializer letterDeserializer) {
             _socket = socket;
@@ -47,7 +47,7 @@ namespace Hyperletter.Channel {
 
         private void BeginReceive() {
             if (_shutdownRequested) {
-                HandleSocketError(DisconnectReason.Requested);
+                HandleSocketError(ShutdownReason.Requested);
                 return;
             }
 
@@ -57,7 +57,7 @@ namespace Hyperletter.Channel {
                 if(!pending)
                     EndReceived(_receiveEventArgs);
             } catch(Exception) {
-                HandleSocketError(DisconnectReason.Socket);
+                HandleSocketError(ShutdownReason.Socket);
             }
         }
 
@@ -65,19 +65,19 @@ namespace Hyperletter.Channel {
             SocketError status = socketAsyncEvent.SocketError;
             int read = socketAsyncEvent.BytesTransferred;
             if(status != System.Net.Sockets.SocketError.Success || read == 0) {
-                HandleSocketError(DisconnectReason.Socket);
+                HandleSocketError(ShutdownReason.Socket);
             } else {
                 try {
                     HandleReceived(_tcpReceiveBuffer, read);
                     Receiving = false;
                     BeginReceive();
                 } catch(Exception) {
-                    HandleSocketError(DisconnectReason.Incompatible);
+                    HandleSocketError(ShutdownReason.Incompatible);
                 }
             }
         }
 
-        private void HandleSocketError(DisconnectReason reason) {
+        private void HandleSocketError(ShutdownReason reason) {
             Receiving = false;
             if(SocketError != null) SocketError(reason);
         }
@@ -97,7 +97,7 @@ namespace Hyperletter.Channel {
                 }
 
                 if(!_initalized && (_currentLength != 30 && _currentLength != 10)) {
-                    HandleSocketError(DisconnectReason.Incompatible);
+                    HandleSocketError(ShutdownReason.Incompatible);
                     return;
                 }
 
