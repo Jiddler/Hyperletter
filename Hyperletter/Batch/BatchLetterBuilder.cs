@@ -30,12 +30,20 @@ namespace Hyperletter.Batch {
         public Letter.Letter Build() {
             var letter = new Letter.Letter {Type = LetterType.Batch, Options = _batchOptions};
 
-            int lettersInBatch = _letters.Count < _maxLetters ? _letters.Count : _maxLetters;
+            int lettersInBatch = _letters.Count;
             letter.Parts = new byte[lettersInBatch][];
             for(int i = 0; i < lettersInBatch; i++)
                 letter.Parts[i] = _serializer.Serialize(_letters.Dequeue());
 
             return letter;
+        }
+
+        public bool IsFull {
+            get { return _letters.Count >= _maxLetters; }
+        }
+
+        public bool IsEmpty {
+            get { return _letters.Count == 0; }
         }
     }
 }
