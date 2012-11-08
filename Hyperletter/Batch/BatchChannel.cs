@@ -68,8 +68,8 @@ namespace Hyperletter.Batch {
         }
 
         public EnqueueResult Enqueue(ILetter letter) {
-            _slidingTimeoutTimer.Enabled = false;
-            _slidingTimeoutTimer.Enabled = true;
+            ChangeTimerState(false);
+            ChangeTimerState(true);
 
             if(!_sentBatch)
                 _stopwatch.Restart();
@@ -77,9 +77,7 @@ namespace Hyperletter.Batch {
             _queue.Enqueue(letter);
             _batchBuilder.Add(letter);
 
-            TrySendBatch(false);
-
-            return _canSend ? EnqueueResult.CanEnqueueMore : EnqueueResult.CantEnqueueMore;
+            return TrySendBatch(false);
         }
 
         public void Heartbeat() {
@@ -102,32 +100,31 @@ namespace Hyperletter.Batch {
             ChannelDisconnected(this, reason);
         }
 
-        private void FailedQueuedLetters() {
-            ILetter letter;
-            while(_queue.TryDequeue(out letter)) {
-                FailedToSend(this, letter);
-            }
-        }
-
         private void SlidingTimeoutTimerOnElapsed(object sender, ElapsedEventArgs elapsedEventArgs) {
-            _slidingTimeoutTimer.Enabled = false;
+            ChangeTimerState(false);
             TrySendBatch(true);
         }
 
-        private void TrySendBatch(bool timeout) {
-            lock(_syncRoot) {
-                if(_sentBatch)
-                    return;
-
-                if(HasSomethingToSend() && (timeout || _batchBuilder.Count >= _options.MaxLetters || _stopwatch.ElapsedMilliseconds >= _options.MaxExtend.TotalMilliseconds)) {
-                    _sentBatch = true;
-                    _channel.Enqueue(_batchBuilder.Build());
-                }
+        private void ChangeTimerState(bool enabled) {
+            lock(_slidingTimeoutTimer) {
+                _slidingTimeoutTimer.Enabled = enabled;    
             }
         }
 
-        private bool HasSomethingToSend() {
-            return _batchBuilder.Count > 0;
+        private EnqueueResult TrySendBatch(bool timeout) {
+            lock(_syncRoot) {
+                if(_sentBatch)
+                    return EnqueueResult.CantEnqueueMore;
+
+                if (!_batchBuilder.IsEmpty && (timeout || _batchBuilder.IsFull || _stopwatch.ElapsedMilliseconds >= _options.MaxExtend.TotalMilliseconds)) {
+                    _sentBatch = true;
+                    _channel.Enqueue(_batchBuilder.Build());
+
+                    return EnqueueResult.CantEnqueueMore;
+                }
+
+                return EnqueueResult.CanEnqueueMore;
+            }
         }
 
         private void ChannelOnSent(IChannel channel, ILetter letter) {
@@ -139,6 +136,7 @@ namespace Hyperletter.Batch {
             } else
                 Sent(this, _queue.Dequeue());
 
+            ChannelQueueEmpty(this);
             TrySendBatch(false);
         }
 
@@ -154,6 +152,13 @@ namespace Hyperletter.Batch {
                 FailedQueuedLetters();
             else
                 FailedToSend(this, letter);
+        }
+
+        private void FailedQueuedLetters() {
+            ILetter letter;
+            while(_queue.TryDequeue(out letter)) {
+                FailedToSend(this, letter);
+            }
         }
     }
 }
