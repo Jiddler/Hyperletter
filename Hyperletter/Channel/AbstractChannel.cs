@@ -149,8 +149,6 @@ namespace Hyperletter.Channel {
                 HandleAckSent();
             else if(!sentLetter.Options.HasFlag(LetterOptions.Ack))
                 HandleLetterSent(_queue.Dequeue());
-            if(_shutdownRequested)
-                Shutdown(ShutdownReason.Requested);
         }
 
         private void HandleAckSent() {
@@ -215,7 +213,11 @@ namespace Hyperletter.Channel {
 
                 DisconnectSocket();
 
+                DateTime startedWaitingAt = DateTime.UtcNow;
                 while (_transmitter.Sending || _receiver.Receiving) {
+                    if ((DateTime.UtcNow - startedWaitingAt).TotalMilliseconds > 1500)
+                        break;
+
                     Thread.Sleep(10);
                 };
 
