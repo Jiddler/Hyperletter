@@ -15,7 +15,6 @@ namespace Hyperletter.Batch {
 
         private readonly Timer _slidingTimeoutTimer;
         private readonly object _syncRoot = new object();
-        private bool _canSend;
 
         private readonly Stopwatch _stopwatch = new Stopwatch();
         private bool _sentBatch;
@@ -89,13 +88,10 @@ namespace Hyperletter.Batch {
         }
         
         private void ChannelOnInitialized(IChannel channel) {
-            _canSend = true;
             ChannelInitialized(this);
         }
 
         private void ChannelOnDisconnected(IChannel channel, ShutdownReason reason) {
-            _canSend = false;
-
             FailedQueuedLetters();
             ChannelDisconnected(this, reason);
         }
@@ -131,7 +127,7 @@ namespace Hyperletter.Batch {
             if(letter.Type == LetterType.Batch) {
                 _sentBatch = false;
 
-                for(int i = 0; i < letter.Parts.Length; i++)
+                for(var i = 0; i < letter.Parts.Length; i++)
                     Sent(this, _queue.Dequeue());
             } else
                 Sent(this, _queue.Dequeue());
@@ -145,7 +141,6 @@ namespace Hyperletter.Batch {
         }
 
         private void ChannelOnFailedToSend(IChannel channel, ILetter letter) {
-            _canSend = false;
             _sentBatch = false;
 
             if(letter.Type == LetterType.Batch)

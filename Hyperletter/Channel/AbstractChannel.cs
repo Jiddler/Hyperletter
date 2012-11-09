@@ -27,9 +27,9 @@ namespace Hyperletter.Channel {
         private int _lastActionHeartbeat;
         private LetterReceiver _receiver;
         private LetterTransmitter _transmitter;
-        private ShutdownReason _shutdownReason;
         private bool _wasConnected;
         private bool _shutdownRequested;
+        private DateTime _connectedAt;
 
         public bool IsConnected { get; private set; }
         public Guid RemoteNodeId { get; private set; }
@@ -73,13 +73,12 @@ namespace Hyperletter.Channel {
         }
 
         protected void Connected() {
+            _connectedAt = DateTime.UtcNow;
             IsConnected = true;
             _shutdownRequested = false;
-          
+
             CreateTransmitter();
             CreateReceiver();
-
-            _initalizationCount = 0;
 
             Enqueue(new Letter.Letter { Type = LetterType.Initialize, Options = LetterOptions.Ack, Parts = new[] { _options.NodeId.ToByteArray() } });
             ChannelConnected(this);
@@ -117,8 +116,15 @@ namespace Hyperletter.Channel {
         }
 
         public void Heartbeat() {
-            if (_initalizationCount != 2 || !IsConnected)
+            if(_initalizationCount != 2) {
+                if (IsConnected) {
+                    var now = DateTime.UtcNow;
+                    if ((now - _connectedAt).TotalMilliseconds > _options.MaximumInitializeTime)
+                        Shutdown(ShutdownReason.Socket);
+                }
+
                 return;
+            }
 
             if(_lastAction != _lastActionHeartbeat)
                 _lastActionHeartbeat = _lastAction;
@@ -200,33 +206,35 @@ namespace Hyperletter.Channel {
                 return;
 
             lock(this) {
-                _shutdownReason = reason;
+                if (_shutdownRequested)
+                    return;
+
                 _shutdownRequested = true;
+                _initalizationCount = 0;
                 _wasConnected = IsConnected;
                 IsConnected = false;
 
-                if(_transmitter != null)
-                    _transmitter.Stop();
-
-                if(_receiver != null)
-                    _receiver.Stop();
+                if(_transmitter != null) _transmitter.Stop();
+                if(_receiver != null) _receiver.Stop();
 
                 DisconnectSocket();
-
-                DateTime startedWaitingAt = DateTime.UtcNow;
-                while (_transmitter.Sending || _receiver.Receiving) {
-                    if ((DateTime.UtcNow - startedWaitingAt).TotalMilliseconds > 1500)
-                        break;
-
-                    Thread.Sleep(10);
-                };
-
+                WaitForTranseiviersToShutDown();
                 FailQueuedLetters();
 
                 if (_wasConnected) {
-                    ChannelDisconnected(this, _shutdownReason);
-                    AfterDisconnectHook(_shutdownReason);
+                    ChannelDisconnected(this, reason);
+                    AfterDisconnectHook(reason);
                 }
+            }
+        }
+
+        private void WaitForTranseiviersToShutDown() {
+            DateTime startedWaitingAt = DateTime.UtcNow;
+            while(_transmitter.Sending || _receiver.Receiving) {
+                if((DateTime.UtcNow - startedWaitingAt).TotalMilliseconds > _options.ShutdownWait)
+                    break;
+
+                Thread.Sleep(10);
             }
         }
 
