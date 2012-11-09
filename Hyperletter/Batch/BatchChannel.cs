@@ -92,6 +92,7 @@ namespace Hyperletter.Batch {
         }
 
         private void ChannelOnDisconnected(IChannel channel, ShutdownReason reason) {
+            ChangeTimerState(false);
             FailedQueuedLetters();
             ChannelDisconnected(this, reason);
         }
