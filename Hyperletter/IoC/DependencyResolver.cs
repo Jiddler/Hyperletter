@@ -144,7 +144,8 @@ namespace Hyperletter.IoC {
               .Select(pi => Expression.Parameter(pi.ParameterType, pi.Name))
               .ToList();
 
-            var parametersExpression = Expression.NewArrayInit(typeof(object), parameters.Select(p => Expression.Convert(p, typeof(object))));
+            var convertedParameters = (IEnumerable<Expression>) parameters.Select(p => Expression.Convert(p, typeof(object)));
+            var parametersExpression = Expression.NewArrayInit(typeof(object), convertedParameters);
             var body = Expression.Call(t, target, parametersExpression);
             return Expression.Lambda(type, body, parameters).Compile();
         }
