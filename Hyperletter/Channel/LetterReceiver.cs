@@ -148,6 +148,7 @@ namespace Hyperletter.Channel {
         public void Dispose()
         {
             _receiveEventArgs.Completed -= ReceiveEventArgsOnCompleted;
+            _receiveEventArgs.Dispose();
             _receiveEventArgs = null;
         }
     }
