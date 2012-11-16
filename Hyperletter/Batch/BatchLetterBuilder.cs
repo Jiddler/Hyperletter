@@ -45,5 +45,9 @@ namespace Hyperletter.Batch {
         public bool IsEmpty {
             get { return _letters.Count == 0; }
         }
+
+        public void Clear() {
+            _letters.Clear();
+        }
     }
 }

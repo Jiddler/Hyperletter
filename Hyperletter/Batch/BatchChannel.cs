@@ -93,6 +93,7 @@ namespace Hyperletter.Batch {
 
         private void ChannelOnDisconnected(IChannel channel, ShutdownReason reason) {
             ChangeTimerState(false);
+            _sentBatch = false;
             FailedQueuedLetters();
             ChannelDisconnected(this, reason);
         }
@@ -155,6 +156,7 @@ namespace Hyperletter.Batch {
             while(_queue.TryDequeue(out letter)) {
                 FailedToSend(this, letter);
             }
+            _batchBuilder.Clear();
         }
     }
 }
