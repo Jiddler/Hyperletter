@@ -46,10 +46,8 @@ namespace Hyperletter.Channel {
         }
 
         private void BeginReceive() {
-            if (_shutdownRequested) {
-                HandleSocketError(ShutdownReason.Requested);
+            if (_shutdownRequested)
                 return;
-            }
 
             try {
                 Receiving = true;

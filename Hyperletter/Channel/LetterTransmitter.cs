@@ -37,10 +37,8 @@ namespace Hyperletter.Channel {
         }
 
         private void TrySend(ILetter letter = null) {
-            if (_shutdownRequested) {
-                HandleSocketError(ShutdownReason.Requested);
+            if (_shutdownRequested)
                 return;
-            }
 
             lock(this) {
                 if(Sending) {
@@ -95,8 +93,8 @@ namespace Hyperletter.Channel {
                 HandleSocketError(ShutdownReason.Socket);
             } else {
                 var sentLetter = _currentLetter;
-                Sending = false;
                 Sent(sentLetter);
+                Sending = false;
                 TrySend();
             }
         }

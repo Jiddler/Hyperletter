@@ -2,6 +2,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Net.Sockets;
 using System.Threading;
+using System.Threading.Tasks;
 using Hyperletter.Extension;
 using Hyperletter.Letter;
 
@@ -117,9 +118,9 @@ namespace Hyperletter.Channel {
 
         public void Heartbeat() {
             if(_initalizationCount != 2) {
-                if (IsConnected) {
+                if(IsConnected) {
                     var now = DateTime.UtcNow;
-                    if ((now - _connectedAt).TotalMilliseconds > _options.MaximumInitializeTime)
+                    if((now - _connectedAt).TotalMilliseconds > _options.MaximumInitializeTime)
                         Shutdown(ShutdownReason.Socket);
                 }
 
@@ -133,7 +134,7 @@ namespace Hyperletter.Channel {
         }
 
         public void Disconnect() {
-            Shutdown(ShutdownReason.Requested);
+            Task.Factory.StartNew(() => Shutdown(ShutdownReason.Requested));
         }
 
         private void ReceiverReceived(ILetter receivedLetter) {
@@ -202,29 +203,27 @@ namespace Hyperletter.Channel {
         }
 
         private void Shutdown(ShutdownReason reason) {
-            if (_shutdownRequested)
-                return;
-
-            lock(this) {
-                if (_shutdownRequested)
+            lock (this) {
+                if(_shutdownRequested) {
                     return;
-
-                _shutdownRequested = true;
-                _initalizationCount = 0;
-                _wasConnected = IsConnected;
-                IsConnected = false;
-
-                if(_transmitter != null) _transmitter.Stop();
-                if(_receiver != null) _receiver.Stop();
-
-                DisconnectSocket();
-                WaitForTranseiviersToShutDown();
-                FailQueuedLetters();
-
-                if (_wasConnected) {
-                    ChannelDisconnected(this, reason);
-                    AfterDisconnectHook(reason);
                 }
+                _shutdownRequested = true;
+            }
+
+            _initalizationCount = 0;
+            _wasConnected = IsConnected;
+            IsConnected = false;
+
+            if(_transmitter != null) _transmitter.Stop();
+            if(_receiver != null) _receiver.Stop();
+
+            DisconnectSocket();
+            WaitForTranseiviersToShutDown();
+            FailQueuedLetters();
+
+            if (_wasConnected) {
+                ChannelDisconnected(this, reason);
+                AfterDisconnectHook(reason);
             }
         }
 
