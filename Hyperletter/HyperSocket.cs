@@ -57,8 +57,8 @@ namespace Hyperletter {
             container.Register<LetterDeserializer>().AsSingleton();
             container.Register<LetterDispatcher>().AsSingleton();
             container.Register<SocketListener>().AsSingleton();
-            
-            container.Register<HyperletterFactory>();
+            container.Register<HyperletterFactory>().AsSingleton();
+
             container.Register<LetterTransmitter>();
             container.Register<LetterReceiver>();
 
@@ -80,7 +80,7 @@ namespace Hyperletter {
 
             var listener = _factory.CreateSocketListener(binding);
             _listeners[binding] = listener;
-            listener.IncomingChannel += HookupChannel;
+            listener.IncomingChannel += PrepareChannel;
             listener.Start();
         }
 
@@ -95,7 +95,7 @@ namespace Hyperletter {
             var binding = new Binding(ipAddress, port);
             var channel = _factory.CreateOutboundChannel(binding);
             channel.ChannelConnecting += ChannelConnecting;
-            HookupChannel(channel);
+            PrepareChannel(channel);
             channel.Connect();
         }
 
@@ -126,10 +126,17 @@ namespace Hyperletter {
                 channel.Disconnect();
         }
 
-        private void HookupChannel(IChannel channel) {
+        private void PrepareChannel(IChannel channel) {
             if(Options.Batch.Enabled)
                 channel = _factory.CreateBatchChannel(channel);
 
+            HookChannel(channel);
+
+            _channels[channel.Binding] = channel;
+            channel.Initialize();
+        }
+
+        private void HookChannel(IChannel channel) {
             channel.Received += ChannelReceived;
             channel.FailedToSend += ChannelFailedToSend;
             channel.Sent += ChannelSent;
@@ -138,9 +145,17 @@ namespace Hyperletter {
             channel.ChannelInitialized += ChannelInitialized;
             channel.ChannelInitialized += ChannelAvailable;
             channel.ChannelQueueEmpty += ChannelAvailable;
+        }
 
-            _channels[channel.Binding] = channel;
-            channel.Initialize();
+        private void UnhookChannel(IChannel channel) {
+            channel.Received -= ChannelReceived;
+            channel.FailedToSend -= ChannelFailedToSend;
+            channel.Sent -= ChannelSent;
+            channel.ChannelDisconnected -= ChannelDisconnected;
+            channel.ChannelConnected -= ChannelConnected;
+            channel.ChannelInitialized -= ChannelInitialized;
+            channel.ChannelInitialized -= ChannelAvailable;
+            channel.ChannelQueueEmpty -= ChannelAvailable;
         }
 
         private void ChannelConnecting(IChannel channel) {
@@ -162,8 +177,10 @@ namespace Hyperletter {
 
             _routeChannels.Remove(channel.RemoteNodeId);
 
-            if(channel.Direction == Direction.Inbound || reason == ShutdownReason.Requested)
+            if(channel.Direction == Direction.Inbound || reason == ShutdownReason.Requested) {
                 _channels.Remove(binding);
+                UnhookChannel(channel);
+            }
 
             if(Disconnected != null)
                 Disconnected(this, binding, reason);
