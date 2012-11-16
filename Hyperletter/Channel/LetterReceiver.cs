@@ -8,10 +8,10 @@ namespace Hyperletter.Channel {
         private readonly byte[] _lengthBuffer = new byte[4];
         private readonly LetterDeserializer _letterDeserializer;
 
-        private readonly SocketAsyncEventArgs _receiveEventArgs = new SocketAsyncEventArgs();
         private readonly Socket _socket;
-        private Guid _connectedTo;
         private readonly byte[] _tcpReceiveBuffer = new byte[4096];
+        private Guid _connectedTo;
+        private SocketAsyncEventArgs _receiveEventArgs = new SocketAsyncEventArgs();
 
         private MemoryStream _receiveBuffer = new MemoryStream();
 
@@ -143,6 +143,12 @@ namespace Hyperletter.Channel {
 
         private bool IsNewMessage() {
             return _currentLength == 0;
+        }
+
+        public void Dispose()
+        {
+            _receiveEventArgs.Completed -= ReceiveEventArgsOnCompleted;
+            _receiveEventArgs = null;
         }
     }
 }

@@ -204,9 +204,9 @@ namespace Hyperletter.Channel {
 
         private void Shutdown(ShutdownReason reason) {
             lock (this) {
-                if(_shutdownRequested) {
+                if(_shutdownRequested)
                     return;
-                }
+
                 _shutdownRequested = true;
             }
 
@@ -229,12 +229,15 @@ namespace Hyperletter.Channel {
 
         private void WaitForTranseiviersToShutDown() {
             DateTime startedWaitingAt = DateTime.UtcNow;
-            while(_transmitter.Sending || _receiver.Receiving) {
+            while ((_transmitter != null && _transmitter.Sending) || (_receiver != null && _receiver.Receiving)) {
                 if((DateTime.UtcNow - startedWaitingAt).TotalMilliseconds > _options.ShutdownWait)
                     break;
 
                 Thread.Sleep(10);
             }
+
+            if(_transmitter != null) _transmitter.Dispose();
+            if(_receiver != null) _receiver.Dispose();
         }
 
         protected virtual void AfterDisconnectHook(ShutdownReason reason) {

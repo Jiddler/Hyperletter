@@ -5,14 +5,14 @@ using System.Threading;
 using Hyperletter.Letter;
 
 namespace Hyperletter.Channel {
-    internal class LetterTransmitter {
+    internal class LetterTransmitter : IDisposable {
         private readonly LetterSerializer _letterSerializer;
 
         private readonly ConcurrentQueue<ILetter> _queue = new ConcurrentQueue<ILetter>();
-        private readonly SocketAsyncEventArgs _sendEventArgs = new SocketAsyncEventArgs();
         private readonly Socket _socket;
         private ILetter _currentLetter;
         private bool _shutdownRequested;
+        private SocketAsyncEventArgs _sendEventArgs = new SocketAsyncEventArgs();
 
         public bool Sending { get; private set; }
 
@@ -97,6 +97,11 @@ namespace Hyperletter.Channel {
                 Sending = false;
                 TrySend();
             }
+        }
+
+        public void Dispose() {
+            _sendEventArgs.Completed -= SendEventArgsOnCompleted;
+            _sendEventArgs = null;
         }
     }
 }
