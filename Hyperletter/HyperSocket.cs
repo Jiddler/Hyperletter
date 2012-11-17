@@ -161,13 +161,15 @@ namespace Hyperletter {
         }
 
         private void ChannelConnecting(IChannel channel) {
-            if (Connecting != null)
-                Connecting(this, channel.Binding);
+            var evnt = Connecting;
+            if (evnt != null)
+                evnt(this, channel.Binding);
         }
 
         private void ChannelConnected(IChannel obj) {
-            if(Connected != null)
-                Connected(this, obj.Binding);
+            var evnt = Connected;
+            if (evnt != null)
+                evnt(this, obj.Binding);
         }
 
         private void ChannelInitialized(IChannel obj) {
@@ -184,19 +186,21 @@ namespace Hyperletter {
                 UnhookChannel(channel);
             }
 
-            if(Disconnected != null)
-                Disconnected(this, binding, reason);
+            var evnt = Disconnected;
+            if (evnt != null)
+                evnt(this, binding, reason);
         }
 
         private void ChannelReceived(IChannel channel, ILetter letter) {
-            if(Received == null)
-                return;
-
-            Received(this, letter);
+            var evnt = Received;
+            if (evnt != null)
+                evnt(this, letter);
         }
 
         private void ChannelSent(IChannel channel, ILetter letter) {
-            if(Sent != null) Sent(this, letter);
+            var evnt = Sent;
+            if (evnt != null)
+                evnt(this, letter);
         }
 
         private void ChannelFailedToSend(IChannel channel, ILetter letter) {
@@ -210,14 +214,17 @@ namespace Hyperletter {
         }
 
         private void Discard(IChannel channel, ILetter letter) {
-            if(Discarded != null && !letter.Options.HasFlag(LetterOptions.SilentDiscard))
-                Discarded(this, channel.Binding, letter);
+            var evnt = Discarded;
+            if (evnt != null && !letter.Options.HasFlag(LetterOptions.SilentDiscard))
+                evnt(this, channel.Binding, letter);
         }
 
         private void Requeue(ILetter letter) {
             _letterDispatcher.EnqueueLetter(letter);
-            if(Requeued != null)
-                Requeued(letter);
+
+            var evnt = Requeued;
+            if (evnt != null)
+                evnt(letter);
         }
 
         private void ChannelAvailable(IChannel channel) {
