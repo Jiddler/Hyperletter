@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Net.Sockets;
-using System.Threading;
 using Hyperletter.Letter;
 
 namespace Hyperletter.Channel {

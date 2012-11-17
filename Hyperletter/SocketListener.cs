@@ -1,14 +1,12 @@
 using System;
 using System.Net;
 using System.Net.Sockets;
-using System.Threading;
 using Hyperletter.Channel;
 
 namespace Hyperletter {
     internal class SocketListener : IDisposable {
         private readonly Binding _binding;
         private readonly HyperletterFactory _factory;
-        private bool _disposed;
         private TcpListener _listener;
         private bool _listening;
 

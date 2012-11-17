@@ -1,12 +1,9 @@
 ﻿using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 using Hyperletter.Channel;
 using Hyperletter.Letter;
-using Hyperletter.Extension;
 using Hyperletter.Utility;
 
 namespace Hyperletter {
@@ -19,7 +16,6 @@ namespace Hyperletter {
 
         private readonly BlockingCollection<ILetter> _blockingSendQueue;
         private readonly ConcurrentQueue<ILetter> _sendQueue;
-        private Task _task;
 
         public LetterDispatcher(HyperSocket hyperSocket, CancellationToken cancellationToken) {
             _hyperSocket = hyperSocket;
@@ -31,7 +27,7 @@ namespace Hyperletter {
             _sendQueue = new ConcurrentQueue<ILetter>();
             _blockingSendQueue = new BlockingCollection<ILetter>(_sendQueue);
 
-            _task = Task.Factory.StartNew(SendTask);
+            Task.Factory.StartNew(SendTask);
         }
 
         public void EnqueueLetter(ILetter letter) {
