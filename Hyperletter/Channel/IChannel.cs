@@ -9,6 +9,7 @@ namespace Hyperletter.Channel {
         Direction Direction { get; }
         
         event Action<IChannel> ChannelConnected;
+        event Action<IChannel> ChannelConnecting;
         event Action<IChannel, ShutdownReason> ChannelDisconnected;
         event Action<IChannel> ChannelQueueEmpty;
         event Action<IChannel> ChannelInitialized;
@@ -21,5 +22,6 @@ namespace Hyperletter.Channel {
         EnqueueResult Enqueue(ILetter letter);
         void Heartbeat();
         void Disconnect();
+        
     }
 }

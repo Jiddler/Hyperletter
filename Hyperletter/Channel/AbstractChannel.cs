@@ -36,7 +36,8 @@ namespace Hyperletter.Channel {
         public Guid RemoteNodeId { get; private set; }
         public Binding Binding { get; private set; }
         public abstract Direction Direction { get; }
-        
+
+        public virtual event Action<IChannel> ChannelConnecting;
         public event Action<IChannel> ChannelConnected;
         public event Action<IChannel, ShutdownReason> ChannelDisconnected;
         public event Action<IChannel> ChannelQueueEmpty;

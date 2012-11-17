@@ -20,6 +20,7 @@ namespace Hyperletter.Batch {
         private bool _sentBatch;
 
         public event Action<IChannel> ChannelConnected;
+        public event Action<IChannel> ChannelConnecting;
         public event Action<IChannel, ShutdownReason> ChannelDisconnected;
         public event Action<IChannel> ChannelQueueEmpty;
         public event Action<IChannel> ChannelInitialized;
@@ -37,6 +38,7 @@ namespace Hyperletter.Batch {
             _channel.ChannelDisconnected += ChannelOnDisconnected;
             _channel.ChannelQueueEmpty += abstractChannel => { /* NOOP */ };
             _channel.ChannelInitialized += ChannelOnInitialized;
+            _channel.ChannelConnecting += abstractChannel => ChannelConnecting(this);
 
             _channel.Received += ChannelOnReceived;
             _channel.Sent += ChannelOnSent;

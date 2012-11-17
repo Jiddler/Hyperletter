@@ -7,7 +7,7 @@ namespace Hyperletter.Channel {
     internal class OutboundChannel : AbstractChannel {
         private readonly SocketOptions _options;
 
-        public event Action<IChannel> ChannelConnecting;
+        public override event Action<IChannel> ChannelConnecting;
 
         public OutboundChannel(SocketOptions options, Binding binding, LetterDeserializer letterDeserializer, HyperletterFactory factory) : base(options, binding, letterDeserializer, factory) {
             _options = options;

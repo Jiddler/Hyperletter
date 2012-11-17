@@ -94,7 +94,6 @@ namespace Hyperletter {
         public void Connect(IPAddress ipAddress, int port) {
             var binding = new Binding(ipAddress, port);
             var channel = _factory.CreateOutboundChannel(binding);
-            channel.ChannelConnecting += ChannelConnecting;
             PrepareChannel(channel);
             channel.Connect();
         }
@@ -118,6 +117,7 @@ namespace Hyperletter {
 
         public void Dispose() {
             _cancellationTokenSource.Cancel();
+            _heartbeat.Dispose();
 
             foreach(var listener in _listeners.Values)
                 listener.Stop();
@@ -141,6 +141,7 @@ namespace Hyperletter {
             channel.FailedToSend += ChannelFailedToSend;
             channel.Sent += ChannelSent;
             channel.ChannelDisconnected += ChannelDisconnected;
+            channel.ChannelConnecting += ChannelConnecting;
             channel.ChannelConnected += ChannelConnected;
             channel.ChannelInitialized += ChannelInitialized;
             channel.ChannelInitialized += ChannelAvailable;
@@ -152,6 +153,7 @@ namespace Hyperletter {
             channel.FailedToSend -= ChannelFailedToSend;
             channel.Sent -= ChannelSent;
             channel.ChannelDisconnected -= ChannelDisconnected;
+            channel.ChannelConnecting -= ChannelConnecting;
             channel.ChannelConnected -= ChannelConnected;
             channel.ChannelInitialized -= ChannelInitialized;
             channel.ChannelInitialized -= ChannelAvailable;
