@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Net;
 using System.Threading;
+using System.Threading.Tasks;
 using Hyperletter.Batch;
 using Hyperletter.Channel;
 using Hyperletter.Extension;
@@ -10,7 +11,7 @@ using Hyperletter.IoC;
 using Hyperletter.Letter;
 
 namespace Hyperletter {
-    public class HyperSocket : IDisposable, IHyperSocket {
+    public class HyperSocket : IHyperSocket {
         private readonly ConcurrentDictionary<Binding, SocketListener> _listeners = new ConcurrentDictionary<Binding, SocketListener>();
         private readonly ConcurrentDictionary<Binding, IChannel> _channels = new ConcurrentDictionary<Binding, IChannel>();
         private readonly ConcurrentDictionary<Guid, IChannel> _routeChannels = new ConcurrentDictionary<Guid, IChannel>();
@@ -32,6 +33,7 @@ namespace Hyperletter {
         public event Action<IHyperSocket, Binding> Connecting;
         public event Action<IHyperSocket, Binding> Connected;
         public event Action<IHyperSocket, Binding, ShutdownReason> Disconnected;
+        public event Action<IHyperSocket> Disposed;
 
         public HyperSocket() : this(new SocketOptions()) {
         }
@@ -99,10 +101,12 @@ namespace Hyperletter {
         }
 
         public void Disconnect(IPAddress ipAddress, int port) {
-            var binding = new Binding(ipAddress, port);
-            IChannel channel;
-            if(_channels.TryGetValue(binding, out channel))
-                channel.Disconnect();
+            Task.Factory.StartNew(() => {
+                var binding = new Binding(ipAddress, port);
+                IChannel channel;
+                if(_channels.TryGetValue(binding, out channel))
+                    channel.Disconnect();
+            });
         }
 
         public void Send(ILetter letter) {
@@ -116,14 +120,20 @@ namespace Hyperletter {
         }
 
         public void Dispose() {
-            _cancellationTokenSource.Cancel();
-            _heartbeat.Dispose();
+            Task.Factory.StartNew(() => {
+                _cancellationTokenSource.Cancel();
+                _heartbeat.Dispose();
 
-            foreach(var listener in _listeners.Values)
-                listener.Stop();
+                foreach(var listener in _listeners.Values)
+                    listener.Stop();
 
-            foreach(var channel in _channels.Values)
-                channel.Disconnect();
+                foreach(var channel in _channels.Values)
+                    channel.Disconnect();
+
+                var evnt = Disposed;
+                if (evnt != null)
+                    evnt(this);
+            });
         }
 
         private void PrepareChannel(IChannel channel) {

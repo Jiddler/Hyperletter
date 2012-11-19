@@ -3,10 +3,11 @@ using System.Net;
 using Hyperletter.Letter;
 
 namespace Hyperletter {
-    public interface IHyperSocket {
+    public interface IHyperSocket : IDisposable {
         event Action<IHyperSocket, Binding> Connecting;
         event Action<IHyperSocket, Binding> Connected;
         event Action<IHyperSocket, Binding, ShutdownReason> Disconnected;
+        event Action<IHyperSocket> Disposed;
 
         event Action<IHyperSocket, ILetter> Sent;
         event Action<IHyperSocket, Binding, ILetter> Discarded;

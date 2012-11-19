@@ -135,7 +135,7 @@ namespace Hyperletter.Channel {
         }
 
         public void Disconnect() {
-            Task.Factory.StartNew(() => Shutdown(ShutdownReason.Requested));
+            Shutdown(ShutdownReason.Requested);
         }
 
         private void ReceiverReceived(ILetter receivedLetter) {
