@@ -6,6 +6,10 @@ using System.Threading;
 using System.Threading.Tasks;
 using Hyperletter.Batch;
 using Hyperletter.Channel;
+using Hyperletter.EventArgs;
+using Hyperletter.EventArgs.Channel;
+using Hyperletter.EventArgs.Letter;
+using Hyperletter.EventArgs.Socket;
 using Hyperletter.Extension;
 using Hyperletter.IoC;
 using Hyperletter.Letter;
@@ -22,18 +26,18 @@ namespace Hyperletter {
         private readonly HyperletterFactory _factory;
 
         public SocketOptions Options { get; private set; }
-        public IEnumerable<IChannel> Channels { get { return _channels.Values; } }
+        internal IEnumerable<IChannel> Channels { get { return _channels.Values; } }
 
-        public event Action<IHyperSocket, ILetter> Sent;
-        public event Action<IHyperSocket, ILetter> Received;
-        public event Action<IHyperSocket, Binding, ILetter> Discarded;
+        public event Action<ILetter, ISentEventArgs> Sent;
+        public event Action<ILetter, IReceivedEventArgs> Received;
+        public event Action<ILetter, IDiscardedEventArgs> Discarded;
+        public event Action<ILetter, IRequeuedEventArgs> Requeued;
 
-        public event Action<ILetter> Requeued;
-
-        public event Action<IHyperSocket, Binding> Connecting;
-        public event Action<IHyperSocket, Binding> Connected;
-        public event Action<IHyperSocket, Binding, ShutdownReason> Disconnected;
-        public event Action<IHyperSocket> Disposed;
+        public event Action<IHyperSocket, IConnectingEventArgs> Connecting;
+        public event Action<IHyperSocket, IConnectedEventArgs> Connected;
+        public event Action<IHyperSocket, IInitializedEventArgs> Initialized;
+        public event Action<IHyperSocket, IDisconnectedEventArgs> Disconnected;
+        public event Action<IHyperSocket, IDisposedEventArgs> Disposed;
 
         public HyperSocket() : this(new SocketOptions()) {
         }
@@ -131,8 +135,7 @@ namespace Hyperletter {
                     channel.Disconnect();
 
                 var evnt = Disposed;
-                if (evnt != null)
-                    evnt(this);
+                if (evnt != null) evnt(this, new DisposedEventArgs { Socket = this });
             });
         }
 
@@ -172,18 +175,19 @@ namespace Hyperletter {
 
         private void ChannelConnecting(IChannel channel) {
             var evnt = Connecting;
-            if (evnt != null)
-                evnt(this, channel.Binding);
+            if (evnt != null) evnt(this, new ConnectingEventArgs { Binding = channel.Binding, Socket = this });
         }
 
-        private void ChannelConnected(IChannel obj) {
+        private void ChannelConnected(IChannel channel) {
             var evnt = Connected;
-            if (evnt != null)
-                evnt(this, obj.Binding);
+            if (evnt != null) evnt(this, new ConnectedEventArgs { Binding = channel.Binding, Socket = this });
         }
 
-        private void ChannelInitialized(IChannel obj) {
-            _routeChannels.TryAdd(obj.RemoteNodeId, obj);
+        private void ChannelInitialized(IChannel channel) {
+            _routeChannels.TryAdd(channel.RemoteNodeId, channel);
+
+            var evnt = Initialized;
+            if (evnt != null) evnt(this, new InitializedEventArgs { Binding = channel.Binding, Socket = this });
         }
 
         private void ChannelDisconnected(IChannel channel, ShutdownReason reason) {
@@ -197,20 +201,21 @@ namespace Hyperletter {
             }
 
             var evnt = Disconnected;
-            if (evnt != null)
-                evnt(this, binding, reason);
+            if (evnt != null) evnt(this, new DisconnectedEventArgs { Binding = binding, Reason = reason, Socket = this });
         }
 
-        private void ChannelReceived(IChannel channel, ILetter letter) {
+        private void ChannelReceived(ILetter letter, ReceivedEventArgs receivedEventArgs) {
             var evnt = Received;
-            if (evnt != null)
-                evnt(this, letter);
+            if (evnt != null) {
+                receivedEventArgs.Socket = this;
+                evnt(letter, receivedEventArgs);
+            }
         }
 
         private void ChannelSent(IChannel channel, ILetter letter) {
             var evnt = Sent;
             if (evnt != null)
-                evnt(this, letter);
+                evnt(letter, new SentEventArgs { Binding = channel.Binding, Socket = this });
         }
 
         private void ChannelFailedToSend(IChannel channel, ILetter letter) {
@@ -226,15 +231,14 @@ namespace Hyperletter {
         private void Discard(IChannel channel, ILetter letter) {
             var evnt = Discarded;
             if (evnt != null && !letter.Options.HasFlag(LetterOptions.SilentDiscard))
-                evnt(this, channel.Binding, letter);
+                evnt(letter, new DiscardedEventArgs {Binding = channel.Binding, Socket = this});
         }
 
         private void Requeue(ILetter letter) {
             _letterDispatcher.EnqueueLetter(letter);
 
             var evnt = Requeued;
-            if (evnt != null)
-                evnt(letter);
+            if (evnt != null) evnt(letter, new RequeuedEventArgs { Socket = this });
         }
 
         private void ChannelAvailable(IChannel channel) {

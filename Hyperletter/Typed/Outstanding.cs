@@ -1,4 +1,6 @@
 using System;
+using Hyperletter.EventArgs;
+using Hyperletter.EventArgs.Letter;
 using Hyperletter.Letter;
 
 namespace Hyperletter.Typed {
@@ -9,6 +11,6 @@ namespace Hyperletter.Typed {
             Created = DateTime.UtcNow;
         }
 
-        public abstract void SetResult(Metadata metadata, ILetter letter);
+        public abstract void SetResult(Metadata metadata, ILetter letter, IReceivedEventArgs receivedEventArgs);
     }
 }

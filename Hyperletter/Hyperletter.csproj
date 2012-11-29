@@ -9,7 +9,7 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>Hyperletter</RootNamespace>
     <AssemblyName>Hyperletter</AssemblyName>
-    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <TargetFrameworkProfile />
   </PropertyGroup>
@@ -50,6 +50,29 @@
     <Compile Include="Channel\LetterTransmitter.cs" />
     <Compile Include="Channel\OutboundChannel.cs" />
     <Compile Include="Direction.cs" />
+    <Compile Include="EventArgs\AbstractChannelEventArgs.cs" />
+    <Compile Include="EventArgs\Channel\ConnectedEventArgs.cs" />
+    <Compile Include="EventArgs\Channel\ConnectingEventArgs.cs" />
+    <Compile Include="EventArgs\Channel\DisconnectedEventArgs.cs" />
+    <Compile Include="EventArgs\Channel\IConnectedEventArgs.cs" />
+    <Compile Include="EventArgs\Channel\IConnectingEventArgs.cs" />
+    <Compile Include="EventArgs\Channel\IDisconnectedEventArgs.cs" />
+    <Compile Include="EventArgs\Channel\IInitializedEventArgs.cs" />
+    <Compile Include="EventArgs\Channel\InitializedEventArgs.cs" />
+    <Compile Include="EventArgs\IChannelEventArgs.cs" />
+    <Compile Include="EventArgs\ISocketEventArgs.cs" />
+    <Compile Include="EventArgs\Letter\DiscardedEventArgs.cs" />
+    <Compile Include="EventArgs\Letter\IDiscardedEventArgs.cs" />
+    <Compile Include="EventArgs\Letter\IReceivedEventArgs.cs" />
+    <Compile Include="EventArgs\Letter\IRequeuedEventArgs.cs" />
+    <Compile Include="EventArgs\Letter\ISentEventArgs.cs" />
+    <Compile Include="EventArgs\Letter\ReceivedEventArgs.cs" />
+    <Compile Include="EventArgs\Letter\RequeuedEventArgs.cs" />
+    <Compile Include="EventArgs\Letter\SentEventArgs.cs" />
+    <Compile Include="EventArgs\AbstractSocketEventArgs.cs" />
+    <Compile Include="EventArgs\Socket\DisposedEventArgs.cs" />
+    <Compile Include="EventArgs\Socket\IDisposedEventArgs.cs" />
+    <Compile Include="NotificationOptions.cs" />
     <Compile Include="ShutdownReason.cs" />
     <Compile Include="Extension\ConcurrentDictionaryExtensions.cs" />
     <Compile Include="Extension\ConcurrentQueueExtensions.cs" />

@@ -106,13 +106,12 @@ namespace Hyperletter.Channel {
                 if(!ReceivedFullLetter())
                     return;
 
-                var letter = _letterDeserializer.Deserialize(_connectedTo, _receiveBuffer.ToArray());
+                var letter = _letterDeserializer.Deserialize(_receiveBuffer.ToArray());
                 _receiveBuffer = new MemoryStream();
                 _currentLength = 0;
 
                 if (letter.Type == LetterType.Initialize) {
                     _initalized = true;
-                    _connectedTo = letter.RemoteNodeId;
                 }
 
                 if(letter.Type != LetterType.Heartbeat)

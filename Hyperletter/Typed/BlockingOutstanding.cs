@@ -1,5 +1,7 @@
 using System;
 using System.Threading;
+using Hyperletter.EventArgs;
+using Hyperletter.EventArgs.Letter;
 using Hyperletter.Letter;
 
 namespace Hyperletter.Typed {
@@ -13,9 +15,9 @@ namespace Hyperletter.Typed {
 
         public IAnswerable<TResult> Result { get; protected set; }
 
-        public override void SetResult(Metadata metadata, ILetter letter) {
+        public override void SetResult(Metadata metadata, ILetter letter, IReceivedEventArgs receivedEventArgs) {
             var result = _socket.Serializer.Deserialize<TResult>(letter.Parts[1], Type.GetType(metadata.Type));
-            Result = new Answerable<TResult>(_socket, result, letter.RemoteNodeId, metadata.ConversationId);
+            Result = new Answerable<TResult>(_socket, result, receivedEventArgs.RemoteNodeId, metadata.ConversationId);
             _waitLock.Set();
         }
 

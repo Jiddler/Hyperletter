@@ -1,8 +1,10 @@
 using System;
+using Hyperletter.EventArgs;
+using Hyperletter.EventArgs.Letter;
 using Hyperletter.Letter;
 
 namespace Hyperletter.Channel {
-    public interface IChannel {
+    internal interface IChannel {
         bool IsConnected { get; }
         Guid RemoteNodeId { get; }
         Binding Binding { get; }
@@ -14,7 +16,7 @@ namespace Hyperletter.Channel {
         event Action<IChannel> ChannelQueueEmpty;
         event Action<IChannel> ChannelInitialized;
 
-        event Action<IChannel, ILetter> Received;
+        event Action<ILetter, ReceivedEventArgs> Received;
         event Action<IChannel, ILetter> Sent;
         event Action<IChannel, ILetter> FailedToSend;
 

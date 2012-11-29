@@ -1,18 +1,24 @@
 using System;
 using System.Net;
+using Hyperletter.EventArgs;
+using Hyperletter.EventArgs.Channel;
+using Hyperletter.EventArgs.Letter;
+using Hyperletter.EventArgs.Socket;
 using Hyperletter.Letter;
 
 namespace Hyperletter {
     public interface IHyperSocket : IDisposable {
-        event Action<IHyperSocket, Binding> Connecting;
-        event Action<IHyperSocket, Binding> Connected;
-        event Action<IHyperSocket, Binding, ShutdownReason> Disconnected;
-        event Action<IHyperSocket> Disposed;
+        event Action<IHyperSocket, IConnectingEventArgs> Connecting;
+        event Action<IHyperSocket, IConnectedEventArgs> Connected;
+        event Action<IHyperSocket, IInitializedEventArgs> Initialized;
+        event Action<IHyperSocket, IDisconnectedEventArgs> Disconnected;
 
-        event Action<IHyperSocket, ILetter> Sent;
-        event Action<IHyperSocket, Binding, ILetter> Discarded;
-        event Action<ILetter> Requeued;
-        event Action<IHyperSocket, ILetter> Received;
+        event Action<ILetter, ISentEventArgs> Sent;
+        event Action<ILetter, IDiscardedEventArgs> Discarded;
+        event Action<ILetter, IRequeuedEventArgs> Requeued;
+        event Action<ILetter, IReceivedEventArgs> Received;
+
+        event Action<IHyperSocket, IDisposedEventArgs> Disposed;
 
         SocketOptions Options { get; }
 
@@ -23,7 +29,7 @@ namespace Hyperletter {
         
         void Send(ILetter letter);
         void SendTo(ILetter answer, Guid toNodeId);
-        
-        void Dispose();
     }
+
+
 }

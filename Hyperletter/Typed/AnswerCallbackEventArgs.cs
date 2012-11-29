@@ -1,7 +1,7 @@
 using System;
 
 namespace Hyperletter.Typed {
-    public class AnswerCallbackEventArgs<TRequest, TReply> : EventArgs {
+    public class AnswerCallbackEventArgs<TRequest, TReply> : System.EventArgs {
         public AnswerCallbackEventArgs(IAnswerable<TReply> answer, TRequest answerFor) {
             Answer = answer;
             AnswerFor = answerFor;

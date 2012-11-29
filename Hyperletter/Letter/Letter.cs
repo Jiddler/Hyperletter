@@ -1,9 +1,5 @@
-using System;
-
 namespace Hyperletter.Letter {
     public class Letter : ILetter {
-        public Guid RemoteNodeId { get; internal set; }
-
         public LetterType Type { get; set; }
         public LetterOptions Options { get; set; }
 

@@ -9,7 +9,7 @@ namespace BindTest {
     internal class Program {
         public static object SyncRoot = new object();
 
-        private static void Main(string[] args) {
+        private static void Main(string[] arg) {
             var options = new SocketOptions();
             var unicastSocket = new HyperSocket(options);
 
@@ -24,8 +24,8 @@ namespace BindTest {
                 }
             };
 
-            unicastSocket.Disconnected += (socket, binding, reason) => Console.WriteLine("DISCONNECTED " + binding);
-            unicastSocket.Connected += (socket, binding) => Console.WriteLine("CONNECTED " + binding);
+            unicastSocket.Disconnected += (socket, args) => Console.WriteLine("DISCONNECTED " + args.Binding + " " + args.Reason);
+            unicastSocket.Connected += (socket, args) => Console.WriteLine("CONNECTED " + args.Binding);
 
             int received = 0;
             unicastSocket.Received += (socket, letter) => {
@@ -43,7 +43,7 @@ namespace BindTest {
                 }
             };
 
-            int port = int.Parse(args[0]);
+            int port = int.Parse(arg[0]);
             unicastSocket.Bind(IPAddress.Any, port);
 
             string line;

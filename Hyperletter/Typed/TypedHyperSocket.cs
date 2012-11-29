@@ -4,6 +4,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Timers;
+using Hyperletter.EventArgs;
+using Hyperletter.EventArgs.Letter;
 using Hyperletter.Letter;
 using Hyperletter.Extension;
 
@@ -100,7 +102,7 @@ namespace Hyperletter.Typed {
             _socket.Connect(ipAddress, port);
         }
 
-        private void SocketOnReceived(IHyperSocket hyperSocket, ILetter letter) {
+        private void SocketOnReceived(ILetter letter, IReceivedEventArgs receivedEventArgs) {
             if(letter.Parts.Length != 2)
                 return;
 
@@ -109,15 +111,15 @@ namespace Hyperletter.Typed {
             if(messageType == null)
                 return;
 
-            TriggerOutstanding(metadata, letter);
-            TriggerRegistrations(messageType, metadata, letter);
+            TriggerOutstanding(metadata, letter, receivedEventArgs);
+            TriggerRegistrations(messageType, metadata, letter, receivedEventArgs);
         }
 
-        private void TriggerRegistrations(Type type, Metadata metadata, ILetter letter) {
+        private void TriggerRegistrations(Type type, Metadata metadata, ILetter letter, IReceivedEventArgs receivedEventArgs) {
             var registrations = GetMatchingRegistrations(type);
 
             foreach(var registration in registrations)
-                registration.Invoke(this, letter, metadata, type);
+                registration.Invoke(this, letter, metadata, type, receivedEventArgs);
         }
 
         private IEnumerable<Registration> GetMatchingRegistrations(Type type) {
@@ -130,10 +132,10 @@ namespace Hyperletter.Typed {
             }
         }
 
-        private void TriggerOutstanding(Metadata metadata, ILetter letter) {
+        private void TriggerOutstanding(Metadata metadata, ILetter letter, IReceivedEventArgs receivedEventArgs) {
             Outstanding outstanding;
             if (_outstandings.TryGetValue(metadata.ConversationId, out outstanding)) {
-                outstanding.SetResult(metadata, letter);
+                outstanding.SetResult(metadata, letter, receivedEventArgs);
                 _outstandings.Remove(metadata.ConversationId);
             }
         }

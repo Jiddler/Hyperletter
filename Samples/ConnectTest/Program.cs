@@ -31,11 +31,11 @@ namespace ConnectTest {
                                               Console.WriteLine("RECEIVED: " + received);
                                       };
 
-            unicastSocket.Discarded += (socket, binding, letter) => Console.WriteLine("DISCARDED: " + binding + " " + Encoding.Unicode.GetString(letter.Parts[0]));
-            unicastSocket.Requeued += letter => Console.WriteLine("REQUEUED: " + letter);
+            unicastSocket.Discarded += (letter, args) => Console.WriteLine("DISCARDED: " + args.Binding + " " + Encoding.Unicode.GetString(letter.Parts[0]));
+            unicastSocket.Requeued += (letter, args) => Console.WriteLine("REQUEUED: " + letter);
 
-            unicastSocket.Disconnected += (socket, binding, reason) => Console.WriteLine("DISCONNECTED " + binding);
-            unicastSocket.Connected += (socket, binding) => Console.WriteLine("CONNECTED " + binding);
+            unicastSocket.Disconnected += (socket, args) => Console.WriteLine("DISCONNECTED " + args.Binding);
+            unicastSocket.Connected += (socket, args) => Console.WriteLine("CONNECTED " + args.Binding);
             
             unicastSocket.Connect(IPAddress.Parse("127.0.0.1"), 8001);
             //unicastSocket.Connect(IPAddress.Parse("127.0.0.1"), 8002);

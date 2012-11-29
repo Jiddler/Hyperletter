@@ -1,4 +1,6 @@
 using System;
+using Hyperletter.EventArgs;
+using Hyperletter.EventArgs.Letter;
 using Hyperletter.Letter;
 
 namespace Hyperletter.Typed {
@@ -13,9 +15,9 @@ namespace Hyperletter.Typed {
             _serializer = serializer;
         }
 
-        public override void Invoke(TypedHyperSocket socket, ILetter letter, Metadata metadata, Type concreteType) {
+        public override void Invoke(TypedHyperSocket socket, ILetter letter, Metadata metadata, Type concreteType, IReceivedEventArgs receivedEventArgs) {
             var message = _serializer.Deserialize<TMessage>(letter.Parts[1], concreteType);
-            var answerable = new Answerable<TMessage>(_socket, message, letter.RemoteNodeId, metadata.ConversationId);
+            var answerable = new Answerable<TMessage>(_socket, message, receivedEventArgs.RemoteNodeId, metadata.ConversationId);
             _callback(socket, answerable);
         }
     }

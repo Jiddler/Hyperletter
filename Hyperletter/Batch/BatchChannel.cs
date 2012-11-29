@@ -3,6 +3,8 @@ using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Timers;
 using Hyperletter.Channel;
+using Hyperletter.EventArgs;
+using Hyperletter.EventArgs.Letter;
 using Hyperletter.Extension;
 using Hyperletter.Letter;
 
@@ -25,7 +27,7 @@ namespace Hyperletter.Batch {
         public event Action<IChannel> ChannelQueueEmpty;
         public event Action<IChannel> ChannelInitialized;
 
-        public event Action<IChannel, ILetter> Received;
+        public event Action<ILetter, ReceivedEventArgs> Received;
         public event Action<IChannel, ILetter> Sent;
         public event Action<IChannel, ILetter> FailedToSend;
 
@@ -140,8 +142,8 @@ namespace Hyperletter.Batch {
             TrySendBatch(false);
         }
 
-        private void ChannelOnReceived(IChannel channel, ILetter letter) {
-            Received(this, letter);
+        private void ChannelOnReceived(ILetter letter, ReceivedEventArgs receivedEventArgs) {
+            Received(letter, receivedEventArgs);
         }
 
         private void ChannelOnFailedToSend(IChannel channel, ILetter letter) {

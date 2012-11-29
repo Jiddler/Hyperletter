@@ -2,7 +2,8 @@ using System;
 using System.Collections.Concurrent;
 using System.Net.Sockets;
 using System.Threading;
-using System.Threading.Tasks;
+using Hyperletter.EventArgs;
+using Hyperletter.EventArgs.Letter;
 using Hyperletter.Extension;
 using Hyperletter.Letter;
 
@@ -43,7 +44,7 @@ namespace Hyperletter.Channel {
         public event Action<IChannel> ChannelQueueEmpty;
         public event Action<IChannel> ChannelInitialized;
 
-        public event Action<IChannel, ILetter> Received;
+        public event Action<ILetter, ReceivedEventArgs> Received;
         public event Action<IChannel, ILetter> Sent;
         public event Action<IChannel, ILetter> FailedToSend;
 
@@ -167,19 +168,25 @@ namespace Hyperletter.Channel {
         private void HandleReceivedLetter(ILetter receivedLetter) {
             switch(receivedLetter.Type) {
                 case LetterType.Initialize:
-                    RemoteNodeId = receivedLetter.RemoteNodeId;
+                    RemoteNodeId = new Guid(receivedLetter.Parts[0]);
                     HandleInitialize();
                     break;
 
                 case LetterType.User:
-                    Received(this, receivedLetter);
+                    Received(receivedLetter, CreateReceivedEventArgs(receivedLetter));
                     break;
 
                 case LetterType.Batch:
-                    for(var i = 0; i < receivedLetter.Parts.Length; i++)
-                        Received(this, _letterDeserializer.Deserialize(RemoteNodeId, receivedLetter.Parts[i]));
+                    for (var i = 0; i < receivedLetter.Parts.Length; i++) {
+                        var batchedLetter = _letterDeserializer.Deserialize(receivedLetter.Parts[i]);
+                        Received(batchedLetter, CreateReceivedEventArgs(batchedLetter));
+                    }
                     break;
             }
+        }
+
+        private ReceivedEventArgs CreateReceivedEventArgs(ILetter letter) {
+            return new ReceivedEventArgs { Acked = letter.Options.HasFlag(LetterOptions.Ack), RemoteNodeId = RemoteNodeId };
         }
 
         private void HandleLetterSent(ILetter sentLetter) {

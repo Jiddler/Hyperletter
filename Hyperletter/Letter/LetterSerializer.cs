@@ -3,18 +3,13 @@ using System.IO;
 
 namespace Hyperletter.Letter {
     internal class LetterDeserializer {
-        public ILetter Deserialize(Guid nodeId, byte[] serializedLetter) {
+        public ILetter Deserialize(byte[] serializedLetter) {
             var letter = new Letter();
 
             int position = 4;
-            letter.RemoteNodeId = nodeId;
             letter.Type = (LetterType) serializedLetter[position++];
             letter.Options = (LetterOptions) serializedLetter[position++];
             letter.Parts = ReadParts(serializedLetter, ref position);
-
-            if (letter.Type == LetterType.Initialize) {
-                letter.RemoteNodeId = new Guid(letter.Parts[0]);
-            }
 
             return letter;
         }
