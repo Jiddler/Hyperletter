@@ -6,7 +6,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using Hyperletter.Batch;
 using Hyperletter.Channel;
-using Hyperletter.EventArgs;
 using Hyperletter.EventArgs.Channel;
 using Hyperletter.EventArgs.Letter;
 using Hyperletter.EventArgs.Socket;

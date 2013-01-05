@@ -2,7 +2,6 @@ using System;
 using System.Collections.Concurrent;
 using System.Net.Sockets;
 using System.Threading;
-using Hyperletter.EventArgs;
 using Hyperletter.EventArgs.Letter;
 using Hyperletter.Extension;
 using Hyperletter.Letter;
