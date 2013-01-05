@@ -3,7 +3,10 @@ using Hyperletter.Letter;
 
 namespace Hyperletter.Typed {
     public interface IAnswerable<out TMessage> {
+        Guid RemoteNodeId { get; }
+
         TMessage Message { get; }
+
         void Answer<T>(T value);
         void Answer<T>(T value, LetterOptions options);
         void Answer<TValue, TReply>(TValue value, Action<IAnswerable<TReply>> callback);

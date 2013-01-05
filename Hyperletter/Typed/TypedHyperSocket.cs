@@ -185,7 +185,7 @@ namespace Hyperletter.Typed {
         }
 
         internal void Answer<T>(T value, AbstractAnswerable answerable, LetterOptions options) {
-            _socket.SendTo(CreateLetter(value, options, answerable.ConversationId), answerable.ReceivedFrom);
+            _socket.SendTo(CreateLetter(value, options, answerable.ConversationId), answerable.RemoteNodeId);
         }
 
         internal void Answer<TRequest, TReply>(TRequest value, AbstractAnswerable answerable, LetterOptions options, AnswerCallback<TRequest, TReply> callback) {
@@ -193,7 +193,7 @@ namespace Hyperletter.Typed {
             var outstanding = new DelegateOutstanding<TRequest, TReply>(this, value, callback);
             _outstandings.Add(answerable.ConversationId, outstanding);
 
-            _socket.SendTo(letter, answerable.ReceivedFrom);
+            _socket.SendTo(letter, answerable.RemoteNodeId);
         }
 
         internal IAnswerable<TReply> Answer<TValue, TReply>(TValue value, AbstractAnswerable answerable, LetterOptions options) {
@@ -201,7 +201,7 @@ namespace Hyperletter.Typed {
             var outstanding = new BlockingOutstanding<TReply>(this);
             _outstandings.Add(answerable.ConversationId, outstanding);
 
-            _socket.SendTo(letter, answerable.ReceivedFrom);
+            _socket.SendTo(letter, answerable.RemoteNodeId);
 
             try {
                 outstanding.Wait();
