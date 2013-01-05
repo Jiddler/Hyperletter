@@ -187,7 +187,7 @@ namespace Hyperletter {
             _routeChannels.TryAdd(channel.RemoteNodeId, channel);
 
             var evnt = Initialized;
-            if (evnt != null) evnt(this, new InitializedEventArgs { Binding = channel.Binding, Socket = this });
+            if (evnt != null) evnt(this, new InitializedEventArgs { Binding = channel.Binding, Socket = this, RemoteNodeId = channel.RemoteNodeId });
         }
 
         private void ChannelDisconnected(IChannel channel, ShutdownReason reason) {
@@ -231,7 +231,7 @@ namespace Hyperletter {
         private void Discard(IChannel channel, ILetter letter) {
             var evnt = Discarded;
             if (evnt != null && !letter.Options.HasFlag(LetterOptions.SilentDiscard))
-                evnt(letter, new DiscardedEventArgs {Binding = channel.Binding, Socket = this});
+                evnt(letter, new DiscardedEventArgs {Binding = channel.Binding, Socket = this, RemoteNodeId = channel.RemoteNodeId });
         }
 
         private void Requeue(ILetter letter) {
