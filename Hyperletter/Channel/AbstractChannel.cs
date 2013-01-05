@@ -145,10 +145,14 @@ namespace Hyperletter.Channel {
             if(receivedLetter.Type == LetterType.Ack) {
                 HandleLetterSent(_queue.Dequeue());
             } else {
-                if(receivedLetter.Options.HasFlag(LetterOptions.Ack))
+                if(receivedLetter.Options.HasFlag(LetterOptions.Ack)) {
+                    if(_options.Notification.NotifyBeforeSendingAck)
+                        HandleReceivedLetter(receivedLetter, false);
+
                     QueueAck(receivedLetter);
-                else
-                    HandleReceivedLetter(receivedLetter);
+                } else {
+                    HandleReceivedLetter(receivedLetter, false);
+                }
             }
         }
 
@@ -162,10 +166,10 @@ namespace Hyperletter.Channel {
 
         private void HandleAckSent() {
             var receivedLetter = _receivedQueue.Dequeue();
-            HandleReceivedLetter(receivedLetter);
+            HandleReceivedLetter(receivedLetter, true);
         }
 
-        private void HandleReceivedLetter(ILetter receivedLetter) {
+        private void HandleReceivedLetter(ILetter receivedLetter, bool acked) {
             switch(receivedLetter.Type) {
                 case LetterType.Initialize:
                     RemoteNodeId = new Guid(receivedLetter.Parts[0]);
@@ -173,20 +177,20 @@ namespace Hyperletter.Channel {
                     break;
 
                 case LetterType.User:
-                    Received(receivedLetter, CreateReceivedEventArgs(receivedLetter));
+                    Received(receivedLetter, CreateReceivedEventArgs(receivedLetter, acked));
                     break;
 
                 case LetterType.Batch:
                     for (var i = 0; i < receivedLetter.Parts.Length; i++) {
                         var batchedLetter = _letterDeserializer.Deserialize(receivedLetter.Parts[i]);
-                        Received(batchedLetter, CreateReceivedEventArgs(batchedLetter));
+                        Received(batchedLetter, CreateReceivedEventArgs(batchedLetter, acked));
                     }
                     break;
             }
         }
 
-        private ReceivedEventArgs CreateReceivedEventArgs(ILetter letter) {
-            return new ReceivedEventArgs { Acked = letter.Options.HasFlag(LetterOptions.Ack), RemoteNodeId = RemoteNodeId };
+        private ReceivedEventArgs CreateReceivedEventArgs(ILetter letter, bool acked) {
+            return new ReceivedEventArgs { Acked = acked, AckRequested = letter.Options.HasFlag(LetterOptions.Ack), RemoteNodeId = RemoteNodeId };
         }
 
         private void HandleLetterSent(ILetter sentLetter) {
