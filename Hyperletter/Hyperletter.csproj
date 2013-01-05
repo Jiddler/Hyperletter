@@ -113,6 +113,7 @@
     <Compile Include="Typed\NoMatchingConstructorException.cs" />
     <Compile Include="Typed\Outstanding.cs" />
     <Compile Include="Typed\Registration.cs" />
+    <Compile Include="Typed\SocketDisposedException.cs" />
     <Compile Include="Typed\TypedSocketOptions.cs" />
     <Compile Include="Typed\TypedHyperSocket.cs" />
     <Compile Include="Utility\ConcurrentHashSet.cs" />

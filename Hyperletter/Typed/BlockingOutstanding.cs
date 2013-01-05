@@ -1,6 +1,5 @@
 using System;
 using System.Threading;
-using Hyperletter.EventArgs;
 using Hyperletter.EventArgs.Letter;
 using Hyperletter.Letter;
 
@@ -14,6 +13,7 @@ namespace Hyperletter.Typed {
         }
 
         public IAnswerable<TResult> Result { get; protected set; }
+        public Exception Exception { get; protected set; }
 
         public override void SetResult(Metadata metadata, ILetter letter, IReceivedEventArgs receivedEventArgs) {
             var result = _socket.Serializer.Deserialize<TResult>(letter.Parts[1], Type.GetType(metadata.Type));
@@ -21,10 +21,17 @@ namespace Hyperletter.Typed {
             _waitLock.Set();
         }
 
+        public override void SetResult(Exception exception) {
+            Exception = exception;
+            _waitLock.Set();
+        }
+
         public void Wait() {
-            if(!_waitLock.Wait(_socket.Options.AnswerTimeout)) {
+            if(!_waitLock.Wait(_socket.Options.AnswerTimeout))
                 throw new TimeoutException();
-            }
+
+            if(Exception != null)
+                throw Exception;
         }
     }
 }

@@ -1,6 +1,5 @@
 using System;
 using System.Net;
-using Hyperletter.EventArgs;
 using Hyperletter.EventArgs.Channel;
 using Hyperletter.EventArgs.Letter;
 using Hyperletter.EventArgs.Socket;

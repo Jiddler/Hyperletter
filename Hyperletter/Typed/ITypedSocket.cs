@@ -1,8 +1,16 @@
 using System;
+using Hyperletter.EventArgs.Channel;
+using Hyperletter.EventArgs.Socket;
 using Hyperletter.Letter;
 
 namespace Hyperletter.Typed {
-    public interface ITypedSocket {
+    public interface ITypedSocket : IDisposable {
+        event Action<ITypedSocket, IConnectingEventArgs> Connecting;
+        event Action<ITypedSocket, IConnectedEventArgs> Connected;
+        event Action<ITypedSocket, IInitializedEventArgs> Initialized;
+        event Action<ITypedSocket, IDisconnectedEventArgs> Disconnected;
+        event Action<ITypedSocket, IDisposedEventArgs> Disposed;
+
         void Register<TMessage, THandler>() where THandler : ITypedHandler<TMessage>;
         void Register<TMessage>(Action<ITypedSocket, IAnswerable<TMessage>> handler);
 

@@ -4,8 +4,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Timers;
-using Hyperletter.EventArgs;
+using Hyperletter.EventArgs.Channel;
 using Hyperletter.EventArgs.Letter;
+using Hyperletter.EventArgs.Socket;
 using Hyperletter.Letter;
 using Hyperletter.Extension;
 
@@ -15,14 +16,24 @@ namespace Hyperletter.Typed {
     public class TypedHyperSocket : ITypedSocket {
         private readonly ITypedHandlerFactory _handlerFactory;
 
-        private readonly ConcurrentDictionary<Guid, Outstanding> _outstandings = new ConcurrentDictionary<Guid, Outstanding>();
-        private readonly DictionaryList<Type, Registration> _registry = new DictionaryList<Type, Registration>();
         private readonly Timer _cleanUpTimer;
         private readonly TypedSocketOptions _options;
         private readonly IHyperSocket _socket;
 
+        private readonly ConcurrentDictionary<Guid, Outstanding> _outstandings = new ConcurrentDictionary<Guid, Outstanding>();
+        private readonly DictionaryList<Type, Registration> _registry = new DictionaryList<Type, Registration>();
+        private bool _disposing;
+
         public TypedSocketOptions Options { get { return _options; } }
         public IHyperSocket Socket { get { return _socket; } }
+
+        internal ITransportSerializer Serializer { get; private set; }
+
+        public event Action<ITypedSocket, IConnectingEventArgs> Connecting;
+        public event Action<ITypedSocket, IConnectedEventArgs> Connected;
+        public event Action<ITypedSocket, IInitializedEventArgs> Initialized;
+        public event Action<ITypedSocket, IDisconnectedEventArgs> Disconnected;
+        public event Action<ITypedSocket, IDisposedEventArgs> Disposed;
 
         public TypedHyperSocket(ITypedHandlerFactory handlerFactory, ITransportSerializer serializer) : this(new TypedSocketOptions(), handlerFactory, serializer) {
         }
@@ -30,7 +41,8 @@ namespace Hyperletter.Typed {
         public TypedHyperSocket(TypedSocketOptions options, ITypedHandlerFactory handlerFactory, ITransportSerializer serializer) {
             _options = options;
             _socket = new HyperSocket(options.Socket);
-            _socket.Received += SocketOnReceived;
+            HookEvents();
+
             _handlerFactory = handlerFactory;
 
             _cleanUpTimer = new Timer(options.AnswerTimeout.TotalMilliseconds/4);
@@ -40,22 +52,62 @@ namespace Hyperletter.Typed {
             Serializer = serializer;
         }
 
-        private void CleanUp(object sender, ElapsedEventArgs elapsedEventArgs) {
-            _cleanUpTimer.Stop();
-
-            foreach (var pair in _outstandings.Where(x => (x.Value.Created + _options.AnswerTimeout) < DateTime.UtcNow)) {
-                var outstanding = pair.Value as DelegateOutstanding;
-                if(outstanding == null)
-                    continue;
-
-                outstanding.SetResult(new TimeoutException());
-                _outstandings.Remove(pair.Key);
-            }
-
-            _cleanUpTimer.Start();
+        private void HookEvents() {
+            _socket.Received += SocketOnReceived;
+            _socket.Connecting += OnSocketOnConnecting;
+            _socket.Connected += OnSocketOnConnected;
+            _socket.Initialized += OnSocketOnInitialized;
+            _socket.Disconnected += OnSocketOnDisconnected;
+            _socket.Disposed += OnSocketOnDisposed;
         }
 
-        internal ITransportSerializer Serializer { get; private set; }
+        private void UnhookEvents() {
+            _socket.Received -= SocketOnReceived;
+            _socket.Connecting -= OnSocketOnConnecting;
+            _socket.Connected -= OnSocketOnConnected;
+            _socket.Initialized -= OnSocketOnInitialized;
+            _socket.Disconnected -= OnSocketOnDisconnected;
+            _socket.Disposed -= OnSocketOnDisposed;
+        }
+
+        public void Bind(IPAddress ipAddress, int port) {
+            _socket.Bind(ipAddress, port);
+        }
+
+        public void Connect(IPAddress ipAddress, int port) {
+            _socket.Connect(ipAddress, port);
+        }
+
+        private void OnSocketOnConnecting(IHyperSocket socket, IConnectingEventArgs args) {
+            var evnt = Connecting;
+            if(evnt != null) evnt(this, args);
+        }
+
+        private void OnSocketOnConnected(IHyperSocket socket, IConnectedEventArgs args) {
+            var evnt = Connected;
+            if (evnt != null) evnt(this, args);
+        }
+
+        private void OnSocketOnInitialized(IHyperSocket socket, IInitializedEventArgs args) {
+            var evnt = Initialized;
+            if (evnt != null) evnt(this, args);
+        }
+
+        private void OnSocketOnDisconnected(IHyperSocket socket, IDisconnectedEventArgs args) {
+            var evnt = Disconnected;
+            if (evnt != null) evnt(this, args);
+        }
+
+        private void OnSocketOnDisposed(IHyperSocket socket, IDisposedEventArgs args) {
+            UnhookEvents();
+            _cleanUpTimer.Dispose();
+
+            foreach(var outstanding in _outstandings.Values)
+                outstanding.SetResult(new SocketDisposedException());
+
+            var evnt = Disposed;
+            if (evnt != null) evnt(this, args);
+        }
 
         public void Register<TMessage, THandler>() where THandler : ITypedHandler<TMessage> {
             _registry.Add(typeof(TMessage), new HandlerRegistration<THandler, TMessage>(this, _handlerFactory, Serializer));
@@ -92,14 +144,6 @@ namespace Hyperletter.Typed {
             _outstandings.Add(conversationId, outstanding);
 
             _socket.Send(letter);
-        }
-
-        public void Bind(IPAddress ipAddress, int port) {
-            _socket.Bind(ipAddress, port);
-        }
-
-        public void Connect(IPAddress ipAddress, int port) {
-            _socket.Connect(ipAddress, port);
         }
 
         private void SocketOnReceived(ILetter letter, IReceivedEventArgs receivedEventArgs) {
@@ -178,6 +222,27 @@ namespace Hyperletter.Typed {
             var letter = new Letter.Letter(options) { Type = LetterType.User, Parts = parts };
 
             return letter;
+        }
+
+        private void CleanUp(object sender, ElapsedEventArgs elapsedEventArgs) {
+            _cleanUpTimer.Stop();
+
+            foreach (var pair in _outstandings.Where(x => (x.Value.Created + _options.AnswerTimeout) < DateTime.UtcNow)) {
+                var outstanding = pair.Value as DelegateOutstanding;
+                if (outstanding == null)
+                    continue;
+
+                outstanding.SetResult(new TimeoutException());
+                _outstandings.Remove(pair.Key);
+            }
+
+            if(!_disposing)
+                _cleanUpTimer.Start();
+        }
+
+        public void Dispose() {
+            _disposing = true;
+            _socket.Dispose();
         }
     }
 }

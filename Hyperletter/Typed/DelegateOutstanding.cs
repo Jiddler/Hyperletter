@@ -1,11 +1,9 @@
 using System;
-using Hyperletter.EventArgs;
 using Hyperletter.EventArgs.Letter;
 using Hyperletter.Letter;
 
 namespace Hyperletter.Typed {
     internal abstract class DelegateOutstanding : Outstanding {
-        public abstract void SetResult(Exception exception);
     }
 
     internal class DelegateOutstanding<TRequest, TReply> : DelegateOutstanding {

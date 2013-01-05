@@ -1,5 +1,4 @@
 using System;
-using Hyperletter.EventArgs;
 using Hyperletter.EventArgs.Letter;
 using Hyperletter.Letter;
 
@@ -12,5 +11,6 @@ namespace Hyperletter.Typed {
         }
 
         public abstract void SetResult(Metadata metadata, ILetter letter, IReceivedEventArgs receivedEventArgs);
+        public abstract void SetResult(Exception exception);
     }
 }
