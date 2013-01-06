@@ -6,6 +6,7 @@ namespace Hyperletter.Letter {
         public byte[][] Parts { get; set; }
 
         public Letter() {
+            Type = LetterType.User;
         }
 
         public Letter(LetterOptions options) {
