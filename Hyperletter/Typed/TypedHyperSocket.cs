@@ -121,7 +121,7 @@ namespace Hyperletter.Typed {
             _socket.Send(CreateLetter(value, options, Guid.NewGuid()));
         }
 
-        public IAnswerable<TReply> Send<TValue, TReply>(TValue value, LetterOptions options = LetterOptions.None) {
+        public IAnswerable<TReply> Send<TRequest, TReply>(TRequest value, LetterOptions options = LetterOptions.None) {
             var conversationId = Guid.NewGuid();
             var letter = CreateLetter(value, options, conversationId);
             var outstanding = new BlockingOutstanding<TReply>(this);
