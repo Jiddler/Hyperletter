@@ -9,7 +9,7 @@ namespace Hyperletter.Letter {
             Type = LetterType.User;
         }
 
-        public Letter(LetterOptions options) {
+        public Letter(LetterOptions options) : this() {
             Options = options;
         }
 
