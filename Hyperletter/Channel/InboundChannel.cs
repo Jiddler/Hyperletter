@@ -3,9 +3,9 @@ using Hyperletter.Letter;
 
 namespace Hyperletter.Channel {
     internal class InboundChannel : AbstractChannel {
-        public InboundChannel(SocketOptions options, TcpClient tcpClient, Binding binding, LetterDeserializer letterDeserializer, HyperletterFactory factory)
+        public InboundChannel(SocketOptions options, Socket socket, Binding binding, LetterDeserializer letterDeserializer, HyperletterFactory factory)
             : base(options, binding, letterDeserializer, factory) {
-            TcpClient = tcpClient;
+            Socket = socket;
         }
 
         public override Direction Direction {

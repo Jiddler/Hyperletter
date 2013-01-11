@@ -73,7 +73,7 @@ namespace Hyperletter {
                 var channel = _channelQueue.Take(_cancellationToken);
                 _queuedChannels.Remove(channel);
 
-                if(!channel.IsConnected)
+                if(!channel.IsConnected || channel.ShutdownRequested)
                     continue;
 
                 return channel;

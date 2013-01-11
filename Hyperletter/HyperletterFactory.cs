@@ -35,8 +35,8 @@ namespace Hyperletter {
             return _container.Resolve<BatchChannel>(channel);
         }
 
-        public InboundChannel CreateInboundChannel(TcpClient tcpClient, Binding binding) {
-            return _container.Resolve<InboundChannel>(tcpClient, binding);
+        public InboundChannel CreateInboundChannel(Socket socket, Binding binding) {
+            return _container.Resolve<InboundChannel>(socket, binding);
         }
     }
 }

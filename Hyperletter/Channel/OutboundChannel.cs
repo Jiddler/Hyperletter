@@ -27,9 +27,9 @@ namespace Hyperletter.Channel {
 
             ChannelConnecting(this);
 
-            TcpClient = new TcpClient();
+            Socket = new Socket(SocketType.Stream, ProtocolType.IP);
             try {
-                TcpClient.BeginConnect(Binding.IpAddress, Binding.Port, EndConnect, null);
+                Socket.BeginConnect(Binding.IpAddress, Binding.Port, EndConnect, null);
             } catch(Exception) {
                 TryReconnect();
             }
@@ -37,14 +37,14 @@ namespace Hyperletter.Channel {
 
         private void EndConnect(IAsyncResult ar) {
             try {
-                TcpClient.EndConnect(ar);
+                Socket.EndConnect(ar);
             } catch (Exception) {
                 TryReconnect();
                 return;
             }
 
-            TcpClient.NoDelay = true;
-            TcpClient.LingerState = new LingerOption(true, 1);
+            Socket.NoDelay = true;
+            Socket.LingerState = new LingerOption(true, 1);
             
             Connected();
         }

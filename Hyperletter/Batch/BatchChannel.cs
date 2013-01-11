@@ -3,7 +3,6 @@ using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Timers;
 using Hyperletter.Channel;
-using Hyperletter.EventArgs;
 using Hyperletter.EventArgs.Letter;
 using Hyperletter.Extension;
 using Hyperletter.Letter;
@@ -52,6 +51,10 @@ namespace Hyperletter.Batch {
 
         public bool IsConnected {
             get { return _channel.IsConnected; }
+        }
+
+        public bool ShutdownRequested {
+            get { return _channel.ShutdownRequested; }
         }
 
         public Guid RemoteNodeId {

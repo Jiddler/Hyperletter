@@ -20,7 +20,7 @@ namespace Hyperletter.Channel {
         private readonly HyperletterFactory _factory;
 
         protected bool Disposed;
-        protected TcpClient TcpClient;
+        protected Socket Socket;
 
         private int _initalizationCount;
 
@@ -28,15 +28,16 @@ namespace Hyperletter.Channel {
         private int _lastActionHeartbeat;
         private LetterReceiver _receiver;
         private LetterTransmitter _transmitter;
-        private bool _wasConnected;
-        private bool _shutdownRequested;
         private DateTime _connectedAt;
 
+        public bool ShutdownRequested { get; private set; }
         public bool IsConnected { get; private set; }
+
+        public bool CanSend { get { return IsConnected && !ShutdownRequested; } }
         public Guid RemoteNodeId { get; private set; }
         public Binding Binding { get; private set; }
         public abstract Direction Direction { get; }
-
+        
         public virtual event Action<IChannel> ChannelConnecting;
         public event Action<IChannel> ChannelConnected;
         public event Action<IChannel, ShutdownReason> ChannelDisconnected;
@@ -58,7 +59,7 @@ namespace Hyperletter.Channel {
         }
 
         public EnqueueResult Enqueue(ILetter letter) {
-            if (!IsConnected) {
+            if (!CanSend) {
                 FailedToSend(this, letter);
                 return EnqueueResult.CantEnqueueMore;
             }
@@ -77,7 +78,7 @@ namespace Hyperletter.Channel {
         protected void Connected() {
             _connectedAt = DateTime.UtcNow;
             IsConnected = true;
-            _shutdownRequested = false;
+            ShutdownRequested = false;
 
             CreateTransmitter();
             CreateReceiver();
@@ -91,7 +92,7 @@ namespace Hyperletter.Channel {
                 _receiver.Received -= ReceiverReceived;
                 _receiver.SocketError -= Shutdown;
             }
-            _receiver = _factory.CreateLetterReceiver(TcpClient.Client);
+            _receiver = _factory.CreateLetterReceiver(Socket);
             _receiver.Received += ReceiverReceived;
             _receiver.SocketError += Shutdown;
             _receiver.Start();
@@ -103,7 +104,7 @@ namespace Hyperletter.Channel {
                 _transmitter.SocketError -= Shutdown;
             }
 
-            _transmitter = _factory.CreateLetterTransmitter(TcpClient.Client);
+            _transmitter = _factory.CreateLetterTransmitter(Socket);
             _transmitter.Sent += TransmitterOnSent;
             _transmitter.SocketError += Shutdown;
             _transmitter.Start();
@@ -215,14 +216,14 @@ namespace Hyperletter.Channel {
 
         private void Shutdown(ShutdownReason reason) {
             lock (this) {
-                if(_shutdownRequested)
+                if(ShutdownRequested)
                     return;
 
-                _shutdownRequested = true;
+                ShutdownRequested = true;
             }
 
             _initalizationCount = 0;
-            _wasConnected = IsConnected;
+            var wasConnected = IsConnected;
             IsConnected = false;
 
             if(_transmitter != null) _transmitter.Stop();
@@ -232,7 +233,7 @@ namespace Hyperletter.Channel {
             WaitForTranseiviersToShutDown();
             FailQueuedLetters();
 
-            if (_wasConnected) {
+            if (wasConnected) {
                 ChannelDisconnected(this, reason);
                 AfterDisconnectHook(reason);
             }
@@ -256,11 +257,9 @@ namespace Hyperletter.Channel {
 
         private void DisconnectSocket() {
             try {
-                if(TcpClient.Client != null) {
-                    TcpClient.Client.Disconnect(false);
-                    TcpClient.Client.Dispose();
+                if(Socket != null) {
+                    Socket.Close();
                 }
-                TcpClient.Close();
             } catch(Exception) {
             }
         }

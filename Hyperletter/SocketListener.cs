@@ -7,8 +7,8 @@ namespace Hyperletter {
     internal class SocketListener : IDisposable {
         private readonly Binding _binding;
         private readonly HyperletterFactory _factory;
-        private TcpListener _listener;
         private bool _listening;
+        private Socket _socket;
 
         public event Action<InboundChannel> IncomingChannel;
 
@@ -22,8 +22,9 @@ namespace Hyperletter {
         }
 
         public void Start() {
-            _listener = new TcpListener(_binding.IpAddress, _binding.Port);
-            _listener.Start();
+            _socket = new Socket(SocketType.Stream, ProtocolType.IP);
+            _socket.Bind(new IPEndPoint(_binding.IpAddress, _binding.Port));
+            _socket.Listen(20);
 
             _listening = true;
 
@@ -33,11 +34,11 @@ namespace Hyperletter {
         public void Stop() {
             _listening = false;
 
-            if (_listener == null)
+            if (_socket == null)
                 return;
 
             try {
-                _listener.Stop();
+                _socket.Close();
             } catch(SocketException) {
             }
         }
@@ -46,7 +47,7 @@ namespace Hyperletter {
             if (!_listening)
                 return;
 
-            _listener.BeginAcceptTcpClient(EndAccept, null);
+            _socket.BeginAccept(EndAccept, null);
         }
 
         private void EndAccept(IAsyncResult res) {
@@ -55,11 +56,11 @@ namespace Hyperletter {
 
             StartListen();
 
-            var tcpClient = _listener.EndAcceptTcpClient(res);
-            tcpClient.NoDelay = true;
-            tcpClient.LingerState = new LingerOption(true, 1);
-            var binding = GetBinding(tcpClient.Client.RemoteEndPoint);
-            var boundChannel = _factory.CreateInboundChannel(tcpClient, binding);
+            var socket = _socket.EndAccept(res);
+            socket.NoDelay = true;
+            socket.LingerState = new LingerOption(true, 1);
+            var binding = GetBinding(socket.RemoteEndPoint);
+            var boundChannel = _factory.CreateInboundChannel(socket, binding);
             IncomingChannel(boundChannel);
         }
 

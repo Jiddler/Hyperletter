@@ -1,11 +1,11 @@
 using System;
-using Hyperletter.EventArgs;
 using Hyperletter.EventArgs.Letter;
 using Hyperletter.Letter;
 
 namespace Hyperletter.Channel {
     internal interface IChannel {
         bool IsConnected { get; }
+        bool ShutdownRequested { get; }
         Guid RemoteNodeId { get; }
         Binding Binding { get; }
         Direction Direction { get; }
