@@ -7,6 +7,7 @@ namespace Hyperletter.Letter {
         SilentDiscard = 1,
         Requeue = 2,
         Ack = 4,
+        UniqueId = 8,
         Multicast = 64
     }
 }

@@ -1,5 +1,13 @@
+using System;
+
 namespace Hyperletter.Letter {
     public class Letter : ILetter {
+        private Guid? _id;
+        public Guid UniqueId {
+            get { return (_id ?? (_id = Guid.NewGuid())).Value; }
+            set { _id = value; }
+        }
+
         public LetterType Type { get; set; }
         public LetterOptions Options { get; set; }
 

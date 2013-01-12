@@ -9,6 +9,12 @@ namespace Hyperletter.Letter {
             int position = 4;
             letter.Type = (LetterType) serializedLetter[position++];
             letter.Options = (LetterOptions) serializedLetter[position++];
+
+            if(letter.Options.HasFlag(LetterOptions.UniqueId)) {
+                letter.UniqueId = new Guid(GetByteRange(serializedLetter, position, 16));
+                position += 16;
+            }
+
             letter.Parts = ReadParts(serializedLetter, ref position);
 
             return letter;
@@ -64,6 +70,9 @@ namespace Hyperletter.Letter {
             ms.Position = 4;
             ms.WriteByte((byte) letter.Type);
             ms.WriteByte((byte) letter.Options);
+            if(letter.Options.HasFlag(LetterOptions.UniqueId)) {
+                ms.Write(letter.UniqueId.ToByteArray(), 0, 16);
+            }
         }
 
         private static void WriteParts(ILetter letter, MemoryStream ms) {
