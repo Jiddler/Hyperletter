@@ -214,14 +214,14 @@ namespace Hyperletter {
         private void ChannelSent(IChannel channel, ILetter letter) {
             var evnt = Sent;
             if (evnt != null)
-                evnt(letter, new SentEventArgs { Binding = channel.Binding, Socket = this });
+                evnt(letter, new SentEventArgs { Binding = channel.Binding, Socket = this, RemoteNodeId = channel.RemoteNodeId });
         }
 
         private void ChannelFailedToSend(IChannel channel, ILetter letter) {
             if(letter.Options.HasFlag(LetterOptions.Multicast)) {
                 Discard(channel, letter);
             } else if(letter.Options.HasFlag(LetterOptions.Requeue)) {
-                Requeue(letter);
+                Requeue(channel, letter);
             } else {
                 Discard(channel, letter);
             }
@@ -233,11 +233,11 @@ namespace Hyperletter {
                 evnt(letter, new DiscardedEventArgs {Binding = channel.Binding, Socket = this, RemoteNodeId = channel.RemoteNodeId });
         }
 
-        private void Requeue(ILetter letter) {
+        private void Requeue(IChannel channel, ILetter letter) {
             _letterDispatcher.EnqueueLetter(letter);
 
             var evnt = Requeued;
-            if (evnt != null) evnt(letter, new RequeuedEventArgs { Socket = this });
+            if (evnt != null) evnt(letter, new RequeuedEventArgs { Socket = this, RemoteNodeId = channel.RemoteNodeId });
         }
 
         private void ChannelAvailable(IChannel channel) {
