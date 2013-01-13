@@ -205,7 +205,7 @@ namespace Hyperletter {
             }
 
             var evnt = Disconnected;
-            if (evnt != null) evnt(this, new DisconnectedEventArgs { Binding = binding, Reason = reason, Socket = this });
+            if (evnt != null) evnt(this, new DisconnectedEventArgs { Binding = binding, Reason = reason, Socket = this, RemoteNodeId = channel.RemoteNodeId });
         }
 
         private void ChannelReceived(ILetter letter, ReceivedEventArgs receivedEventArgs) {
