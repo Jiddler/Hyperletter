@@ -123,7 +123,7 @@ namespace Hyperletter {
             else {
                 var evnt = Discarded;
                 if (evnt != null && !letter.Options.HasFlag(LetterOptions.SilentDiscard))
-                    evnt(letter, new DiscardedEventArgs { Binding = channel.Binding, Socket = this, RemoteNodeId = toNodeId });
+                    evnt(letter, new DiscardedEventArgs { Socket = this, RemoteNodeId = toNodeId });
             }
         }
 
