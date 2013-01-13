@@ -27,7 +27,7 @@ namespace Hyperletter {
         void Disconnect(IPAddress ipAddress, int port);
         
         void Send(ILetter letter);
-        void SendTo(ILetter answer, Guid toNodeId);
+        void SendTo(ILetter letter, Guid toNodeId);
     }
 
 

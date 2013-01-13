@@ -116,10 +116,15 @@ namespace Hyperletter {
             _letterDispatcher.EnqueueLetter(letter);
         }
 
-        public void SendTo(ILetter answer, Guid toNodeId) {
+        public void SendTo(ILetter letter, Guid toNodeId) {
             IChannel channel;
-            if (_routeChannels.TryGetValue(toNodeId, out channel))
-                channel.Enqueue(answer);
+            if(_routeChannels.TryGetValue(toNodeId, out channel))
+                channel.Enqueue(letter);
+            else {
+                var evnt = Discarded;
+                if (evnt != null && !letter.Options.HasFlag(LetterOptions.SilentDiscard))
+                    evnt(letter, new DiscardedEventArgs { Binding = channel.Binding, Socket = this, RemoteNodeId = toNodeId });
+            }
         }
 
         public void Dispose() {
