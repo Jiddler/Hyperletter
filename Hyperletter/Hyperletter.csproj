@@ -61,6 +61,7 @@
     <Compile Include="EventArgs\Channel\InitializedEventArgs.cs" />
     <Compile Include="EventArgs\IChannelEventArgs.cs" />
     <Compile Include="EventArgs\ISocketEventArgs.cs" />
+    <Compile Include="EventArgs\Letter\AckState.cs" />
     <Compile Include="EventArgs\Letter\DiscardedEventArgs.cs" />
     <Compile Include="EventArgs\Letter\IDiscardedEventArgs.cs" />
     <Compile Include="EventArgs\Letter\IReceivedEventArgs.cs" />

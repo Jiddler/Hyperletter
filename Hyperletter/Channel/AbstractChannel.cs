@@ -142,16 +142,17 @@ namespace Hyperletter.Channel {
         private void ReceiverReceived(ILetter receivedLetter) {
             ResetHeartbeatTimer();
 
-            if(receivedLetter.Type == LetterType.Ack) {
+            var letterType = receivedLetter.Type;
+            if(letterType == LetterType.Ack) {
                 HandleLetterSent(_queue.Dequeue());
             } else {
                 if(receivedLetter.Options.HasFlag(LetterOptions.Ack)) {
-                    if(_options.Notification.NotifyBeforeSendingAck)
-                        HandleReceivedLetter(receivedLetter, false);
+                    if(_options.Notification.ReceivedNotifyOnAllAckStates && (letterType.HasFlag(LetterType.User) || letterType.HasFlag(LetterType.Batch)))
+                        HandleReceivedLetter(receivedLetter, AckState.BeforeAck);
 
                     QueueAck(receivedLetter);
                 } else {
-                    HandleReceivedLetter(receivedLetter, false);
+                    HandleReceivedLetter(receivedLetter, AckState.NoAck);
                 }
             }
         }
@@ -166,10 +167,10 @@ namespace Hyperletter.Channel {
 
         private void HandleAckSent() {
             var receivedLetter = _receivedQueue.Dequeue();
-            HandleReceivedLetter(receivedLetter, true);
+            HandleReceivedLetter(receivedLetter, AckState.AfterAck);
         }
 
-        private void HandleReceivedLetter(ILetter receivedLetter, bool acked) {
+        private void HandleReceivedLetter(ILetter receivedLetter, AckState ackState) {
             switch(receivedLetter.Type) {
                 case LetterType.Initialize:
                     RemoteNodeId = new Guid(receivedLetter.Parts[0]);
@@ -177,20 +178,20 @@ namespace Hyperletter.Channel {
                     break;
 
                 case LetterType.User:
-                    Received(receivedLetter, CreateReceivedEventArgs(receivedLetter, acked));
+                    Received(receivedLetter, CreateReceivedEventArgs(ackState));
                     break;
 
                 case LetterType.Batch:
                     for (var i = 0; i < receivedLetter.Parts.Length; i++) {
                         var batchedLetter = _letterDeserializer.Deserialize(receivedLetter.Parts[i]);
-                        Received(batchedLetter, CreateReceivedEventArgs(batchedLetter, acked));
+                        Received(batchedLetter, CreateReceivedEventArgs(ackState));
                     }
                     break;
             }
         }
 
-        private ReceivedEventArgs CreateReceivedEventArgs(ILetter letter, bool acked) {
-            return new ReceivedEventArgs { Acked = acked, AckRequested = letter.Options.HasFlag(LetterOptions.Ack), RemoteNodeId = RemoteNodeId };
+        private ReceivedEventArgs CreateReceivedEventArgs(AckState ackState) {
+            return new ReceivedEventArgs { AckState = ackState, RemoteNodeId = RemoteNodeId };
         }
 
         private void HandleLetterSent(ILetter sentLetter) {
@@ -231,11 +232,25 @@ namespace Hyperletter.Channel {
 
             DisconnectSocket();
             WaitForTranseiviersToShutDown();
+
             FailQueuedLetters();
+            FailedReceivedLetters();
 
             if (wasConnected) {
                 ChannelDisconnected(this, reason);
                 AfterDisconnectHook(reason);
+            }
+        }
+
+        private void FailedReceivedLetters() {
+            if(!_options.Notification.ReceivedNotifyOnAllAckStates)
+                return;
+            
+            var eventArgs = CreateReceivedEventArgs(AckState.FailedAck);
+
+            ILetter letter;
+            while(_receivedQueue.TryDequeue(out letter)) {
+                Received(letter, eventArgs);
             }
         }
 

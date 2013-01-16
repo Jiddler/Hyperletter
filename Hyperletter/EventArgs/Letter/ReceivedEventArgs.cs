@@ -3,7 +3,6 @@ using System;
 namespace Hyperletter.EventArgs.Letter {
     internal class ReceivedEventArgs : AbstractChannelEventArgs, IReceivedEventArgs {
         public Guid RemoteNodeId { get; internal set; }
-        public bool Acked { get; internal set; }
-        public bool AckRequested { get; internal set; }
+        public AckState AckState { get; internal set; }
     }
 }
