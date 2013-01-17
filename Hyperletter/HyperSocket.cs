@@ -136,8 +136,11 @@ namespace Hyperletter {
                 foreach(var listener in _listeners.Values)
                     listener.Stop();
 
+                var disconnectTasks = new List<Task>();
                 foreach(var channel in _channels.Values)
-                    channel.Disconnect();
+                    disconnectTasks.Add(Task.Factory.StartNew(() => channel.Disconnect()));
+
+                Task.WaitAll(disconnectTasks.ToArray());
 
                 var evnt = Disposed;
                 if (evnt != null) evnt(this, new DisposedEventArgs { Socket = this });
