@@ -53,6 +53,8 @@
     <Compile Include="EventArgs\AbstractChannelEventArgs.cs" />
     <Compile Include="EventArgs\Channel\ConnectedEventArgs.cs" />
     <Compile Include="EventArgs\Channel\ConnectingEventArgs.cs" />
+    <Compile Include="EventArgs\Channel\IDisconnectingEventArgs.cs" />
+    <Compile Include="EventArgs\Channel\DisconnectingEventArgs.cs" />
     <Compile Include="EventArgs\Channel\DisconnectedEventArgs.cs" />
     <Compile Include="EventArgs\Channel\IConnectedEventArgs.cs" />
     <Compile Include="EventArgs\Channel\IConnectingEventArgs.cs" />

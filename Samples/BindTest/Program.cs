@@ -11,6 +11,7 @@ namespace BindTest {
 
         private static void Main(string[] arg) {
             var options = new SocketOptions();
+            options.ShutdownGrace = TimeSpan.FromSeconds(5);
             var unicastSocket = new HyperSocket(options);
 
             var stopwatch = new Stopwatch();
@@ -24,6 +25,7 @@ namespace BindTest {
                 }
             };
 
+            unicastSocket.Disconnecting += (socket, args) => Console.WriteLine("DISCONNECTING" + args.Binding + " " + args.Reason);
             unicastSocket.Disconnected += (socket, args) => Console.WriteLine("DISCONNECTED " + args.Binding + " " + args.Reason);
             unicastSocket.Connected += (socket, args) => Console.WriteLine("CONNECTED " + args.Binding);
 

@@ -28,11 +28,12 @@ namespace Hyperletter {
         internal IEnumerable<IChannel> Channels { get { return _channels.Values; } }
 
         public event Action<ILetter, ISentEventArgs> Sent;
-        public event Action<ILetter, IReceivedEventArgs> Received;
         public event Action<ILetter, IDiscardedEventArgs> Discarded;
+        public event Action<ILetter, IReceivedEventArgs> Received;
         public event Action<ILetter, IRequeuedEventArgs> Requeued;
 
         public event Action<IHyperSocket, IConnectingEventArgs> Connecting;
+        public event Action<IHyperSocket, IDisconnectingEventArgs> Disconnecting;
         public event Action<IHyperSocket, IConnectedEventArgs> Connected;
         public event Action<IHyperSocket, IInitializedEventArgs> Initialized;
         public event Action<IHyperSocket, IDisconnectedEventArgs> Disconnected;
@@ -158,6 +159,7 @@ namespace Hyperletter {
             channel.FailedToSend += ChannelFailedToSend;
             channel.Sent += ChannelSent;
             channel.ChannelDisconnected += ChannelDisconnected;
+            channel.ChannelDisconnecting += ChannelDisconnecting;
             channel.ChannelConnecting += ChannelConnecting;
             channel.ChannelConnected += ChannelConnected;
             channel.ChannelInitialized += ChannelInitialized;
@@ -165,11 +167,18 @@ namespace Hyperletter {
             channel.ChannelQueueEmpty += ChannelAvailable;
         }
 
+        private void ChannelDisconnecting(IChannel channel, ShutdownReason shutdownReason) {
+            var evnt = Disconnecting;
+            if(evnt != null)
+                evnt(this, new DisconnectingEventArgs {Binding = channel.Binding, Reason = shutdownReason, RemoteNodeId = channel.RemoteNodeId, Socket = this});
+        }
+
         private void UnhookChannel(IChannel channel) {
             channel.Received -= ChannelReceived;
             channel.FailedToSend -= ChannelFailedToSend;
             channel.Sent -= ChannelSent;
             channel.ChannelDisconnected -= ChannelDisconnected;
+            channel.ChannelDisconnecting -= ChannelDisconnecting;
             channel.ChannelConnecting -= ChannelConnecting;
             channel.ChannelConnected -= ChannelConnected;
             channel.ChannelInitialized -= ChannelInitialized;

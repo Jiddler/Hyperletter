@@ -23,17 +23,19 @@ namespace Hyperletter.Channel {
         protected Socket Socket;
 
         private int _initalizationCount;
+        private bool _shutdownRequested;
 
         private int _lastAction;
         private int _lastActionHeartbeat;
         private LetterReceiver _receiver;
         private LetterTransmitter _transmitter;
         private DateTime _connectedAt;
+        private bool _remoteShutdownRequested;
 
-        public bool ShutdownRequested { get; private set; }
+        public bool ShutdownRequested { get { return _shutdownRequested || _remoteShutdownRequested; } }
         public bool IsConnected { get; private set; }
 
-        public bool CanSend { get { return IsConnected && !ShutdownRequested; } }
+        public bool CanSend { get { return IsConnected; } }
         public Guid RemoteNodeId { get; private set; }
         public Binding Binding { get; private set; }
         public abstract Direction Direction { get; }
@@ -41,6 +43,7 @@ namespace Hyperletter.Channel {
         public virtual event Action<IChannel> ChannelConnecting;
         public event Action<IChannel> ChannelConnected;
         public event Action<IChannel, ShutdownReason> ChannelDisconnected;
+        public event Action<IChannel, ShutdownReason> ChannelDisconnecting;
         public event Action<IChannel> ChannelQueueEmpty;
         public event Action<IChannel> ChannelInitialized;
 
@@ -78,8 +81,9 @@ namespace Hyperletter.Channel {
         protected void Connected() {
             _connectedAt = DateTime.UtcNow;
             IsConnected = true;
-            ShutdownRequested = false;
-
+            _shutdownRequested = false;
+            _remoteShutdownRequested = false;
+            
             CreateTransmitter();
             CreateReceiver();
 
@@ -177,6 +181,11 @@ namespace Hyperletter.Channel {
                     HandleInitialize();
                     break;
 
+                case LetterType.Shutdown:
+                    _remoteShutdownRequested = true;
+                    ChannelDisconnecting(this, ShutdownReason.Remote);
+                    break;
+
                 case LetterType.User:
                     Received(receivedLetter, CreateReceivedEventArgs(ackState));
                     break;
@@ -217,11 +226,22 @@ namespace Hyperletter.Channel {
 
         private void Shutdown(ShutdownReason reason) {
             lock (this) {
-                if(ShutdownRequested)
+                if(_shutdownRequested)
                     return;
 
-                ShutdownRequested = true;
+                _shutdownRequested = true;
             }
+
+            if(!_remoteShutdownRequested)
+                ChannelDisconnecting(this, reason);
+
+            if(reason == ShutdownReason.Requested) {
+                var letter = new Letter.Letter(LetterOptions.Ack) { Type = LetterType.Shutdown };
+                Enqueue(letter);
+            }
+
+            if(_options.ShutdownGrace.TotalMilliseconds > 0)
+                Thread.Sleep((int)_options.ShutdownGrace.TotalMilliseconds);
 
             _initalizationCount = 0;
             var wasConnected = IsConnected;
@@ -237,7 +257,7 @@ namespace Hyperletter.Channel {
             FailedReceivedLetters();
 
             if (wasConnected) {
-                ChannelDisconnected(this, reason);
+                ChannelDisconnected(this, _remoteShutdownRequested ? ShutdownReason.Remote : reason);
                 AfterDisconnectHook(reason);
             }
         }

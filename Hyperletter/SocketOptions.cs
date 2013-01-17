@@ -21,5 +21,7 @@ namespace Hyperletter {
         public int ReconnectIntervall { get; set; }
         public int ShutdownWait { get; set; }
         public int MaximumInitializeTime { get; set; }
+
+        public TimeSpan ShutdownGrace { get; set; }
     }
 }

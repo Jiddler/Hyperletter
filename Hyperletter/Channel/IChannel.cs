@@ -13,6 +13,7 @@ namespace Hyperletter.Channel {
         event Action<IChannel> ChannelConnected;
         event Action<IChannel> ChannelConnecting;
         event Action<IChannel, ShutdownReason> ChannelDisconnected;
+        event Action<IChannel, ShutdownReason> ChannelDisconnecting;
         event Action<IChannel> ChannelQueueEmpty;
         event Action<IChannel> ChannelInitialized;
 

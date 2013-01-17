@@ -11,6 +11,7 @@ namespace Hyperletter {
         event Action<IHyperSocket, IConnectedEventArgs> Connected;
         event Action<IHyperSocket, IInitializedEventArgs> Initialized;
         event Action<IHyperSocket, IDisconnectedEventArgs> Disconnected;
+        event Action<IHyperSocket, IDisconnectingEventArgs> Disconnecting;
 
         event Action<ILetter, ISentEventArgs> Sent;
         event Action<ILetter, IDiscardedEventArgs> Discarded;
