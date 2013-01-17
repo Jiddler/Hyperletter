@@ -14,6 +14,7 @@ namespace Hyperletter.IoC {
         private bool _prepared;
         private object _instance;
         private readonly Dictionary<string, object> _values = new Dictionary<string, object>();
+        private readonly Dictionary<Type, object> _factoryCache = new Dictionary<Type, object>();
 
         public DependencyResolver(Container container) {
             _container = container;
@@ -132,6 +133,10 @@ namespace Hyperletter.IoC {
         }
 
         private object GenerateFactory(Type type) {
+            object factory;
+            if(_factoryCache.TryGetValue(type, out factory))
+                return factory;
+
             var invokeMethod = type.GetMethod("Invoke");
 
             var target = _container.GetType().GetMethod("Resolve", new[] { typeof(object[]) });

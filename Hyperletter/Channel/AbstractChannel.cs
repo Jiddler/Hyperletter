@@ -238,10 +238,10 @@ namespace Hyperletter.Channel {
             if(reason == ShutdownReason.Requested) {
                 var letter = new Letter.Letter(LetterOptions.Ack) { Type = LetterType.Shutdown };
                 Enqueue(letter);
-            }
 
-            if(_options.ShutdownGrace.TotalMilliseconds > 0)
-                Thread.Sleep((int)_options.ShutdownGrace.TotalMilliseconds);
+                if (_options.ShutdownGrace.TotalMilliseconds > 0)
+                    Thread.Sleep((int)_options.ShutdownGrace.TotalMilliseconds);
+            }
 
             _initalizationCount = 0;
             var wasConnected = IsConnected;

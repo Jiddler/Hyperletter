@@ -5,6 +5,8 @@ namespace Hyperletter.IoC {
     public class Container {
         private readonly Dictionary<Type, Resolver> _services = new Dictionary<Type,Resolver>();
 
+        public bool AutoRegister { get; set; }
+
         public Container() {
             RegisterInstance(this);
         }
@@ -33,8 +35,13 @@ namespace Hyperletter.IoC {
 
         public TService Resolve<TService>(Type type, params object[] parameters) where TService : class {
             Resolver dependencyManager;
-            if (!_services.TryGetValue(type, out dependencyManager)) {
+            if (!_services.TryGetValue(type, out dependencyManager) && !AutoRegister) {
                 throw new NoRegistrationException(type.FullName + " is not registerd");
+            }
+
+            if(dependencyManager == null) {
+                dependencyManager = new DependencyResolver<TService>(this);
+                _services[typeof(TService)] = dependencyManager;
             }
 
             return (TService)dependencyManager.Resolve(parameters);
