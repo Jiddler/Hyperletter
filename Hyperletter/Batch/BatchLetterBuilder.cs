@@ -21,7 +21,7 @@ namespace Hyperletter.Batch {
         }
 
         public void Add(ILetter letter) {
-            if(letter.Options.HasFlag(LetterOptions.Ack))
+            if((letter.Options & LetterOptions.Ack) == LetterOptions.Ack)
                 _batchOptions = LetterOptions.Ack;
 
             _letters.Enqueue(letter);

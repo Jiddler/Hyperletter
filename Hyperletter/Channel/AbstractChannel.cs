@@ -150,8 +150,8 @@ namespace Hyperletter.Channel {
             if(letterType == LetterType.Ack) {
                 HandleLetterSent(_queue.Dequeue());
             } else {
-                if(receivedLetter.Options.HasFlag(LetterOptions.Ack)) {
-                    if(_options.Notification.ReceivedNotifyOnAllAckStates && (letterType.HasFlag(LetterType.User) || letterType.HasFlag(LetterType.Batch)))
+                if ((receivedLetter.Options & LetterOptions.Ack) == LetterOptions.Ack) {
+                    if(_options.Notification.ReceivedNotifyOnAllAckStates && ((letterType & LetterType.User) == LetterType.User || (letterType & LetterType.Batch) == LetterType.Batch))
                         HandleReceivedLetter(receivedLetter, AckState.BeforeAck);
 
                     QueueAck(receivedLetter);
@@ -165,7 +165,7 @@ namespace Hyperletter.Channel {
             ResetHeartbeatTimer();
             if(sentLetter.Type == LetterType.Ack)
                 HandleAckSent();
-            else if(!sentLetter.Options.HasFlag(LetterOptions.Ack))
+            else if((sentLetter.Options & LetterOptions.Ack) != LetterOptions.Ack)
                 HandleLetterSent(_queue.Dequeue());
         }
 

@@ -123,7 +123,7 @@ namespace Hyperletter {
                 channel.Enqueue(letter);
             else {
                 var evnt = Discarded;
-                if (evnt != null && !letter.Options.HasFlag(LetterOptions.SilentDiscard))
+                if (evnt != null && (letter.Options & LetterOptions.SilentDiscard) != LetterOptions.SilentDiscard)
                     evnt(letter, new DiscardedEventArgs { Socket = this, RemoteNodeId = toNodeId });
             }
         }
@@ -235,9 +235,9 @@ namespace Hyperletter {
         }
 
         private void ChannelFailedToSend(IChannel channel, ILetter letter) {
-            if(letter.Options.HasFlag(LetterOptions.Multicast)) {
+            if((letter.Options & LetterOptions.Multicast) == LetterOptions.Multicast) {
                 Discard(channel, letter);
-            } else if(letter.Options.HasFlag(LetterOptions.Requeue)) {
+            } else if((letter.Options & LetterOptions.Requeue) == LetterOptions.Requeue) {
                 Requeue(channel, letter);
             } else {
                 Discard(channel, letter);
@@ -246,7 +246,7 @@ namespace Hyperletter {
 
         private void Discard(IChannel channel, ILetter letter) {
             var evnt = Discarded;
-            if (evnt != null && !letter.Options.HasFlag(LetterOptions.SilentDiscard))
+            if (evnt != null && (letter.Options & LetterOptions.SilentDiscard) != LetterOptions.SilentDiscard)
                 evnt(letter, new DiscardedEventArgs {Binding = channel.Binding, Socket = this, RemoteNodeId = channel.RemoteNodeId });
         }
 
