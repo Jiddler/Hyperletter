@@ -115,11 +115,8 @@ namespace Hyperletter.Channel {
         }
 
         private void HandleInitialize() {
-            lock(this) {
-                _initalizationCount++;
-                if(_initalizationCount == 2)
-                    ChannelInitialized(this);
-            }
+            if(Interlocked.Increment(ref _initalizationCount) == 2)
+                ChannelInitialized(this);
         }
 
         public void Heartbeat() {
@@ -241,6 +238,8 @@ namespace Hyperletter.Channel {
 
                 if (_options.ShutdownGrace.TotalMilliseconds > 0)
                     Thread.Sleep((int)_options.ShutdownGrace.TotalMilliseconds);
+                else
+                    Thread.Sleep(10);
             }
 
             _initalizationCount = 0;

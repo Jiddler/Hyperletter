@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Net;
 using System.Text;
+using System.Threading;
 using Hyperletter;
 using Hyperletter.Letter;
 
@@ -35,9 +36,22 @@ namespace ConnectTest {
             unicastSocket.Requeued += (letter, args) => Console.WriteLine("REQUEUED: " + letter);
 
             unicastSocket.Disconnecting += (socket, args) => Console.WriteLine("DISCONNECTING" + args.Binding + " " + args.Reason);
-            unicastSocket.Disconnected += (socket, args) => Console.WriteLine("DISCONNECTED " + args.Binding + " " + args.Reason);
+            unicastSocket.Disconnected += (socket, args) => {
+                {
+                    Console.WriteLine("DISCONNECTED " + args.Binding + " " + args.Reason);
+                    unicastSocket.Connect(IPAddress.Parse("127.0.0.1"), 8001);
+                }};
             unicastSocket.Connected += (socket, args) => Console.WriteLine("CONNECTED " + args.Binding);
-            
+            var x = 0;
+            unicastSocket.Initialized += (socket, args) => {
+                                             if(x++ == 1000) {
+                                                 Console.WriteLine("SENDING");
+                                                 socket.Send(new Letter());
+                                             }
+                                             socket.Disconnect(IPAddress.Parse("127.0.0.1"), 8001);
+                                         };
+
+
             unicastSocket.Connect(IPAddress.Parse("127.0.0.1"), 8001);
             //unicastSocket.Connect(IPAddress.Parse("127.0.0.1"), 8002);
 
