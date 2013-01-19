@@ -22,7 +22,7 @@ namespace Hyperletter {
         }
 
         public void Start() {
-            _socket = new Socket(SocketType.Stream, ProtocolType.IP);
+            _socket = new Socket(_binding.IpAddress.AddressFamily, SocketType.Stream, ProtocolType.IP);
             _socket.Bind(new IPEndPoint(_binding.IpAddress, _binding.Port));
             _socket.Listen(20);
 

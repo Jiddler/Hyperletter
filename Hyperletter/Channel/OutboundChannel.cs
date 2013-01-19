@@ -27,7 +27,7 @@ namespace Hyperletter.Channel {
 
             ChannelConnecting(this);
 
-            Socket = new Socket(SocketType.Stream, ProtocolType.IP);
+            Socket = new Socket(Binding.IpAddress.AddressFamily, SocketType.Stream, ProtocolType.IP);
             try {
                 Socket.BeginConnect(Binding.IpAddress, Binding.Port, EndConnect, null);
             } catch(Exception) {
