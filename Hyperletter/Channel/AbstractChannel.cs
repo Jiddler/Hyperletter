@@ -35,11 +35,11 @@ namespace Hyperletter.Channel {
         public bool ShutdownRequested { get { return _shutdownRequested || _remoteShutdownRequested; } }
         public bool IsConnected { get; private set; }
 
-        public bool CanSend { get { return IsConnected; } }
+        public bool CanSend { get { return IsConnected && _initalizationCount == 2; } }
         public Guid RemoteNodeId { get; private set; }
         public Binding Binding { get; private set; }
         public abstract Direction Direction { get; }
-        
+
         public virtual event Action<IChannel> ChannelConnecting;
         public event Action<IChannel> ChannelConnected;
         public event Action<IChannel, ShutdownReason> ChannelDisconnected;
@@ -62,7 +62,7 @@ namespace Hyperletter.Channel {
         }
 
         public EnqueueResult Enqueue(ILetter letter) {
-            if (!CanSend) {
+            if (!CanSend && (letter.Type == LetterType.User || letter.Type == LetterType.Batch)) {
                 FailedToSend(this, letter);
                 return EnqueueResult.CantEnqueueMore;
             }
@@ -79,15 +79,20 @@ namespace Hyperletter.Channel {
         }
 
         protected void Connected() {
+            Lock(LockedConnected);
+        }
+
+        private void LockedConnected() {
+            CreateTransmitter();
+            CreateReceiver();
+
+            Enqueue(new Letter.Letter {Type = LetterType.Initialize, Options = LetterOptions.Ack, Parts = new[] {_options.NodeId.ToByteArray()}});
+
             _connectedAt = DateTime.UtcNow;
             IsConnected = true;
             _shutdownRequested = false;
             _remoteShutdownRequested = false;
-            
-            CreateTransmitter();
-            CreateReceiver();
 
-            Enqueue(new Letter.Letter { Type = LetterType.Initialize, Options = LetterOptions.Ack, Parts = new[] { _options.NodeId.ToByteArray() } });
             ChannelConnected(this);
         }
 
@@ -96,6 +101,7 @@ namespace Hyperletter.Channel {
                 _receiver.Received -= ReceiverReceived;
                 _receiver.SocketError -= Shutdown;
             }
+
             _receiver = _factory.CreateLetterReceiver(Socket);
             _receiver.Received += ReceiverReceived;
             _receiver.SocketError += Shutdown;
@@ -222,22 +228,28 @@ namespace Hyperletter.Channel {
         }
 
         private void Shutdown(ShutdownReason reason) {
-            lock (this) {
+            lock(this) {
                 if(_shutdownRequested)
                     return;
 
                 _shutdownRequested = true;
             }
 
+            Lock(() => LockedShutdown(reason));
+        }
+
+        private void LockedShutdown(ShutdownReason reason) {
+            _shutdownRequested = true;
+
             if(!_remoteShutdownRequested)
                 ChannelDisconnecting(this, reason);
 
             if(reason == ShutdownReason.Requested) {
-                var letter = new Letter.Letter(LetterOptions.Ack) { Type = LetterType.Shutdown };
+                var letter = new Letter.Letter(LetterOptions.Ack) {Type = LetterType.Shutdown};
                 Enqueue(letter);
 
-                if (_options.ShutdownGrace.TotalMilliseconds > 0)
-                    Thread.Sleep((int)_options.ShutdownGrace.TotalMilliseconds);
+                if(_options.ShutdownGrace.TotalMilliseconds > 0)
+                    Thread.Sleep((int) _options.ShutdownGrace.TotalMilliseconds);
                 else
                     Thread.Sleep(10);
             }
@@ -255,7 +267,7 @@ namespace Hyperletter.Channel {
             FailQueuedLetters();
             FailedReceivedLetters();
 
-            if (wasConnected) {
+            if(wasConnected) {
                 ChannelDisconnected(this, _remoteShutdownRequested ? ShutdownReason.Remote : reason);
                 AfterDisconnectHook(reason);
             }
@@ -310,6 +322,12 @@ namespace Hyperletter.Channel {
             _lastAction++;
             if(_lastAction > 10000000)
                 _lastAction = 0;
+        }
+
+        public void Lock(Action perform) {
+            lock (this) {
+                perform();
+            }
         }
     }
 }

@@ -27,6 +27,7 @@ namespace Hyperletter {
         public SocketOptions Options { get; private set; }
         internal IEnumerable<IChannel> Channels { get { return _channels.Values; } }
 
+        public event Action<ILetter, IQueuingEventArgs> Queuing;
         public event Action<ILetter, ISentEventArgs> Sent;
         public event Action<ILetter, IDiscardedEventArgs> Discarded;
         public event Action<ILetter, IReceivedEventArgs> Received;
@@ -114,6 +115,10 @@ namespace Hyperletter {
         }
 
         public void Send(ILetter letter) {
+            var evnt = Queuing;
+            if(evnt != null)
+                evnt(letter, new QueuingEventArgs {Socket = this});
+
             _letterDispatcher.EnqueueLetter(letter);
         }
 
@@ -171,6 +176,7 @@ namespace Hyperletter {
         }
 
         private void ChannelDisconnecting(IChannel channel, ShutdownReason shutdownReason) {
+            _letterDispatcher.DequeueChannel(channel);
             var evnt = Disconnecting;
             if(evnt != null)
                 evnt(this, new DisconnectingEventArgs {Binding = channel.Binding, Reason = shutdownReason, RemoteNodeId = channel.RemoteNodeId, Socket = this});

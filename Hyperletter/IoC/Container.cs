@@ -61,5 +61,10 @@ namespace Hyperletter.IoC {
         public bool IsRegistered(Type type) {
             return _services.ContainsKey(type);
         }
+
+        public void Build() {
+            foreach(var service in _services.Values)
+                service.Build();
+        }
     }
 }

@@ -15,6 +15,8 @@ namespace Hyperletter.IoC {
         private object _instance;
         private readonly Dictionary<string, object> _values = new Dictionary<string, object>();
         private readonly Dictionary<Type, object> _factoryCache = new Dictionary<Type, object>();
+        private Action<TService> _activatedCallback;
+        private bool _autoResolveOnBuild;
 
         public DependencyResolver(Container container) {
             _container = container;
@@ -58,7 +60,11 @@ namespace Hyperletter.IoC {
 
         private object CreateInstance(IList<object> parameters) {
             var arguments = BuildArguments(parameters);
-            return _constructor.Invoke(arguments);
+            var service = (TService)_constructor.Invoke(arguments);
+            if(_activatedCallback != null)
+                _activatedCallback(service);
+
+            return service;
         }
 
         public DependencyResolver<TService> AsSingleton() {
@@ -66,10 +72,26 @@ namespace Hyperletter.IoC {
             return this;
         }
 
+        public DependencyResolver<TService> AutoResolveOnBuild() {
+            _autoResolveOnBuild = true;
+
+            return this;
+        } 
+
+        public DependencyResolver<TService> OnActivated(Action<TService> activatedCallback) {
+            _activatedCallback = activatedCallback;
+            return this;
+        } 
+
         public DependencyResolver<TService> WithValue(string parameterName, object value) {
             _values[parameterName] = value;
 
             return this;
+        }
+
+        public override void Build() {
+            if(_autoResolveOnBuild)
+                Resolve();
         }
 
         private object[] BuildArguments(IList<object> parameters) {

@@ -13,6 +13,7 @@ namespace Hyperletter {
         event Action<IHyperSocket, IDisconnectedEventArgs> Disconnected;
         event Action<IHyperSocket, IDisconnectingEventArgs> Disconnecting;
 
+        event Action<ILetter, IQueuingEventArgs> Queuing;
         event Action<ILetter, ISentEventArgs> Sent;
         event Action<ILetter, IDiscardedEventArgs> Discarded;
         event Action<ILetter, IRequeuedEventArgs> Requeued;

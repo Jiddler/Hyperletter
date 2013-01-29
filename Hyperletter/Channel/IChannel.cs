@@ -9,7 +9,8 @@ namespace Hyperletter.Channel {
         Guid RemoteNodeId { get; }
         Binding Binding { get; }
         Direction Direction { get; }
-        
+        bool CanSend { get; }
+
         event Action<IChannel> ChannelConnected;
         event Action<IChannel> ChannelConnecting;
         event Action<IChannel, ShutdownReason> ChannelDisconnected;

@@ -64,11 +64,13 @@
     <Compile Include="EventArgs\IChannelEventArgs.cs" />
     <Compile Include="EventArgs\ISocketEventArgs.cs" />
     <Compile Include="EventArgs\Letter\AckState.cs" />
+    <Compile Include="EventArgs\Letter\IQueuingEventArgs.cs" />
     <Compile Include="EventArgs\Letter\DiscardedEventArgs.cs" />
     <Compile Include="EventArgs\Letter\IDiscardedEventArgs.cs" />
     <Compile Include="EventArgs\Letter\IReceivedEventArgs.cs" />
     <Compile Include="EventArgs\Letter\IRequeuedEventArgs.cs" />
     <Compile Include="EventArgs\Letter\ISentEventArgs.cs" />
+    <Compile Include="EventArgs\Letter\QueuingEventArgs.cs" />
     <Compile Include="EventArgs\Letter\ReceivedEventArgs.cs" />
     <Compile Include="EventArgs\Letter\RequeuedEventArgs.cs" />
     <Compile Include="EventArgs\Letter\SentEventArgs.cs" />
@@ -119,6 +121,7 @@
     <Compile Include="Typed\SocketDisposedException.cs" />
     <Compile Include="Typed\TypedSocketOptions.cs" />
     <Compile Include="Typed\TypedHyperSocket.cs" />
+    <Compile Include="Utility\Class1.cs" />
     <Compile Include="Utility\ConcurrentHashSet.cs" />
   </ItemGroup>
   <ItemGroup />
