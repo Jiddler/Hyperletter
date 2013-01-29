@@ -39,18 +39,14 @@ namespace ConnectTest {
             unicastSocket.Disconnected += (socket, args) => {
                 {
                     Console.WriteLine("DISCONNECTED " + args.Binding + " " + args.Reason);
-                    unicastSocket.Connect(IPAddress.Parse("127.0.0.1"), 8001);
                 }};
             unicastSocket.Connected += (socket, args) => Console.WriteLine("CONNECTED " + args.Binding);
             var x = 0;
             unicastSocket.Initialized += (socket, args) => {
-                                             if(x++ == 1000) {
-                                                 Console.WriteLine("SENDING");
-                                                 socket.Send(new Letter());
-                                             }
-                                             socket.Disconnect(IPAddress.Parse("127.0.0.1"), 8001);
+                unicastSocket.Dispose();
+                
                                          };
-
+            unicastSocket.Disposed += (socket, args) => unicastSocket.Connect(IPAddress.Parse("127.0.0.1"), 8001);
 
             unicastSocket.Connect(IPAddress.Parse("127.0.0.1"), 8001);
             //unicastSocket.Connect(IPAddress.Parse("127.0.0.1"), 8002);
