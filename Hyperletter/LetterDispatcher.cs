@@ -11,27 +11,18 @@ namespace Hyperletter {
         private readonly HyperSocket _hyperSocket;
         private readonly CancellationToken _cancellationToken;
 
-        private readonly QueueDictionary<IChannel> _queuedChannels;
-        private readonly BlockingCollection<IChannel> _channelQueue;
-
-        private readonly BlockingCollection<ILetter> _blockingSendQueue;
-        private readonly QueueDictionary<ILetter> _sendQueue;
+        private readonly QueueDictionary<IChannel> _channelQueue = new QueueDictionary<IChannel>();
+        private readonly QueueDictionary<ILetter> _letterQueue = new QueueDictionary<ILetter>();
 
         public LetterDispatcher(HyperSocket hyperSocket, CancellationToken cancellationToken) {
             _hyperSocket = hyperSocket;
             _cancellationToken = cancellationToken;
 
-            _queuedChannels = new QueueDictionary<IChannel>();
-            _channelQueue = new BlockingCollection<IChannel>(_queuedChannels);
-
-            _sendQueue = new QueueDictionary<ILetter>();
-            _blockingSendQueue = new BlockingCollection<ILetter>(_sendQueue);
-
             Task.Factory.StartNew(SendTask);
         }
 
         public void EnqueueLetter(ILetter letter) {
-            _blockingSendQueue.Add(letter);
+            _letterQueue.TryAdd(letter);
         }
 
         public void EnqueueChannel(IChannel channel) {
@@ -39,7 +30,7 @@ namespace Hyperletter {
         }
 
         public void DequeueChannel(IChannel channel) {
-            _queuedChannels.Remove(channel);
+            _channelQueue.Remove(channel);
         }
 
         private void SendTask() {
@@ -62,12 +53,12 @@ namespace Hyperletter {
             var result = channel.Enqueue(letter);
 
             if(result == EnqueueResult.CanEnqueueMore) {
-                _channelQueue.Add(channel);
+                _channelQueue.TryAdd(channel);
             }
         }
 
         private ILetter GetNextLetter() {
-            return _blockingSendQueue.Take(_cancellationToken);
+            return _letterQueue.Take(_cancellationToken);
         }
 
         private IChannel GetNextChannel() {

@@ -43,8 +43,7 @@ namespace ConnectTest {
             unicastSocket.Connected += (socket, args) => Console.WriteLine("CONNECTED " + args.Binding);
             var x = 0;
             unicastSocket.Initialized += (socket, args) => {
-                unicastSocket.Dispose();
-                
+            //    unicastSocket.Dispose();
                                          };
             unicastSocket.Disposed += (socket, args) => unicastSocket.Connect(IPAddress.Parse("127.0.0.1"), 8001);
 

@@ -1,35 +1,16 @@
 ﻿using System;
 using System.Collections;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
-using Hyperletter.Channel;
 
 namespace Hyperletter.Utility {
-    internal class QueueDictionary<T> : IProducerConsumerCollection<T> {
+    internal class QueueDictionary<T>{
         private readonly LinkedList<T> _list = new LinkedList<T>();
         private readonly Dictionary<T, LinkedListNode<T>> _index = new Dictionary<T, LinkedListNode<T>>();
 
         private readonly ReaderWriterLockSlim _lock = new ReaderWriterLockSlim();
-        private readonly object _syncRoot = new object();
-        private readonly public ManualResetEventSlim _autoResetEvent = new ManualResetEventSlim();
-
-        public IEnumerator<T> GetEnumerator() {
-            _lock.EnterReadLock();
-            return new SafeEnumerator<T>(_list.GetEnumerator(), _lock);
-        }
-
-        IEnumerator IEnumerable.GetEnumerator() {
-            return GetEnumerator();
-        }
-
-        public void CopyTo(Array array, int index) {
-            _lock.EnterReadLock();
-            var sourceArray = _list.ToArray();
-            Array.Copy(sourceArray, 0, array, index, sourceArray.Length);
-            _lock.ExitReadLock();
-        }
+        private readonly ManualResetEventSlim _manualResetEventSlim = new ManualResetEventSlim();
 
         public int Count {
             get {
@@ -42,28 +23,16 @@ namespace Hyperletter.Utility {
             }
         }
 
-        public object SyncRoot { get { return _syncRoot; } }
-        public bool IsSynchronized { get { return true; } }
-
-        public void CopyTo(T[] array, int index) {
-            try {
-                _lock.EnterReadLock();
-                _list.CopyTo(array, index);
-            } finally {
-                _lock.ExitReadLock();
-            }
-        }
-
         public bool TryAdd(T item) {
             try {
                 _lock.EnterWriteLock();
                 if(_index.ContainsKey(item))
-                    return true;
+                    return false;
 
                 var node = _list.AddLast(item);
                 _index.Add(item, node);
 
-                _autoResetEvent.Set();
+                _manualResetEventSlim.Set();
 
                 return true;
             } finally {
@@ -79,8 +48,13 @@ namespace Hyperletter.Utility {
                     item = node.Value;
                     _list.Remove(node);
                     _index.Remove(node.Value);
+
+                    _manualResetEventSlim.Set();
+
                     return true;
                 }
+
+                _manualResetEventSlim.Reset();
 
                 item = default(T);
                 return false;
@@ -88,16 +62,7 @@ namespace Hyperletter.Utility {
                 _lock.ExitWriteLock();    
             }
         }
-
-        public T[] ToArray() {
-            try {
-                _lock.EnterReadLock();
-                return _list.ToArray();
-            } finally {
-                _lock.ExitReadLock();
-            }
-        }
-
+        
         public bool Remove(T item) {
             try {
                 _lock.EnterWriteLock();
@@ -113,9 +78,14 @@ namespace Hyperletter.Utility {
             }
         }
 
-        public IChannel Take(CancellationToken cancellationToken) {
+        public T Take(CancellationToken cancellationToken) {
             while(true) {
-                _autoResetEvent.Wait(cancellationToken);
+                T item;
+                if(TryTake(out item)) {
+                    return item;
+                }
+
+                _manualResetEventSlim.Wait(cancellationToken);
             }
         }
     }
