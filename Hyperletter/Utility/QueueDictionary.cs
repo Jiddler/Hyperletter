@@ -1,13 +1,12 @@
-﻿using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Linq;
+﻿using System.Collections.Generic;
 using System.Threading;
 
 namespace Hyperletter.Utility {
-    internal class QueueDictionary<T>{
-        private readonly LinkedList<T> _list = new LinkedList<T>();
-        private readonly Dictionary<T, LinkedListNode<T>> _index = new Dictionary<T, LinkedListNode<T>>();
+    internal class QueueDictionary<T> {
+        private int _highestCount = 0;
+
+        private LinkedList<T> _list = new LinkedList<T>();
+        private Dictionary<T, LinkedListNode<T>> _index = new Dictionary<T, LinkedListNode<T>>();
 
         private readonly ReaderWriterLockSlim _lock = new ReaderWriterLockSlim();
         private readonly ManualResetEventSlim _manualResetEventSlim = new ManualResetEventSlim();
@@ -32,6 +31,9 @@ namespace Hyperletter.Utility {
                 var node = _list.AddLast(item);
                 _index.Add(item, node);
 
+                if(_index.Count > _highestCount)
+                    _highestCount = _index.Count;
+
                 _manualResetEventSlim.Set();
 
                 return true;
@@ -52,6 +54,12 @@ namespace Hyperletter.Utility {
                     _manualResetEventSlim.Set();
 
                     return true;
+                }
+
+                if(_highestCount > 100000) {
+                    _list = new LinkedList<T>();
+                    _index = new Dictionary<T, LinkedListNode<T>>();
+                    _highestCount = 0;
                 }
 
                 _manualResetEventSlim.Reset();
@@ -87,36 +95,6 @@ namespace Hyperletter.Utility {
 
                 _manualResetEventSlim.Wait(cancellationToken);
             }
-        }
-    }
-
-    public class SafeEnumerator<T> : IEnumerator<T> {
-        private readonly IEnumerator<T> _inner;
-        private readonly ReaderWriterLockSlim _lock;
-
-        public SafeEnumerator(IEnumerator<T> inner, ReaderWriterLockSlim @lock) {
-            _inner = inner;
-            _lock = @lock;
-        }
-
-        public void Dispose() {
-            _lock.ExitReadLock();
-        }
-
-        public bool MoveNext() {
-            return _inner.MoveNext();
-        }
-
-        public void Reset() {
-            _inner.Reset();
-        }
-
-        public T Current {
-            get { return _inner.Current; }
-        }
-
-        object IEnumerator.Current {
-            get { return Current; }
         }
     }
 }
