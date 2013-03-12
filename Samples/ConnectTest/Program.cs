@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Net;
 using System.Text;
-using System.Threading;
 using Hyperletter;
 using Hyperletter.Letter;
 
@@ -39,11 +38,12 @@ namespace ConnectTest {
             unicastSocket.Disconnected += (socket, args) => {
                 {
                     Console.WriteLine("DISCONNECTED " + args.Binding + " " + args.Reason);
-                }};
+                }
+                                          };
             unicastSocket.Connected += (socket, args) => Console.WriteLine("CONNECTED " + args.Binding);
-            var x = 0;
+            int x = 0;
             unicastSocket.Initialized += (socket, args) => {
-            //    unicastSocket.Dispose();
+                                             //    unicastSocket.Dispose();
                                          };
             unicastSocket.Disposed += (socket, args) => unicastSocket.Connect(IPAddress.Parse("127.0.0.1"), 8001);
 
@@ -63,10 +63,10 @@ namespace ConnectTest {
                     return;
                 else if(line == "status")
                     WriteStatus(sent, received);
-                else if (line == "reconnect") {
+                else if(line == "reconnect") {
                     unicastSocket.Disconnect(IPAddress.Parse("127.0.0.1"), 8001);
                     unicastSocket.Connect(IPAddress.Parse("127.0.0.1"), 8001);
-                } else if (line != "")
+                } else if(line != "")
                     SendXLetters(unicastSocket, int.Parse(line));
                 else
                     SendXLetters(unicastSocket, 1000000);

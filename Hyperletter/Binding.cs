@@ -2,13 +2,13 @@ using System.Net;
 
 namespace Hyperletter {
     public class Binding {
-        public IPAddress IpAddress { get; private set; }
-        public int Port { get; private set; }
-
         public Binding(IPAddress ipAddress, int port) {
             IpAddress = ipAddress;
             Port = port;
         }
+
+        public IPAddress IpAddress { get; private set; }
+        public int Port { get; private set; }
 
         protected bool Equals(Binding other) {
             return IpAddress.Equals(other.IpAddress) && Port == other.Port;

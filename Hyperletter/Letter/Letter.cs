@@ -3,15 +3,6 @@ using System;
 namespace Hyperletter.Letter {
     public class Letter : ILetter {
         private Guid? _id;
-        public Guid UniqueId {
-            get { return (_id ?? (_id = Guid.NewGuid())).Value; }
-            set { _id = value; }
-        }
-
-        public LetterType Type { get; set; }
-        public LetterOptions Options { get; set; }
-
-        public byte[][] Parts { get; set; }
 
         public Letter() {
             Type = LetterType.User;
@@ -26,5 +17,15 @@ namespace Hyperletter.Letter {
             Options = options;
             Parts = new[] {userPart};
         }
+
+        public Guid UniqueId {
+            get { return (_id ?? (_id = Guid.NewGuid())).Value; }
+            set { _id = value; }
+        }
+
+        public LetterType Type { get; set; }
+        public LetterOptions Options { get; set; }
+
+        public byte[][] Parts { get; set; }
     }
 }

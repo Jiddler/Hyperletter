@@ -14,6 +14,8 @@ namespace DispatcherBindTest {
             Console.ReadLine();
         }
 
+        #region Nested type: MessageHandler
+
         public class MessageHandler : ITypedHandler<TestMessage> {
             public void Execute(ITypedSocket socket, IAnswerable<TestMessage> message) {
                 Console.WriteLine(DateTime.Now + " RECEIVED MESSAGE: " + message.Message.Message);
@@ -21,5 +23,7 @@ namespace DispatcherBindTest {
                 message.Answer(new TestMessage {Message = "ANSWER: " + message.Message.Message});
             }
         }
+
+        #endregion
     }
 }

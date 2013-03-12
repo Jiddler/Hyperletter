@@ -7,8 +7,6 @@ namespace Hyperletter.Channel {
     internal class OutboundChannel : AbstractChannel {
         private readonly SocketOptions _options;
 
-        public override event Action<IChannel> ChannelConnecting;
-
         public OutboundChannel(SocketOptions options, Binding binding, LetterDeserializer letterDeserializer, HyperletterFactory factory) : base(options, binding, letterDeserializer, factory) {
             _options = options;
         }
@@ -16,6 +14,8 @@ namespace Hyperletter.Channel {
         public override Direction Direction {
             get { return Direction.Outbound; }
         }
+
+        public override event Action<IChannel> ChannelConnecting;
 
         public void Connect() {
             TryConnect();
@@ -38,14 +38,14 @@ namespace Hyperletter.Channel {
         private void EndConnect(IAsyncResult ar) {
             try {
                 Socket.EndConnect(ar);
-            } catch (Exception) {
+            } catch(Exception) {
                 TryReconnect();
                 return;
             }
 
             Socket.NoDelay = true;
             Socket.LingerState = new LingerOption(true, 1);
-            
+
             Connected();
         }
 

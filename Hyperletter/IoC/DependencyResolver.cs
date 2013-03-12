@@ -7,16 +7,16 @@ using System.Reflection;
 namespace Hyperletter.IoC {
     public class DependencyResolver<TService> : Resolver {
         private readonly Container _container;
-        private bool _singleton;
-        private Type _type;
-        private ConstructorInfo _constructor;
-        private ParameterInfo[] _parameters;
-        private bool _prepared;
-        private object _instance;
-        private readonly Dictionary<string, object> _values = new Dictionary<string, object>();
         private readonly Dictionary<Type, object> _factoryCache = new Dictionary<Type, object>();
+        private readonly Dictionary<string, object> _values = new Dictionary<string, object>();
         private Action<TService> _activatedCallback;
         private bool _autoResolveOnBuild;
+        private ConstructorInfo _constructor;
+        private object _instance;
+        private ParameterInfo[] _parameters;
+        private bool _prepared;
+        private bool _singleton;
+        private Type _type;
 
         public DependencyResolver(Container container) {
             _container = container;
@@ -59,8 +59,8 @@ namespace Hyperletter.IoC {
         }
 
         private object CreateInstance(IList<object> parameters) {
-            var arguments = BuildArguments(parameters);
-            var service = (TService)_constructor.Invoke(arguments);
+            object[] arguments = BuildArguments(parameters);
+            var service = (TService) _constructor.Invoke(arguments);
             if(_activatedCallback != null)
                 _activatedCallback(service);
 
@@ -76,12 +76,12 @@ namespace Hyperletter.IoC {
             _autoResolveOnBuild = true;
 
             return this;
-        } 
+        }
 
         public DependencyResolver<TService> OnActivated(Action<TService> activatedCallback) {
             _activatedCallback = activatedCallback;
             return this;
-        } 
+        }
 
         public DependencyResolver<TService> WithValue(string parameterName, object value) {
             _values[parameterName] = value;
@@ -95,19 +95,19 @@ namespace Hyperletter.IoC {
         }
 
         private object[] BuildArguments(IList<object> parameters) {
-            var parameterIndex = 0;
-            var constructorParameterIndex = 0;
+            int parameterIndex = 0;
+            int constructorParameterIndex = 0;
             var arguments = new object[_parameters.Length];
-            foreach(var p in _parameters) {
+            foreach(ParameterInfo p in _parameters) {
                 object obj;
                 if(_values.TryGetValue(p.Name, out obj)) {
                     arguments[constructorParameterIndex++] = obj;
                 } else if(parameters.Count > parameterIndex && p.ParameterType.IsInstanceOfType(parameters[parameterIndex])) {
                     arguments[constructorParameterIndex++] = parameters[parameterIndex++];
                 } else {
-                    if (_container.TryResolve(p.ParameterType, out obj))
+                    if(_container.TryResolve(p.ParameterType, out obj))
                         arguments[constructorParameterIndex++] = obj;
-                    else if (IsFunc(p.ParameterType) && _container.IsRegistered(GetReturnType(p.ParameterType)))
+                    else if(IsFunc(p.ParameterType) && _container.IsRegistered(GetReturnType(p.ParameterType)))
                         arguments[constructorParameterIndex++] = GenerateFactory(p.ParameterType);
                     else
                         throw new ResolveException("Cant find parameter " + p.Name + " (" + p.ParameterType + ") in arguments or registerd in container");
@@ -116,40 +116,38 @@ namespace Hyperletter.IoC {
             return arguments;
         }
 
-
-
         private Type GetReturnType(Type type) {
             return type.GetMethod("Invoke").ReturnType;
         }
 
         private bool IsFunc(Type type) {
             Type generic = null;
-            if (type.IsGenericTypeDefinition)
+            if(type.IsGenericTypeDefinition)
                 generic = type;
-            else if (type.IsGenericType)
+            else if(type.IsGenericType)
                 generic = type.GetGenericTypeDefinition();
-            
-            if (generic == null)
+
+            if(generic == null)
                 return false;
 
-            if (generic == typeof(Func<>)
-                || generic == typeof(Func<,>)
-                || generic == typeof(Func<,,>)
-                || generic == typeof(Func<,,,>)
-                || generic == typeof(Func<,,,,>)
-                || generic == typeof(Func<,,,,,>)
-                || generic == typeof(Func<,,,,,,>)
-                || generic == typeof(Func<,,,,,,,>)
-                || generic == typeof(Func<,,,,,,,,>)
-                || generic == typeof(Func<,,,,,,,,,>)
-                || generic == typeof(Func<,,,,,,,,,,>)
-                || generic == typeof(Func<,,,,,,,,,,,>)
-                || generic == typeof(Func<,,,,,,,,,,,,>)
-                || generic == typeof(Func<,,,,,,,,,,,,,>)
-                || generic == typeof(Func<,,,,,,,,,,,,,,>)
-                || generic == typeof(Func<,,,,,,,,,,,,,,,>)
-                || generic == typeof(Func<,,,,,,,,,,,,,,,,>))
-                    return true;
+            if(generic == typeof(Func<>)
+               || generic == typeof(Func<,>)
+               || generic == typeof(Func<,,>)
+               || generic == typeof(Func<,,,>)
+               || generic == typeof(Func<,,,,>)
+               || generic == typeof(Func<,,,,,>)
+               || generic == typeof(Func<,,,,,,>)
+               || generic == typeof(Func<,,,,,,,>)
+               || generic == typeof(Func<,,,,,,,,>)
+               || generic == typeof(Func<,,,,,,,,,>)
+               || generic == typeof(Func<,,,,,,,,,,>)
+               || generic == typeof(Func<,,,,,,,,,,,>)
+               || generic == typeof(Func<,,,,,,,,,,,,>)
+               || generic == typeof(Func<,,,,,,,,,,,,,>)
+               || generic == typeof(Func<,,,,,,,,,,,,,,>)
+               || generic == typeof(Func<,,,,,,,,,,,,,,,>)
+               || generic == typeof(Func<,,,,,,,,,,,,,,,,>))
+                return true;
 
             return false;
         }
@@ -159,21 +157,21 @@ namespace Hyperletter.IoC {
             if(_factoryCache.TryGetValue(type, out factory))
                 return factory;
 
-            var invokeMethod = type.GetMethod("Invoke");
+            MethodInfo invokeMethod = type.GetMethod("Invoke");
 
-            var target = _container.GetType().GetMethod("Resolve", new[] { typeof(object[]) });
+            MethodInfo target = _container.GetType().GetMethod("Resolve", new[] {typeof(object[])});
             target = target.MakeGenericMethod(invokeMethod.ReturnType);
 
-            var t = Expression.Constant(_container);
+            ConstantExpression t = Expression.Constant(_container);
 
-            var parameters = invokeMethod
-              .GetParameters()
-              .Select(pi => Expression.Parameter(pi.ParameterType, pi.Name))
-              .ToList();
+            List<ParameterExpression> parameters = invokeMethod
+                .GetParameters()
+                .Select(pi => Expression.Parameter(pi.ParameterType, pi.Name))
+                .ToList();
 
             var convertedParameters = (IEnumerable<Expression>) parameters.Select(p => Expression.Convert(p, typeof(object)));
-            var parametersExpression = Expression.NewArrayInit(typeof(object), convertedParameters);
-            var body = Expression.Call(t, target, parametersExpression);
+            NewArrayExpression parametersExpression = Expression.NewArrayInit(typeof(object), convertedParameters);
+            MethodCallExpression body = Expression.Call(t, target, parametersExpression);
             return Expression.Lambda(type, body, parameters).Compile();
         }
     }

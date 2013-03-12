@@ -15,21 +15,10 @@ namespace Hyperletter.Batch {
         private readonly ConcurrentQueue<ILetter> _queue = new ConcurrentQueue<ILetter>();
 
         private readonly Timer _slidingTimeoutTimer;
-        private readonly object _syncRoot = new object();
 
         private readonly Stopwatch _stopwatch = new Stopwatch();
+        private readonly object _syncRoot = new object();
         private bool _sentBatch;
-
-        public event Action<IChannel> ChannelConnected;
-        public event Action<IChannel> ChannelConnecting;
-        public event Action<IChannel, ShutdownReason> ChannelDisconnected;
-        public event Action<IChannel, ShutdownReason> ChannelDisconnecting;
-        public event Action<IChannel> ChannelQueueEmpty;
-        public event Action<IChannel> ChannelInitialized;
-
-        public event Action<ILetter, ReceivedEventArgs> Received;
-        public event Action<IChannel, ILetter> Sent;
-        public event Action<IChannel, ILetter> FailedToSend;
 
         public BatchChannel(SocketOptions options, IChannel channel, BatchLetterBuilder batchBuilder) {
             _channel = channel;
@@ -38,7 +27,9 @@ namespace Hyperletter.Batch {
 
             _channel.ChannelConnected += abstractChannel => ChannelConnected(this);
             _channel.ChannelDisconnected += ChannelOnDisconnected;
-            _channel.ChannelQueueEmpty += abstractChannel => { /* NOOP */ };
+            _channel.ChannelQueueEmpty += abstractChannel => {
+                                              /* NOOP */
+                                          };
             _channel.ChannelInitialized += ChannelOnInitialized;
             _channel.ChannelConnecting += abstractChannel => ChannelConnecting(this);
             _channel.ChannelDisconnecting += (abstractChannel, reason) => ChannelDisconnecting(this, reason);
@@ -75,6 +66,17 @@ namespace Hyperletter.Batch {
             get { return _channel.Direction; }
         }
 
+        public event Action<IChannel> ChannelConnected;
+        public event Action<IChannel> ChannelConnecting;
+        public event Action<IChannel, ShutdownReason> ChannelDisconnected;
+        public event Action<IChannel, ShutdownReason> ChannelDisconnecting;
+        public event Action<IChannel> ChannelQueueEmpty;
+        public event Action<IChannel> ChannelInitialized;
+
+        public event Action<ILetter, ReceivedEventArgs> Received;
+        public event Action<IChannel, ILetter> Sent;
+        public event Action<IChannel, ILetter> FailedToSend;
+
         public void Initialize() {
             _channel.Initialize();
         }
@@ -99,7 +101,7 @@ namespace Hyperletter.Batch {
         public void Disconnect() {
             _channel.Disconnect();
         }
-        
+
         private void ChannelOnInitialized(IChannel channel) {
             ChannelInitialized(this);
         }
@@ -118,7 +120,7 @@ namespace Hyperletter.Batch {
 
         private void ChangeTimerState(bool enabled) {
             lock(_slidingTimeoutTimer) {
-                _slidingTimeoutTimer.Enabled = enabled;    
+                _slidingTimeoutTimer.Enabled = enabled;
             }
         }
 
@@ -127,7 +129,7 @@ namespace Hyperletter.Batch {
                 if(_sentBatch)
                     return EnqueueResult.CantEnqueueMore;
 
-                if (!_batchBuilder.IsEmpty && (timeout || _batchBuilder.IsFull || _stopwatch.ElapsedMilliseconds >= _options.MaxExtend.TotalMilliseconds)) {
+                if(!_batchBuilder.IsEmpty && (timeout || _batchBuilder.IsFull || _stopwatch.ElapsedMilliseconds >= _options.MaxExtend.TotalMilliseconds)) {
                     _sentBatch = true;
                     _channel.Enqueue(_batchBuilder.Build());
 
@@ -142,7 +144,7 @@ namespace Hyperletter.Batch {
             if(letter.Type == LetterType.Batch) {
                 _sentBatch = false;
 
-                for(var i = 0; i < letter.Parts.Length; i++)
+                for(int i = 0; i < letter.Parts.Length; i++)
                     Sent(this, _queue.Dequeue());
             } else
                 Sent(this, _queue.Dequeue());

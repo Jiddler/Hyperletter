@@ -11,17 +11,13 @@ namespace Hyperletter.Channel {
         private readonly Socket _socket;
         private readonly byte[] _tcpReceiveBuffer = new byte[4096];
         private Guid _connectedTo;
-        private SocketAsyncEventArgs _receiveEventArgs = new SocketAsyncEventArgs();
-
-        private MemoryStream _receiveBuffer = new MemoryStream();
 
         private int _currentLength;
-        private int _lengthPosition;
         private bool _initalized;
+        private int _lengthPosition;
+        private MemoryStream _receiveBuffer = new MemoryStream();
+        private SocketAsyncEventArgs _receiveEventArgs = new SocketAsyncEventArgs();
         private bool _shutdownRequested;
-
-        public event Action<ILetter> Received;
-        public event Action<ShutdownReason> SocketError;
 
         public LetterReceiver(Socket socket, LetterDeserializer letterDeserializer) {
             _socket = socket;
@@ -29,6 +25,8 @@ namespace Hyperletter.Channel {
         }
 
         public bool Receiving { get; private set; }
+        public event Action<ILetter> Received;
+        public event Action<ShutdownReason> SocketError;
 
         public void Start() {
             _receiveEventArgs.SetBuffer(_tcpReceiveBuffer, 0, _tcpReceiveBuffer.Length);
@@ -46,7 +44,7 @@ namespace Hyperletter.Channel {
         }
 
         private void BeginReceive() {
-            if (_shutdownRequested)
+            if(_shutdownRequested)
                 return;
 
             try {
@@ -106,11 +104,11 @@ namespace Hyperletter.Channel {
                 if(!ReceivedFullLetter())
                     return;
 
-                var letter = _letterDeserializer.Deserialize(_receiveBuffer.ToArray());
+                ILetter letter = _letterDeserializer.Deserialize(_receiveBuffer.ToArray());
                 _receiveBuffer = new MemoryStream();
                 _currentLength = 0;
 
-                if (letter.Type == LetterType.Initialize) {
+                if(letter.Type == LetterType.Initialize) {
                     _initalized = true;
                 }
 
@@ -144,8 +142,7 @@ namespace Hyperletter.Channel {
             return _currentLength == 0;
         }
 
-        public void Dispose()
-        {
+        public void Dispose() {
             _receiveEventArgs.Completed -= ReceiveEventArgsOnCompleted;
             _receiveEventArgs.Dispose();
             _receiveEventArgs = null;

@@ -3,8 +3,19 @@ using System.Threading;
 
 namespace Hyperletter.Utility {
     public class ConcurrentHashSet<T> {
-        private readonly ReaderWriterLockSlim _lock = new ReaderWriterLockSlim(LockRecursionPolicy.SupportsRecursion);
         private readonly HashSet<T> _hashSet = new HashSet<T>();
+        private readonly ReaderWriterLockSlim _lock = new ReaderWriterLockSlim(LockRecursionPolicy.SupportsRecursion);
+
+        public int Count {
+            get {
+                try {
+                    _lock.EnterReadLock();
+                    return _hashSet.Count;
+                } finally {
+                    if(_lock.IsReadLockHeld) _lock.ExitReadLock();
+                }
+            }
+        }
 
         public bool Add(T item) {
             try {
@@ -39,17 +50,6 @@ namespace Hyperletter.Utility {
                 return _hashSet.Remove(item);
             } finally {
                 if(_lock.IsWriteLockHeld) _lock.ExitWriteLock();
-            }
-        }
-
-        public int Count {
-            get {
-                try {
-                    _lock.EnterReadLock();
-                    return _hashSet.Count;
-                } finally {
-                    if(_lock.IsReadLockHeld) _lock.ExitReadLock();
-                }
             }
         }
     }

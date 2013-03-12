@@ -10,12 +10,12 @@ namespace Hyperletter {
         private bool _listening;
         private Socket _socket;
 
-        public event Action<InboundChannel> IncomingChannel;
-
         public SocketListener(Binding binding, HyperletterFactory factory) {
             _binding = binding;
             _factory = factory;
         }
+
+        public event Action<InboundChannel> IncomingChannel;
 
         public void Dispose() {
             Stop();
@@ -34,7 +34,7 @@ namespace Hyperletter {
         public void Stop() {
             _listening = false;
 
-            if (_socket == null)
+            if(_socket == null)
                 return;
 
             try {
@@ -44,23 +44,23 @@ namespace Hyperletter {
         }
 
         private void StartListen() {
-            if (!_listening)
+            if(!_listening)
                 return;
 
             _socket.BeginAccept(EndAccept, null);
         }
 
         private void EndAccept(IAsyncResult res) {
-            if (!_listening)
+            if(!_listening)
                 return;
 
             StartListen();
 
-            var socket = _socket.EndAccept(res);
+            Socket socket = _socket.EndAccept(res);
             socket.NoDelay = true;
             socket.LingerState = new LingerOption(true, 1);
-            var binding = GetBinding(socket.RemoteEndPoint);
-            var boundChannel = _factory.CreateInboundChannel(socket, binding);
+            Binding binding = GetBinding(socket.RemoteEndPoint);
+            InboundChannel boundChannel = _factory.CreateInboundChannel(socket, binding);
             IncomingChannel(boundChannel);
         }
 

@@ -121,8 +121,9 @@
     <Compile Include="Typed\SocketDisposedException.cs" />
     <Compile Include="Typed\TypedSocketOptions.cs" />
     <Compile Include="Typed\TypedHyperSocket.cs" />
-    <Compile Include="Utility\Class1.cs" />
+    <Compile Include="Utility\SafeEnumerator.cs" />
     <Compile Include="Utility\ConcurrentHashSet.cs" />
+    <Compile Include="Utility\QueueDictionary.cs" />
   </ItemGroup>
   <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

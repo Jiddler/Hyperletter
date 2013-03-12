@@ -12,6 +12,14 @@ namespace Hyperletter.Utility {
             _lock = @lock;
         }
 
+        public T Current {
+            get { return _inner.Current; }
+        }
+
+        object IEnumerator.Current {
+            get { return Current; }
+        }
+
         public void Dispose() {
             _lock.ExitReadLock();
         }
@@ -22,14 +30,6 @@ namespace Hyperletter.Utility {
 
         public void Reset() {
             _inner.Reset();
-        }
-
-        public T Current {
-            get { return _inner.Current; }
-        }
-
-        object IEnumerator.Current {
-            get { return Current; }
         }
     }
 }

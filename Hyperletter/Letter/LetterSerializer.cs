@@ -10,7 +10,7 @@ namespace Hyperletter.Letter {
             letter.Type = (LetterType) serializedLetter[position++];
             letter.Options = (LetterOptions) serializedLetter[position++];
 
-            if ((letter.Options & LetterOptions.UniqueId) == LetterOptions.UniqueId) {
+            if((letter.Options & LetterOptions.UniqueId) == LetterOptions.UniqueId) {
                 letter.UniqueId = new Guid(GetByteRange(serializedLetter, position, 16));
                 position += 16;
             }
@@ -64,7 +64,7 @@ namespace Hyperletter.Letter {
 
         private static void WriteTotalLength(Stream ms) {
             ms.Position = 0;
-            ms.Write(Bytes((int)ms.Length), 0, 4);
+            ms.Write(Bytes((int) ms.Length), 0, 4);
         }
 
         private static void WriteMetadata(ILetter letter, Stream ms) {
@@ -90,10 +90,10 @@ namespace Hyperletter.Letter {
 
         private static byte[] Bytes(int parts) {
             var bytes = new byte[4];
-            bytes[3] = (byte)(parts >> 24);
-            bytes[2] = (byte)(parts >> 16);
-            bytes[1] = (byte)(parts >> 8);
-            bytes[0] = (byte)parts;
+            bytes[3] = (byte) (parts >> 24);
+            bytes[2] = (byte) (parts >> 16);
+            bytes[1] = (byte) (parts >> 8);
+            bytes[0] = (byte) parts;
             return bytes;
         }
     }

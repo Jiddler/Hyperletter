@@ -10,15 +10,15 @@ namespace Hyperletter.Channel {
         private readonly ConcurrentQueue<ILetter> _queue = new ConcurrentQueue<ILetter>();
         private readonly Socket _socket;
         private ILetter _currentLetter;
-        private bool _shutdownRequested;
         private SocketAsyncEventArgs _sendEventArgs = new SocketAsyncEventArgs();
+        private bool _shutdownRequested;
 
-        public bool Sending { get; private set; }
-
-        public LetterTransmitter(Socket socket,  LetterSerializer letterSerializer) {
+        public LetterTransmitter(Socket socket, LetterSerializer letterSerializer) {
             _socket = socket;
             _letterSerializer = letterSerializer;
         }
+
+        public bool Sending { get; private set; }
 
         public event Action<ILetter> Sent;
         public event Action<ShutdownReason> SocketError;
@@ -36,7 +36,7 @@ namespace Hyperletter.Channel {
         }
 
         private void TrySend(ILetter letter = null) {
-            if (_shutdownRequested)
+            if(_shutdownRequested)
                 return;
 
             lock(this) {
@@ -72,7 +72,7 @@ namespace Hyperletter.Channel {
             _sendEventArgs.SetBuffer(serializedLetter, 0, serializedLetter.Length);
 
             try {
-                var pending = _socket.SendAsync(_sendEventArgs);
+                bool pending = _socket.SendAsync(_sendEventArgs);
                 if(!pending)
                     EndSend(_sendEventArgs);
             } catch(Exception) {
@@ -87,11 +87,11 @@ namespace Hyperletter.Channel {
         private void EndSend(SocketAsyncEventArgs socketAsyncEvent) {
             SocketError status = socketAsyncEvent.SocketError;
             int sent = socketAsyncEvent.BytesTransferred;
-            
+
             if(status != System.Net.Sockets.SocketError.Success || sent == 0) {
                 HandleSocketError(ShutdownReason.Socket);
             } else {
-                var sentLetter = _currentLetter;
+                ILetter sentLetter = _currentLetter;
                 Sent(sentLetter);
                 Sending = false;
                 TrySend();

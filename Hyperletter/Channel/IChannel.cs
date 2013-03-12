@@ -26,6 +26,5 @@ namespace Hyperletter.Channel {
         EnqueueResult Enqueue(ILetter letter);
         void Heartbeat();
         void Disconnect();
-        
     }
 }

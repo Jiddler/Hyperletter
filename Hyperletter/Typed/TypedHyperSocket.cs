@@ -7,33 +7,21 @@ using System.Timers;
 using Hyperletter.EventArgs.Channel;
 using Hyperletter.EventArgs.Letter;
 using Hyperletter.EventArgs.Socket;
-using Hyperletter.Letter;
 using Hyperletter.Extension;
+using Hyperletter.Letter;
 
 namespace Hyperletter.Typed {
     public delegate void AnswerCallback<TRequest, TReply>(ITypedSocket socket, AnswerCallbackEventArgs<TRequest, TReply> args);
 
     public class TypedHyperSocket : ITypedSocket {
-        private readonly ITypedHandlerFactory _handlerFactory;
-
         private readonly Timer _cleanUpTimer;
+        private readonly ITypedHandlerFactory _handlerFactory;
         private readonly TypedSocketOptions _options;
-        private readonly IHyperSocket _socket;
 
         private readonly ConcurrentDictionary<Guid, Outstanding> _outstandings = new ConcurrentDictionary<Guid, Outstanding>();
         private readonly DictionaryList<Type, Registration> _registry = new DictionaryList<Type, Registration>();
+        private readonly IHyperSocket _socket;
         private bool _disposing;
-
-        public TypedSocketOptions Options { get { return _options; } }
-        public IHyperSocket Socket { get { return _socket; } }
-
-        internal ITransportSerializer Serializer { get; private set; }
-
-        public event Action<ITypedSocket, IConnectingEventArgs> Connecting;
-        public event Action<ITypedSocket, IConnectedEventArgs> Connected;
-        public event Action<ITypedSocket, IInitializedEventArgs> Initialized;
-        public event Action<ITypedSocket, IDisconnectedEventArgs> Disconnected;
-        public event Action<ITypedSocket, IDisposedEventArgs> Disposed;
 
         public TypedHyperSocket(ITypedHandlerFactory handlerFactory, ITransportSerializer serializer) : this(new TypedSocketOptions(), handlerFactory, serializer) {
         }
@@ -51,6 +39,22 @@ namespace Hyperletter.Typed {
 
             Serializer = serializer;
         }
+
+        public TypedSocketOptions Options {
+            get { return _options; }
+        }
+
+        public IHyperSocket Socket {
+            get { return _socket; }
+        }
+
+        internal ITransportSerializer Serializer { get; private set; }
+
+        public event Action<ITypedSocket, IConnectingEventArgs> Connecting;
+        public event Action<ITypedSocket, IConnectedEventArgs> Connected;
+        public event Action<ITypedSocket, IInitializedEventArgs> Initialized;
+        public event Action<ITypedSocket, IDisconnectedEventArgs> Disconnected;
+        public event Action<ITypedSocket, IDisposedEventArgs> Disposed;
 
         private void HookEvents() {
             _socket.Received += SocketOnReceived;
@@ -79,34 +83,34 @@ namespace Hyperletter.Typed {
         }
 
         private void OnSocketOnConnecting(IHyperSocket socket, IConnectingEventArgs args) {
-            var evnt = Connecting;
+            Action<ITypedSocket, IConnectingEventArgs> evnt = Connecting;
             if(evnt != null) evnt(this, args);
         }
 
         private void OnSocketOnConnected(IHyperSocket socket, IConnectedEventArgs args) {
-            var evnt = Connected;
-            if (evnt != null) evnt(this, args);
+            Action<ITypedSocket, IConnectedEventArgs> evnt = Connected;
+            if(evnt != null) evnt(this, args);
         }
 
         private void OnSocketOnInitialized(IHyperSocket socket, IInitializedEventArgs args) {
-            var evnt = Initialized;
-            if (evnt != null) evnt(this, args);
+            Action<ITypedSocket, IInitializedEventArgs> evnt = Initialized;
+            if(evnt != null) evnt(this, args);
         }
 
         private void OnSocketOnDisconnected(IHyperSocket socket, IDisconnectedEventArgs args) {
-            var evnt = Disconnected;
-            if (evnt != null) evnt(this, args);
+            Action<ITypedSocket, IDisconnectedEventArgs> evnt = Disconnected;
+            if(evnt != null) evnt(this, args);
         }
 
         private void OnSocketOnDisposed(IHyperSocket socket, IDisposedEventArgs args) {
             UnhookEvents();
             _cleanUpTimer.Dispose();
 
-            foreach(var outstanding in _outstandings.Values)
+            foreach(Outstanding outstanding in _outstandings.Values)
                 outstanding.SetResult(new SocketDisposedException());
 
-            var evnt = Disposed;
-            if (evnt != null) evnt(this, args);
+            Action<ITypedSocket, IDisposedEventArgs> evnt = Disposed;
+            if(evnt != null) evnt(this, args);
         }
 
         public void Register<TMessage, THandler>() where THandler : ITypedHandler<TMessage> {
@@ -122,8 +126,8 @@ namespace Hyperletter.Typed {
         }
 
         public IAnswerable<TReply> Send<TRequest, TReply>(TRequest value, LetterOptions options = LetterOptions.None) {
-            var conversationId = Guid.NewGuid();
-            var letter = CreateLetter(value, options, conversationId);
+            Guid conversationId = Guid.NewGuid();
+            ILetter letter = CreateLetter(value, options, conversationId);
             var outstanding = new BlockingOutstanding<TReply>(this);
             _outstandings.Add(conversationId, outstanding);
             _socket.Send(letter);
@@ -138,8 +142,8 @@ namespace Hyperletter.Typed {
         }
 
         public void Send<TRequest, TReply>(TRequest request, AnswerCallback<TRequest, TReply> callback, LetterOptions options = LetterOptions.None) {
-            var conversationId = Guid.NewGuid();
-            var letter = CreateLetter(request, options, conversationId);
+            Guid conversationId = Guid.NewGuid();
+            ILetter letter = CreateLetter(request, options, conversationId);
             var outstanding = new DelegateOutstanding<TRequest, TReply>(this, request, callback);
             _outstandings.Add(conversationId, outstanding);
 
@@ -151,7 +155,7 @@ namespace Hyperletter.Typed {
                 return;
 
             var metadata = Serializer.Deserialize<Metadata>(letter.Parts[0]);
-            var messageType = Type.GetType(metadata.Type);
+            Type messageType = Type.GetType(metadata.Type);
             if(messageType == null)
                 return;
 
@@ -160,25 +164,25 @@ namespace Hyperletter.Typed {
         }
 
         private void TriggerRegistrations(Type type, Metadata metadata, ILetter letter, IReceivedEventArgs receivedEventArgs) {
-            var registrations = GetMatchingRegistrations(type);
+            IEnumerable<Registration> registrations = GetMatchingRegistrations(type);
 
-            foreach(var registration in registrations)
+            foreach(Registration registration in registrations)
                 registration.Invoke(this, letter, metadata, type, receivedEventArgs);
         }
 
         private IEnumerable<Registration> GetMatchingRegistrations(Type type) {
-            foreach(var registration in _registry.Get(type))
+            foreach(Registration registration in _registry.Get(type))
                 yield return registration;
 
-            foreach(var interfaceType in type.GetInterfaces()) {
-                foreach(var registration in _registry.Get(interfaceType))
+            foreach(Type interfaceType in type.GetInterfaces()) {
+                foreach(Registration registration in _registry.Get(interfaceType))
                     yield return registration;
             }
         }
 
         private void TriggerOutstanding(Metadata metadata, ILetter letter, IReceivedEventArgs receivedEventArgs) {
             Outstanding outstanding;
-            if (_outstandings.TryGetValue(metadata.ConversationId, out outstanding)) {
+            if(_outstandings.TryGetValue(metadata.ConversationId, out outstanding)) {
                 outstanding.SetResult(metadata, letter, receivedEventArgs);
                 _outstandings.Remove(metadata.ConversationId);
             }
@@ -189,7 +193,7 @@ namespace Hyperletter.Typed {
         }
 
         internal void Answer<TRequest, TReply>(TRequest value, AbstractAnswerable answerable, LetterOptions options, AnswerCallback<TRequest, TReply> callback) {
-            var letter = CreateLetter(value, options | LetterOptions.Ack, answerable.ConversationId);
+            ILetter letter = CreateLetter(value, options | LetterOptions.Ack, answerable.ConversationId);
             var outstanding = new DelegateOutstanding<TRequest, TReply>(this, value, callback);
             _outstandings.Add(answerable.ConversationId, outstanding);
 
@@ -197,7 +201,7 @@ namespace Hyperletter.Typed {
         }
 
         internal IAnswerable<TReply> Answer<TValue, TReply>(TValue value, AbstractAnswerable answerable, LetterOptions options) {
-            var letter = CreateLetter(value, options, answerable.ConversationId);
+            ILetter letter = CreateLetter(value, options, answerable.ConversationId);
             var outstanding = new BlockingOutstanding<TReply>(this);
             _outstandings.Add(answerable.ConversationId, outstanding);
 
@@ -213,13 +217,13 @@ namespace Hyperletter.Typed {
         }
 
         private ILetter CreateLetter<T>(T value, LetterOptions options, Guid conversationId) {
-            var metadata = new Metadata(value.GetType()) { ConversationId = conversationId };
+            var metadata = new Metadata(value.GetType()) {ConversationId = conversationId};
 
             var parts = new byte[2][];
             parts[0] = Serializer.Serialize(metadata);
             parts[1] = Serializer.Serialize(value);
-            
-            var letter = new Letter.Letter(options) { Type = LetterType.User, Parts = parts };
+
+            var letter = new Letter.Letter(options) {Type = LetterType.User, Parts = parts};
 
             return letter;
         }
@@ -227,9 +231,9 @@ namespace Hyperletter.Typed {
         private void CleanUp(object sender, ElapsedEventArgs elapsedEventArgs) {
             _cleanUpTimer.Stop();
 
-            foreach (var pair in _outstandings.Where(x => (x.Value.Created + _options.AnswerTimeout) < DateTime.UtcNow)) {
+            foreach(var pair in _outstandings.Where(x => (x.Value.Created + _options.AnswerTimeout) < DateTime.UtcNow)) {
                 var outstanding = pair.Value as DelegateOutstanding;
-                if (outstanding == null)
+                if(outstanding == null)
                     continue;
 
                 outstanding.SetResult(new TimeoutException());

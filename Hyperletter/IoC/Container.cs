@@ -3,13 +3,13 @@ using System.Collections.Generic;
 
 namespace Hyperletter.IoC {
     public class Container {
-        private readonly Dictionary<Type, Resolver> _services = new Dictionary<Type,Resolver>();
-
-        public bool AutoRegister { get; set; }
+        private readonly Dictionary<Type, Resolver> _services = new Dictionary<Type, Resolver>();
 
         public Container() {
             RegisterInstance(this);
         }
+
+        public bool AutoRegister { get; set; }
 
         public DependencyResolver<TConcrete> Register<TConcrete>() {
             return Register<TConcrete, TConcrete>();
@@ -35,7 +35,7 @@ namespace Hyperletter.IoC {
 
         public TService Resolve<TService>(Type type, params object[] parameters) where TService : class {
             Resolver dependencyManager;
-            if (!_services.TryGetValue(type, out dependencyManager) && !AutoRegister) {
+            if(!_services.TryGetValue(type, out dependencyManager) && !AutoRegister) {
                 throw new NoRegistrationException(type.FullName + " is not registerd");
             }
 
@@ -44,17 +44,17 @@ namespace Hyperletter.IoC {
                 _services[typeof(TService)] = dependencyManager;
             }
 
-            return (TService)dependencyManager.Resolve(parameters);
+            return (TService) dependencyManager.Resolve(parameters);
         }
 
         public bool TryResolve<TService>(Type type, out TService service, params object[] parameters) where TService : class {
             Resolver dependencyManager;
-            if (!_services.TryGetValue(type, out dependencyManager)) {
+            if(!_services.TryGetValue(type, out dependencyManager)) {
                 service = null;
                 return false;
             }
 
-            service = (TService)dependencyManager.Resolve(parameters);
+            service = (TService) dependencyManager.Resolve(parameters);
             return true;
         }
 
@@ -63,7 +63,7 @@ namespace Hyperletter.IoC {
         }
 
         public void Build() {
-            foreach(var service in _services.Values)
+            foreach(Resolver service in _services.Values)
                 service.Build();
         }
     }

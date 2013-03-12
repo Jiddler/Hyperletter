@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Concurrent;
 using System.Threading;
 using System.Threading.Tasks;
 using Hyperletter.Channel;
@@ -8,10 +7,10 @@ using Hyperletter.Utility;
 
 namespace Hyperletter {
     internal class LetterDispatcher {
-        private readonly HyperSocket _hyperSocket;
         private readonly CancellationToken _cancellationToken;
 
         private readonly QueueDictionary<IChannel> _channelQueue = new QueueDictionary<IChannel>();
+        private readonly HyperSocket _hyperSocket;
         private readonly QueueDictionary<ILetter> _letterQueue = new QueueDictionary<ILetter>();
 
         public LetterDispatcher(HyperSocket hyperSocket, CancellationToken cancellationToken) {
@@ -36,7 +35,7 @@ namespace Hyperletter {
         private void SendTask() {
             while(true) {
                 try {
-                    var letter = GetNextLetter();
+                    ILetter letter = GetNextLetter();
                     if(IsMulticastLetter(letter))
                         SendMulticastLetter(letter);
                     else
@@ -49,8 +48,8 @@ namespace Hyperletter {
         }
 
         private void SendUnicastLetter(ILetter letter) {
-            var channel = GetNextChannel();
-            var result = channel.Enqueue(letter);
+            IChannel channel = GetNextChannel();
+            EnqueueResult result = channel.Enqueue(letter);
 
             if(result == EnqueueResult.CanEnqueueMore) {
                 _channelQueue.TryAdd(channel);
@@ -63,7 +62,7 @@ namespace Hyperletter {
 
         private IChannel GetNextChannel() {
             while(true) {
-                var channel = _channelQueue.Take(_cancellationToken);
+                IChannel channel = _channelQueue.Take(_cancellationToken);
                 if(!channel.CanSend || channel.ShutdownRequested)
                     continue;
 
@@ -76,7 +75,7 @@ namespace Hyperletter {
         }
 
         private void SendMulticastLetter(ILetter letter) {
-            foreach(var channel in _hyperSocket.Channels) {
+            foreach(IChannel channel in _hyperSocket.Channels) {
                 channel.Enqueue(letter);
             }
         }

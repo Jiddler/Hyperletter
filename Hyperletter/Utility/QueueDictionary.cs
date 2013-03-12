@@ -3,13 +3,11 @@ using System.Threading;
 
 namespace Hyperletter.Utility {
     internal class QueueDictionary<T> {
-        private int _highestCount = 0;
-
-        private LinkedList<T> _list = new LinkedList<T>();
-        private Dictionary<T, LinkedListNode<T>> _index = new Dictionary<T, LinkedListNode<T>>();
-
         private readonly ReaderWriterLockSlim _lock = new ReaderWriterLockSlim();
         private readonly ManualResetEventSlim _manualResetEventSlim = new ManualResetEventSlim();
+        private int _highestCount;
+        private Dictionary<T, LinkedListNode<T>> _index = new Dictionary<T, LinkedListNode<T>>();
+        private LinkedList<T> _list = new LinkedList<T>();
 
         public int Count {
             get {
@@ -28,7 +26,7 @@ namespace Hyperletter.Utility {
                 if(_index.ContainsKey(item))
                     return false;
 
-                var node = _list.AddLast(item);
+                LinkedListNode<T> node = _list.AddLast(item);
                 _index.Add(item, node);
 
                 if(_index.Count > _highestCount)
@@ -45,8 +43,8 @@ namespace Hyperletter.Utility {
         public bool TryTake(out T item) {
             try {
                 _lock.EnterWriteLock();
-                var node = _list.First;
-                if (node != null) {
+                LinkedListNode<T> node = _list.First;
+                if(node != null) {
                     item = node.Value;
                     _list.Remove(node);
                     _index.Remove(node.Value);
@@ -67,15 +65,15 @@ namespace Hyperletter.Utility {
                 item = default(T);
                 return false;
             } finally {
-                _lock.ExitWriteLock();    
+                _lock.ExitWriteLock();
             }
         }
-        
+
         public bool Remove(T item) {
             try {
                 _lock.EnterWriteLock();
                 LinkedListNode<T> node;
-                if (_index.TryGetValue(item, out node)) {
+                if(_index.TryGetValue(item, out node)) {
                     _index.Remove(item);
                     _list.Remove(node);
                     return true;

@@ -20,6 +20,14 @@ namespace Hyperletter.Batch {
             get { return _letters.Count; }
         }
 
+        public bool IsFull {
+            get { return _letters.Count >= _maxLetters; }
+        }
+
+        public bool IsEmpty {
+            get { return _letters.Count == 0; }
+        }
+
         public void Add(ILetter letter) {
             if((letter.Options & LetterOptions.Ack) == LetterOptions.Ack)
                 _batchOptions = LetterOptions.Ack;
@@ -36,14 +44,6 @@ namespace Hyperletter.Batch {
                 letter.Parts[i] = _serializer.Serialize(_letters.Dequeue());
 
             return letter;
-        }
-
-        public bool IsFull {
-            get { return _letters.Count >= _maxLetters; }
-        }
-
-        public bool IsEmpty {
-            get { return _letters.Count == 0; }
         }
 
         public void Clear() {
