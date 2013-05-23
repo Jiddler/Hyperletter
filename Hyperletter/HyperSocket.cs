@@ -33,7 +33,7 @@ namespace Hyperletter {
             _letterDispatcher = _factory.CreateLetterDispatcher();
 
             _heartbeat = new Timer(Heartbeat);
-            _heartbeat.Change(Options.Heartbeat.Intervall, Options.Heartbeat.Intervall);
+            _heartbeat.Change(Options.Heartbeat.Interval, Options.Heartbeat.Interval);
         }
 
         public SocketOptions Options { get; private set; }

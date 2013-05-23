@@ -1,5 +1,5 @@
 namespace Hyperletter {
     public class HeartbeatOptions {
-        public int Intervall { get; set; }
+        public int Interval { get; set; }
     }
 }
