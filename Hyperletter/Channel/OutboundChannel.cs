@@ -50,7 +50,7 @@ namespace Hyperletter.Channel {
         }
 
         private void TryReconnect() {
-            Thread.Sleep(_options.ReconnectIntervall);
+            Thread.Sleep(_options.ReconnectInterval);
             TryConnect();
         }
 
