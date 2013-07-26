@@ -171,11 +171,11 @@ namespace Hyperletter.Typed {
         }
 
         private IEnumerable<Registration> GetMatchingRegistrations(Type type) {
-            foreach(Registration registration in _registry.Get(type))
+            foreach(Registration registration in _registry.Get(type).ToList())
                 yield return registration;
 
             foreach(Type interfaceType in type.GetInterfaces()) {
-                foreach(Registration registration in _registry.Get(interfaceType))
+                foreach(Registration registration in _registry.Get(interfaceType).ToList())
                     yield return registration;
             }
         }
