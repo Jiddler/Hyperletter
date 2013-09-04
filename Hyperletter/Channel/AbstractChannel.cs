@@ -208,7 +208,7 @@ namespace Hyperletter.Channel {
         }
 
         private ReceivedEventArgs CreateReceivedEventArgs(AckState ackState) {
-            return new ReceivedEventArgs {AckState = ackState, RemoteNodeId = RemoteNodeId};
+            return new ReceivedEventArgs {AckState = ackState, RemoteNodeId = RemoteNodeId, Binding = Binding };
         }
 
         private void HandleLetterSent(ILetter sentLetter) {
