@@ -134,7 +134,7 @@ namespace Hyperletter.Channel {
             if(_initalizationCount != 2) {
                 if(IsConnected) {
                     DateTime now = DateTime.UtcNow;
-                    if((now - _connectedAt).TotalMilliseconds > _options.MaximumInitializeTime)
+                    if((now - _connectedAt) > _options.MaximumInitializeTime)
                         Shutdown(ShutdownReason.Socket);
                 }
 
@@ -293,7 +293,7 @@ namespace Hyperletter.Channel {
         private void WaitForTranseiviersToShutDown() {
             DateTime startedWaitingAt = DateTime.UtcNow;
             while((_transmitter != null && _transmitter.Sending) || (_receiver != null && _receiver.Receiving)) {
-                if((DateTime.UtcNow - startedWaitingAt).TotalMilliseconds > _options.ShutdownWait)
+                if((DateTime.UtcNow - startedWaitingAt) > _options.ShutdownWait)
                     break;
 
                 Thread.Sleep(10);

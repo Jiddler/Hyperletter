@@ -8,9 +8,9 @@ namespace Hyperletter {
             Heartbeat = new HeartbeatOptions {Interval = 1000};
             Notification = new NotificationOptions {ReceivedNotifyOnAllAckStates = false};
             NodeId = Guid.NewGuid();
-            ReconnectInterval = 1000;
-            ShutdownWait = 1500;
-            MaximumInitializeTime = 4000;
+            ReconnectInterval = TimeSpan.FromMilliseconds(1000);
+            ShutdownWait = TimeSpan.FromMilliseconds(1500);
+            MaximumInitializeTime = TimeSpan.FromMilliseconds(4000);
         }
 
         public BatchOptions Batch { get; private set; }
@@ -18,9 +18,9 @@ namespace Hyperletter {
         public HeartbeatOptions Heartbeat { get; private set; }
         public NotificationOptions Notification { get; private set; }
 
-        public int ReconnectInterval { get; set; }
-        public int ShutdownWait { get; set; }
-        public int MaximumInitializeTime { get; set; }
+        public TimeSpan ReconnectInterval { get; set; }
+        public TimeSpan ShutdownWait { get; set; }
+        public TimeSpan MaximumInitializeTime { get; set; }
 
         public TimeSpan ShutdownGrace { get; set; }
     }
