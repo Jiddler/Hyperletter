@@ -18,6 +18,8 @@ namespace Hyperletter.Channel {
         private readonly ConcurrentQueue<ILetter> _queue = new ConcurrentQueue<ILetter>();
         private readonly ConcurrentQueue<ILetter> _receivedQueue = new ConcurrentQueue<ILetter>();
 
+        private SpinLock _lock = new SpinLock();
+
         protected bool Disposed;
         protected Socket Socket;
         private DateTime _connectedAt;
@@ -88,6 +90,8 @@ namespace Hyperletter.Channel {
         }
 
         private void LockedConnected() {
+            ChannelConnected(this);
+
             CreateTransmitter();
             CreateReceiver();
 
@@ -97,8 +101,6 @@ namespace Hyperletter.Channel {
             IsConnected = true;
             _shutdownRequested = false;
             _remoteShutdownRequested = false;
-
-            ChannelConnected(this);
         }
 
         private void CreateReceiver() {
@@ -244,8 +246,6 @@ namespace Hyperletter.Channel {
         }
 
         private void LockedShutdown(ShutdownReason reason) {
-            _shutdownRequested = true;
-
             if(!_remoteShutdownRequested)
                 ChannelDisconnecting(this, reason);
 
@@ -330,9 +330,17 @@ namespace Hyperletter.Channel {
         }
 
         public void Lock(Action perform) {
-            lock(this) {
+            bool lockTaken = false;
+            
+            try
+            {
+                _lock.Enter(ref lockTaken);
                 perform();
             }
+            finally
+            { 
+                if (lockTaken) _lock.Exit(false);
+            } 
         }
     }
 }
