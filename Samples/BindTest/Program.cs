@@ -11,7 +11,7 @@ namespace BindTest {
 
         private static void Main(string[] arg) {
             var options = new SocketOptions();
-            options.ShutdownGrace = TimeSpan.FromSeconds(5);
+            options.ShutdownGrace = TimeSpan.FromMilliseconds(250);
             var unicastSocket = new HyperSocket(options);
 
             var stopwatch = new Stopwatch();
@@ -41,7 +41,10 @@ namespace BindTest {
                                               if(received%100000 == 0) {
                                                   Console.WriteLine("Received: " + received + " in " + stopwatch.ElapsedMilliseconds + " ms" + ". " + (received/stopwatch.ElapsedMilliseconds) + " letter/millisecond");
                                                   received = 0;
+                                                  letter.Socket.Disconnect(letter.Binding.IpAddress, letter.Binding.Port);
                                               }
+
+
                                           }
                                       };
 
