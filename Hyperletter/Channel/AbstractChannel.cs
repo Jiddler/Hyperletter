@@ -18,7 +18,7 @@ namespace Hyperletter.Channel {
         private readonly ConcurrentQueue<ILetter> _queue = new ConcurrentQueue<ILetter>();
         private readonly ConcurrentQueue<ILetter> _receivedQueue = new ConcurrentQueue<ILetter>();
 
-        private SpinLock _lock = new SpinLock();
+        private SpinLock _lock = new SpinLock(false);
 
         protected bool Disposed;
         protected Socket Socket;
@@ -332,13 +332,10 @@ namespace Hyperletter.Channel {
         public void Lock(Action perform) {
             bool lockTaken = false;
             
-            try
-            {
+            try {
                 _lock.Enter(ref lockTaken);
                 perform();
-            }
-            finally
-            { 
+            } finally { 
                 if (lockTaken) _lock.Exit(false);
             } 
         }
