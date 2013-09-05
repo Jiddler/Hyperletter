@@ -9,7 +9,7 @@ namespace ConnectTest {
         public static object SyncRoot = new object();
 
         private static void Main() {
-            var socketOptions = new SocketOptions();
+            var socketOptions = new SocketOptions { ReconnectInterval = TimeSpan.FromMilliseconds(100)};
             var unicastSocket = new HyperSocket(socketOptions);
 
             int sent = 0;
@@ -18,8 +18,15 @@ namespace ConnectTest {
                                       lock(SyncRoot) {
                                           sent++;
 
-                                          if(sent%20000 == 0)
+                                        if(sent%20000 == 0) {
                                               Console.WriteLine("SENT: " + sent);
+                                              
+                                          }
+
+                                          if(sent % 40000 == 0)
+                                              SendXLetters(unicastSocket, 40000);
+
+
                                       }
                                   };
 
@@ -37,15 +44,22 @@ namespace ConnectTest {
             unicastSocket.Disconnecting += (socket, args) => Console.WriteLine("DISCONNECTING" + args.Binding + " " + args.Reason);
             unicastSocket.Disconnected += (socket, args) => {
                 {
+                    if(args.Reason == ShutdownReason.Requested)
+                        unicastSocket.Connect(IPAddress.Parse("127.0.0.1"), 8001);
                     Console.WriteLine("DISCONNECTED " + args.Binding + " " + args.Reason);
                 }
                                           };
             unicastSocket.Connected += (socket, args) => Console.WriteLine("CONNECTED " + args.Binding);
             int x = 0;
             unicastSocket.Initialized += (socket, args) => {
+                Console.WriteLine("INITIALIZED");
+                if(x++ == 0)
+                    SendXLetters(unicastSocket, 40000);
                                              //    unicastSocket.Dispose();
                                          };
-            unicastSocket.Disposed += (socket, args) => unicastSocket.Connect(IPAddress.Parse("127.0.0.1"), 8001);
+            unicastSocket.Disposed += (socket, args) => {
+                                          
+                                      };
 
             unicastSocket.Connect(IPAddress.Parse("127.0.0.1"), 8001);
             //unicastSocket.Connect(IPAddress.Parse("127.0.0.1"), 8002);
