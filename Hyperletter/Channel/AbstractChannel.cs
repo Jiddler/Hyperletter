@@ -242,7 +242,14 @@ namespace Hyperletter.Channel {
                 _shutdownRequested = true;
             }
 
+            bool wasConnected = IsConnected;
             Lock(() => LockedShutdown(reason));
+
+            
+            if(wasConnected) {
+                ChannelDisconnected(this, _remoteShutdownRequested ? ShutdownReason.Remote : reason);
+                AfterDisconnectHook(reason);
+            }
         }
 
         private void LockedShutdown(ShutdownReason reason) {
@@ -260,7 +267,6 @@ namespace Hyperletter.Channel {
             }
 
             _initalizationCount = 0;
-            bool wasConnected = IsConnected;
             IsConnected = false;
 
             if(_transmitter != null) _transmitter.Stop();
@@ -271,11 +277,6 @@ namespace Hyperletter.Channel {
 
             FailQueuedLetters();
             FailedReceivedLetters();
-
-            if(wasConnected) {
-                ChannelDisconnected(this, _remoteShutdownRequested ? ShutdownReason.Remote : reason);
-                AfterDisconnectHook(reason);
-            }
         }
 
         private void FailedReceivedLetters() {
