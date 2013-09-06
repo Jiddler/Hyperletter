@@ -56,12 +56,15 @@ namespace Hyperletter {
 
             StartListen();
 
-            Socket socket = _socket.EndAccept(res);
-            socket.NoDelay = true;
-            socket.LingerState = new LingerOption(true, 1);
-            Binding binding = GetBinding(socket.RemoteEndPoint);
-            InboundChannel boundChannel = _factory.CreateInboundChannel(socket, binding);
-            IncomingChannel(boundChannel);
+            try {
+                Socket socket = _socket.EndAccept(res);
+                socket.NoDelay = true;
+                socket.LingerState = new LingerOption(true, 1);
+                Binding binding = GetBinding(socket.RemoteEndPoint);
+                InboundChannel boundChannel = _factory.CreateInboundChannel(socket, binding);
+                IncomingChannel(boundChannel);
+            } catch(SocketException) {
+            }
         }
 
         private Binding GetBinding(EndPoint endPoint) {
