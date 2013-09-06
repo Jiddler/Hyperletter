@@ -128,8 +128,10 @@ namespace Hyperletter.Channel {
         }
 
         private void HandleInitialize() {
-            if(Interlocked.Increment(ref _initalizationCount) == 2)
-                ChannelInitialized(this);
+            Lock(() => {
+                if (Interlocked.Increment(ref _initalizationCount) == 2)
+                    ChannelInitialized(this);                     
+            });
         }
 
         public void Heartbeat() {
