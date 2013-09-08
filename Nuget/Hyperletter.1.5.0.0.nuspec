@@ -1,0 +1,26 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2011/08/nuspec.xsd">
+    <metadata>
+        <id>Hyperletter</id>
+        <version>1.5.0.0</version>
+        <title>Hyperletter</title>
+        <authors>Lars Stenberg</authors>
+        <owners>Lars Stenberg</owners>
+        <licenseUrl>http://opensource.org/licenses/MIT</licenseUrl>
+        <projectUrl>http://github.com/hyperletter/clr</projectUrl>
+        <requireLicenseAcceptance>false</requireLicenseAcceptance>
+        <description>A lightweight MQ-solution. Like a mix of WCF and ZeroMQ (ZMQ).</description>
+        <releaseNotes>Added queuing event.
+Spelling fixes of API.
+Some bugfixes.
+A couple of major internal fixes.</releaseNotes>
+        <copyright>Copyright 2012</copyright>
+        <tags>MQ WCF ZEROMQ ZMQ 0MQ SERVICEBUS</tags>
+    </metadata>
+    <files>
+        <file src="lib\net40\Hyperletter.dll" target="lib\net40\Hyperletter.dll" />
+        <file src="lib\net40\Hyperletter.pdb" target="lib\net40\Hyperletter.pdb" />
+        <file src="lib\net45\Hyperletter.dll" target="lib\net45\Hyperletter.dll" />
+        <file src="lib\net45\Hyperletter.pdb" target="lib\net45\Hyperletter.pdb" />
+    </files>
+</package>
