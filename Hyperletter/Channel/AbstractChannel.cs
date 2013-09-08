@@ -167,7 +167,7 @@ namespace Hyperletter.Channel {
                 HandleLetterSent(_queue.Dequeue());
             } else {
                 if((receivedLetter.Options & LetterOptions.Ack) == LetterOptions.Ack) {
-                    if(_options.Notification.ReceivedNotifyOnAllAckStates && ((letterType & LetterType.User) == LetterType.User || (letterType & LetterType.Batch) == LetterType.Batch))
+                    if(_options.Notification.ReceivedNotifyOnAllAckStates && (letterType == LetterType.User || letterType == LetterType.Batch))
                         HandleReceivedLetter(receivedLetter, AckState.BeforeAck);
 
                     QueueAck(receivedLetter);

@@ -10,7 +10,6 @@ namespace Hyperletter.Channel {
 
         private readonly Socket _socket;
         private readonly byte[] _tcpReceiveBuffer = new byte[4096];
-        private Guid _connectedTo;
 
         private int _currentLength;
         private bool _initalized;

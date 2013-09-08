@@ -12,7 +12,7 @@ namespace Hyperletter.IoC {
         private Action<TService> _activatedCallback;
         private bool _autoResolveOnBuild;
         private ConstructorInfo _constructor;
-        private object _instance;
+        private volatile object _instance;
         private ParameterInfo[] _parameters;
         private bool _prepared;
         private bool _singleton;
