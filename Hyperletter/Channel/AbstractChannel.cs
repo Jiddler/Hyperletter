@@ -69,15 +69,19 @@ namespace Hyperletter.Channel {
         }
 
         public EnqueueResult Enqueue(ILetter letter) {
-            if(!CanSend && (letter.Type == LetterType.User || letter.Type == LetterType.Batch)) {
+            if(!CanSend) {
                 FailedToSend(this, letter);
                 return EnqueueResult.CantEnqueueMore;
             }
 
-            _queue.Enqueue(letter);
-            _transmitter.Enqueue(letter);
+            InternalEnqueue(letter);
 
             return EnqueueResult.CantEnqueueMore;
+        }
+
+        internal void InternalEnqueue(ILetter letter) {
+            _queue.Enqueue(letter);
+            _transmitter.Enqueue(letter);
         }
 
         public void Dispose() {
@@ -95,7 +99,7 @@ namespace Hyperletter.Channel {
             CreateTransmitter();
             CreateReceiver();
 
-            Enqueue(new Letter.Letter {Type = LetterType.Initialize, Options = LetterOptions.Ack, Parts = new[] {_options.NodeId.ToByteArray()}});
+            InternalEnqueue(new Letter.Letter { Type = LetterType.Initialize, Options = LetterOptions.Ack, Parts = new[] { _options.NodeId.ToByteArray() } });
 
             _connectedAt = DateTime.UtcNow;
             IsConnected = true;
@@ -148,7 +152,7 @@ namespace Hyperletter.Channel {
             if(_lastAction != _lastActionHeartbeat)
                 _lastActionHeartbeat = _lastAction;
             else
-                Enqueue(HeartbeatLetter);
+                InternalEnqueue(HeartbeatLetter);
         }
 
         public void Disconnect() {
@@ -255,7 +259,7 @@ namespace Hyperletter.Channel {
 
             if(reason == ShutdownReason.Requested) {
                 var letter = new Letter.Letter(LetterOptions.Ack) {Type = LetterType.Shutdown};
-                Enqueue(letter);
+                InternalEnqueue(letter);
 
                 if(_options.ShutdownGrace.TotalMilliseconds > 0)
                     Thread.Sleep((int) _options.ShutdownGrace.TotalMilliseconds);

@@ -42,10 +42,6 @@ namespace Hyperletter.Batch {
             _slidingTimeoutTimer.Elapsed += SlidingTimeoutTimerOnElapsed;
         }
 
-        public bool CanSend {
-            get { return _channel.CanSend; }
-        }
-
         public bool IsConnected {
             get { return _channel.IsConnected; }
         }

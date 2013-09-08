@@ -63,7 +63,7 @@ namespace Hyperletter {
         private IChannel GetNextChannel() {
             while(true) {
                 IChannel channel = _channelQueue.Take(_cancellationToken);
-                if(!channel.CanSend || channel.ShutdownRequested)
+                if (channel.ShutdownRequested)
                     continue;
 
                 return channel;
