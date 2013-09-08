@@ -4,7 +4,7 @@ Thanks Jetbrains for supporting Hyperletter with ReSharper and DotCover!
 [![The Most Intelligent Add-In To Visual Studio](http://www.jetbrains.com/resharper/features/rs/rs1/rs125x37_violet.gif)](http://www.jetbrains.com/)
 
 ## Version
-We´re currently on V1.3.
+We´re currently on V1.5.
 
 ## Concept
 **_Helps to distribute your system_**  
@@ -106,12 +106,11 @@ See BindDispatcherTest and ConnectDispatcherTest in source for more details (See
 
 ## Whats next
 
-### V1. Bugfixes
-V1 is considered complete, and stable. Bug fixes will be done on a regular basis.
+### Bugfixes
 _We dont have any outstanding issues, please report any issues_
 
-### V2. Persistence
-Hyperletter is core part of FirefliesMQ which will give you a persisted queues and routes.
+### Other features
+Hyperletter is core part of FirefliesMQ (persisted queues and routes) and hyperletter features is mosly implemented to support any new features of FirefliesMQ.
 
 ## Protocol specification
 ### Header
