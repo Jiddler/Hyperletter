@@ -225,13 +225,21 @@ namespace Hyperletter.Channel {
                     HandleInitialize();
                     break;
 
+                case LetterType.Heartbeat:
+                    NotifyOnEmptyQueue();
+                    break;
+
                 case LetterType.Batch:
                 case LetterType.User:
                     Sent(this, sentLetter);
-                    if(_queue.Count == 0 && ChannelQueueEmpty != null) {
-                        ChannelQueueEmpty(this);
-                    }
+                    NotifyOnEmptyQueue();
                     break;
+            }
+        }
+
+        private void NotifyOnEmptyQueue() {
+            if(_queue.Count == 0 && ChannelQueueEmpty != null) {
+                ChannelQueueEmpty(this);
             }
         }
 
