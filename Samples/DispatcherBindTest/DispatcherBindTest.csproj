@@ -43,6 +43,10 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\Hyperletter.Typed\Hyperletter.Typed.csproj">
+      <Project>{5294CF89-1509-4374-9D0B-4226E700E6AB}</Project>
+      <Name>Hyperletter.Typed</Name>
+    </ProjectReference>
     <ProjectReference Include="..\..\Hyperletter\Hyperletter.csproj">
       <Project>{3cabacb8-0fb8-49f8-b2de-5c1283c92441}</Project>
       <Name>Hyperletter</Name>

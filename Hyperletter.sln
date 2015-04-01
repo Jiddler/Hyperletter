@@ -1,6 +1,8 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 2012
+# Visual Studio 2013
+VisualStudioVersion = 12.0.31101.0
+MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{810AFE34-7010-4BB4-90BB-720C38F9B6BB}"
 	ProjectSection(SolutionItems) = preProject
 		LICENCE = LICENCE
@@ -27,6 +29,8 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ConnectTest", "Samples\ConnectTest\ConnectTest.csproj", "{1A6EE45B-71F0-4907-A9C2-70FD8C10465B}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Hyperletter", "Hyperletter\Hyperletter.csproj", "{3CABACB8-0FB8-49F8-B2DE-5C1283C92441}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Hyperletter.Typed", "Hyperletter.Typed\Hyperletter.Typed.csproj", "{5294CF89-1509-4374-9D0B-4226E700E6AB}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -58,6 +62,10 @@ Global
 		{3CABACB8-0FB8-49F8-B2DE-5C1283C92441}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3CABACB8-0FB8-49F8-B2DE-5C1283C92441}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{3CABACB8-0FB8-49F8-B2DE-5C1283C92441}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5294CF89-1509-4374-9D0B-4226E700E6AB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5294CF89-1509-4374-9D0B-4226E700E6AB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5294CF89-1509-4374-9D0B-4226E700E6AB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5294CF89-1509-4374-9D0B-4226E700E6AB}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
