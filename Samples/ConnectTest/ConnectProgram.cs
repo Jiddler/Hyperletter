@@ -6,10 +6,10 @@ using Hyperletter.Letter;
 
 namespace ConnectTest {
     internal class ConnectProgram {
-        public static object SyncRoot = new object();
+        private static readonly object SyncRoot = new object();
 
         private static void Main() {
-            var socketOptions = new SocketOptions { ReconnectInterval = TimeSpan.FromMilliseconds(100)};
+            var socketOptions = new SocketOptions {ReconnectInterval = TimeSpan.FromMilliseconds(100)};
             var hyperSocket = new HyperSocket(socketOptions);
 
             int sent = 0;
@@ -56,7 +56,8 @@ namespace ConnectTest {
             while((line = Console.ReadLine()) != null) {
                 if(line == "exit")
                     return;
-                else if(line == "status")
+                
+                if(line == "status")
                     WriteStatus(sent, received);
                 else if(line == "reconnect") {
                     hyperSocket.Disconnect(IPAddress.Parse("127.0.0.1"), 8001);
@@ -77,7 +78,7 @@ namespace ConnectTest {
 
         private static void SendXLetters(HyperSocket unicastSocket, int numberToSend) {
             for(int i = 0; i < numberToSend; i++)
-                unicastSocket.Send(new Letter {Options = LetterOptions.Ack | LetterOptions.Requeue, Type = LetterType.User, Parts = new[] {Encoding.Unicode.GetBytes("Hej " + i)}});
+                unicastSocket.Send(new Letter {Options = LetterOptions.None | LetterOptions.Requeue, Type = LetterType.User, Parts = new[] {Encoding.Unicode.GetBytes("Hej " + i)}});
         }
     }
 }

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
@@ -137,21 +138,17 @@ namespace Hyperletter {
 
         public void Dispose() {
             Task.Factory.StartNew(() => {
-                                      _cancellationTokenSource.Cancel();
-                                      _heartbeat.Dispose();
+                _cancellationTokenSource.Cancel();
+                _heartbeat.Dispose();
 
-                                      foreach(SocketListener listener in _listeners.Values)
-                                          listener.Stop();
+                foreach(SocketListener listener in _listeners.Values)
+                    listener.Stop();
 
-                                      var disconnectTasks = new List<Task>();
-                                      foreach(IChannel channel in _channels.Values)
-                                          disconnectTasks.Add(Task.Factory.StartNew(() => channel.Disconnect()));
+                Task.WaitAll(_channels.Values.Select(channel => Task.Factory.StartNew(channel.Disconnect)).ToArray());
 
-                                      Task.WaitAll(disconnectTasks.ToArray());
-
-                                      Action<IHyperSocket, IDisposedEventArgs> evnt = Disposed;
-                                      if(evnt != null) evnt(this, new DisposedEventArgs {Socket = this});
-                                  });
+                var evnt = Disposed;
+                if(evnt != null) evnt(this, new DisposedEventArgs {Socket = this});
+            });
         }
 
         private void PrepareChannel(IChannel channel) {

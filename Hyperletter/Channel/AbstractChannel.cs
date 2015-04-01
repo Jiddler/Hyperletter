@@ -20,7 +20,6 @@ namespace Hyperletter.Channel {
 
         private SpinLock _lock = new SpinLock(false);
 
-        protected bool Disposed;
         protected Socket Socket;
         private DateTime _connectedAt;
 
@@ -79,14 +78,9 @@ namespace Hyperletter.Channel {
             return EnqueueResult.CantEnqueueMore;
         }
 
-        internal void InternalEnqueue(ILetter letter) {
+        private void InternalEnqueue(ILetter letter) {
             _queue.Enqueue(letter);
             _transmitter.Enqueue(letter);
-        }
-
-        public void Dispose() {
-            Disposed = true;
-            Disconnect();
         }
 
         protected void Connected() {
@@ -344,7 +338,7 @@ namespace Hyperletter.Channel {
                 _lastAction = 0;
         }
 
-        public void Lock(Action perform) {
+        private void Lock(Action perform) {
             bool lockTaken = false;
             
             try {

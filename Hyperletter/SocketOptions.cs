@@ -14,9 +14,10 @@ namespace Hyperletter {
         }
 
         public BatchOptions Batch { get; private set; }
-        public Guid NodeId { get; set; }
         public HeartbeatOptions Heartbeat { get; private set; }
         public NotificationOptions Notification { get; private set; }
+
+        public Guid NodeId { get; set; }
 
         public TimeSpan ReconnectInterval { get; set; }
         public TimeSpan ShutdownWait { get; set; }

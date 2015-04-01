@@ -4,7 +4,6 @@ using Hyperletter.Letter;
 
 namespace Hyperletter.Batch {
     internal class BatchLetterBuilder {
-        public const int MaxLettersInOneBatch = 1000;
         private readonly ConcurrentQueue<ILetter> _letters = new ConcurrentQueue<ILetter>();
         private readonly int _maxLetters;
         private readonly LetterSerializer _serializer;
@@ -14,10 +13,6 @@ namespace Hyperletter.Batch {
         public BatchLetterBuilder(SocketOptions socketOptions, LetterSerializer serializer) {
             _maxLetters = socketOptions.Batch.MaxLetters;
             _serializer = serializer;
-        }
-
-        public int Count {
-            get { return _letters.Count; }
         }
 
         public bool IsFull {

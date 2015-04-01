@@ -7,11 +7,10 @@ using Hyperletter.Letter;
 
 namespace BindTest {
     internal class BindProgram {
-        public static object SyncRoot = new object();
+        private static readonly object SyncRoot = new object();
 
         private static void Main(string[] arg) {
-            var options = new SocketOptions();
-            options.ShutdownGrace = TimeSpan.FromMilliseconds(250);
+            var options = new SocketOptions { ShutdownGrace = TimeSpan.FromMilliseconds(250) };
             var hyperSocket = new HyperSocket(options);
 
             var stopwatch = new Stopwatch();
@@ -31,7 +30,7 @@ namespace BindTest {
 
             int received = 0;
             hyperSocket.Received += (letter, args) => {
-                lock(hyperSocket) {
+                lock(SyncRoot) {
                     if(received == 0)
                         stopwatch.Restart();
                     received++;

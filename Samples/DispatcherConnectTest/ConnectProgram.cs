@@ -6,8 +6,7 @@ using Hyperletter.Typed;
 namespace DispatcherConnectTest {
     public class ConnectProgram {
         public static void Main() {
-            var options = new TypedSocketOptions();
-            options.AnswerTimeout = TimeSpan.FromSeconds(600);
+            var options = new TypedSocketOptions {AnswerTimeout = TimeSpan.FromSeconds(600)};
             var socket = new TypedHyperSocket(options, new DefaultTypedHandlerFactory(), new JsonTransportSerializer());
             socket.Register<TestMessage>(IncomingTestMessage);
             socket.Connect(IPAddress.Parse("127.0.0.1"), 8900);

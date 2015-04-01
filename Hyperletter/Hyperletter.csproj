@@ -100,8 +100,6 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SocketListener.cs" />
     <Compile Include="SocketOptions.cs" />
-    <Compile Include="Utility\SafeEnumerator.cs" />
-    <Compile Include="Utility\ConcurrentHashSet.cs" />
     <Compile Include="Utility\QueueDictionary.cs" />
   </ItemGroup>
   <ItemGroup />

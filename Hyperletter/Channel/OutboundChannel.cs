@@ -22,9 +22,6 @@ namespace Hyperletter.Channel {
         }
 
         private void TryConnect() {
-            if(Disposed)
-                return;
-
             ChannelConnecting(this);
 
             Socket = new Socket(Binding.IpAddress.AddressFamily, SocketType.Stream, ProtocolType.IP);
