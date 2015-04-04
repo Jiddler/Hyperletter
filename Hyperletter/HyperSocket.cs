@@ -143,11 +143,7 @@ namespace Hyperletter {
                                       foreach(SocketListener listener in _listeners.Values)
                                           listener.Stop();
 
-                                      var disconnectTasks = new List<Task>();
-                                      foreach(IChannel channel in _channels.Values)
-                                          disconnectTasks.Add(Task.Factory.StartNew(() => channel.Disconnect()));
-
-                                      Task.WaitAll(disconnectTasks.ToArray());
+                                      Parallel.ForEach(_channels.Values, (channel) => channel.Disconnect());
 
                                       Action<IHyperSocket, IDisposedEventArgs> evnt = Disposed;
                                       if(evnt != null) evnt(this, new DisposedEventArgs {Socket = this});
