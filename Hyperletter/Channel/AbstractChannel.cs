@@ -8,14 +8,13 @@ using Hyperletter.Letter;
 
 namespace Hyperletter.Channel {
     internal abstract class AbstractChannel : IChannel {
-        private static readonly Letter.Letter AckLetter = new Letter.Letter {Type = LetterType.Ack};
         private static readonly Letter.Letter HeartbeatLetter = new Letter.Letter {Type = LetterType.Heartbeat, Options = LetterOptions.SilentDiscard};
         private readonly HyperletterFactory _factory;
         private readonly LetterDeserializer _letterDeserializer;
 
         private readonly SocketOptions _options;
 
-        private readonly ConcurrentQueue<ILetter> _queue = new ConcurrentQueue<ILetter>();
+        private readonly ConcurrentDictionary<Guid, ILetter> _sentDictionary = new ConcurrentDictionary<Guid, ILetter>();
         private readonly ConcurrentQueue<ILetter> _receivedQueue = new ConcurrentQueue<ILetter>();
 
         private SpinLock _lock = new SpinLock(false);
@@ -79,7 +78,7 @@ namespace Hyperletter.Channel {
         }
 
         private void InternalEnqueue(ILetter letter) {
-            _queue.Enqueue(letter);
+            _sentDictionary[letter.UniqueId] = letter;
             _transmitter.Enqueue(letter);
         }
 
@@ -158,7 +157,10 @@ namespace Hyperletter.Channel {
 
             LetterType letterType = receivedLetter.Type;
             if(letterType == LetterType.Ack) {
-                HandleLetterSent(_queue.Dequeue());
+                var ackFor = new Guid(receivedLetter.Parts[0]);
+                ILetter sentLetter;
+                if(_sentDictionary.TryRemove(ackFor, out sentLetter))
+                    HandleLetterSent(sentLetter);
             } else {
                 if((receivedLetter.Options & LetterOptions.Ack) == LetterOptions.Ack) {
                     if(_options.Notification.ReceivedNotifyOnAllAckStates && (letterType == LetterType.User || letterType == LetterType.Batch))
@@ -175,8 +177,10 @@ namespace Hyperletter.Channel {
             ResetHeartbeatTimer();
             if(sentLetter.Type == LetterType.Ack)
                 HandleAckSent();
-            else if((sentLetter.Options & LetterOptions.Ack) != LetterOptions.Ack)
-                HandleLetterSent(_queue.Dequeue());
+            else if((sentLetter.Options & LetterOptions.Ack) != LetterOptions.Ack) {
+                _sentDictionary.Remove(sentLetter.UniqueId);
+                HandleLetterSent(sentLetter);
+            }
         }
 
         private void HandleAckSent() {
@@ -232,14 +236,14 @@ namespace Hyperletter.Channel {
         }
 
         private void NotifyOnEmptyQueue() {
-            if(_queue.Count == 0 && ChannelQueueEmpty != null) {
+            if(_sentDictionary.Count == 0 && ChannelQueueEmpty != null) {
                 ChannelQueueEmpty(this);
             }
         }
 
         private void QueueAck(ILetter letter) {
             _receivedQueue.Enqueue(letter);
-            _transmitter.Enqueue(AckLetter);
+            _transmitter.Enqueue(new Letter.Letter(LetterOptions.None, letter.UniqueId.ToByteArray()) { Type = LetterType.Ack});
         }
 
         private void Shutdown(ShutdownReason reason) {
@@ -325,11 +329,12 @@ namespace Hyperletter.Channel {
         }
 
         private void FailQueuedLetters() {
-            ILetter letter;
-            while(_queue.TryDequeue(out letter)) {
+            foreach(var letter in _sentDictionary.Values) {
                 if(letter.Type == LetterType.User || letter.Type == LetterType.Batch)
                     FailedToSend(this, letter);
             }
+
+            _sentDictionary.Clear();
         }
 
         private void ResetHeartbeatTimer() {

@@ -91,7 +91,7 @@ namespace Hyperletter.Channel {
                         return;
                 }
 
-                if(!_initalized && (_currentLength != 30 && _currentLength != 10)) {
+                if(!_initalized && (_currentLength != 46)) { // 46 == (HEADER) 4 byte length, 1 byte type, 1 byte options, 16 bytes unique id, (PARTS) 4 bytes part count, 4 byte part 1 byte count, 16 bytes remote id
                     HandleSocketError(ShutdownReason.Incompatible);
                     return;
                 }

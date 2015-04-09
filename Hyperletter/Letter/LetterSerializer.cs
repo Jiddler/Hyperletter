@@ -10,7 +10,7 @@ namespace Hyperletter.Letter {
             letter.Type = (LetterType) serializedLetter[position++];
             letter.Options = (LetterOptions) serializedLetter[position++];
 
-            if((letter.Options & LetterOptions.UniqueId) == LetterOptions.UniqueId) {
+            if((letter.Options & LetterOptions.UniqueId) == LetterOptions.UniqueId || (letter.Options & LetterOptions.Ack) == LetterOptions.Ack) {
                 letter.UniqueId = new Guid(GetByteRange(serializedLetter, position, 16));
                 position += 16;
             }
@@ -71,7 +71,7 @@ namespace Hyperletter.Letter {
             ms.Position = 4;
             ms.WriteByte((byte) letter.Type);
             ms.WriteByte((byte) letter.Options);
-            if((letter.Options & LetterOptions.UniqueId) == LetterOptions.UniqueId) {
+            if((letter.Options & LetterOptions.UniqueId) == LetterOptions.UniqueId || (letter.Options & LetterOptions.Ack) == LetterOptions.Ack) {
                 ms.Write(letter.UniqueId.ToByteArray(), 0, 16);
             }
         }
