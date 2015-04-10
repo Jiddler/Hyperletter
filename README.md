@@ -26,7 +26,7 @@ All options is per letter (not per socket) so you can send one message which you
 
 Hyperletter can queue letters until a connection is established.
 
-Hyperletter **_does not_** persist the queues on disk (see what´s next below), so if you´re application crashes your queued data is lost.
+Hyperletter **_does not_** persist the queues on disk (see what´s next below), so if your application crashes your queued data is lost.
 
 You can build disk caching if you want to; listen to the Sent-event to know when to delete it from you´re persistence. Persisted queues going to be a part of FirefliesMQ (not yet published), which will also offer a lot of other features like routes. Hyperletter is the transport protocol for FirefliesMQ.
 
