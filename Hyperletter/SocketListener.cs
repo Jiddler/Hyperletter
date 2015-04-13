@@ -5,13 +5,12 @@ using Hyperletter.Channel;
 
 namespace Hyperletter {
     internal class SocketListener : IDisposable {
-        private readonly Binding _binding;
         private readonly HyperletterFactory _factory;
         private bool _listening;
         private Socket _socket;
+        private Binding _binding;
 
-        public SocketListener(Binding binding, HyperletterFactory factory) {
-            _binding = binding;
+        public SocketListener(HyperletterFactory factory) {
             _factory = factory;
         }
 
@@ -21,14 +20,18 @@ namespace Hyperletter {
             Stop();
         }
 
-        public void Start() {
-            _socket = new Socket(_binding.IpAddress.AddressFamily, SocketType.Stream, ProtocolType.IP);
-            _socket.Bind(new IPEndPoint(_binding.IpAddress, _binding.Port));
+        public Binding Start(IPAddress ipAddress, int port) {
+            _socket = new Socket(ipAddress.AddressFamily, SocketType.Stream, ProtocolType.IP);
+            _socket.Bind(new IPEndPoint(ipAddress, port));
             _socket.Listen(20);
+
+            _binding = new Binding(ipAddress, ((IPEndPoint)_socket.LocalEndPoint).Port);
 
             _listening = true;
 
             StartListen();
+
+            return _binding;
         }
 
         public void Stop() {

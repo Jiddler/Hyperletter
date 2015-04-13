@@ -22,7 +22,7 @@ namespace Hyperletter {
 
         event Action<IHyperSocket, IDisposedEventArgs> Disposed;
 
-        void Bind(IPAddress ipAddress, int port);
+        IPEndPoint Bind(IPAddress ipAddress, int port);
         void Unbind(IPAddress ipAddress, int port);
         void Connect(IPAddress ipAddress, int port);
         void Disconnect(IPAddress ipAddress, int port);

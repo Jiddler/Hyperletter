@@ -1,4 +1,5 @@
-﻿using System.Net.Sockets;
+﻿using System.Net;
+using System.Net.Sockets;
 using Hyperletter.Batch;
 using Hyperletter.Channel;
 using Hyperletter.IoC;
@@ -23,8 +24,8 @@ namespace Hyperletter {
             return _container.Resolve<LetterDispatcher>();
         }
 
-        public SocketListener CreateSocketListener(Binding binding) {
-            return _container.Resolve<SocketListener>(binding);
+        public SocketListener CreateSocketListener() {
+            return _container.Resolve<SocketListener>();
         }
 
         public OutboundChannel CreateOutboundChannel(Binding binding) {

@@ -85,13 +85,14 @@ namespace Hyperletter {
                 channel.Heartbeat();
         }
 
-        public void Bind(IPAddress ipAddress, int port) {
-            var binding = new Binding(ipAddress, port);
-
-            SocketListener listener = _factory.CreateSocketListener(binding);
-            _listeners[binding] = listener;
+        public IPEndPoint Bind(IPAddress ipAddress, int port) {
+            SocketListener listener = _factory.CreateSocketListener();
             listener.IncomingChannel += PrepareChannel;
-            listener.Start();
+            var binding = listener.Start(ipAddress, port);
+
+            _listeners[binding] = listener;
+
+            return new IPEndPoint(binding.IpAddress, binding.Port);
         }
 
         public void Unbind(IPAddress ipAddress, int port) {
@@ -110,11 +111,11 @@ namespace Hyperletter {
 
         public void Disconnect(IPAddress ipAddress, int port) {
             Task.Factory.StartNew(() => {
-                                      var binding = new Binding(ipAddress, port);
-                                      IChannel channel;
-                                      if(_channels.TryGetValue(binding, out channel))
-                                          channel.Disconnect();
-                                  });
+                var binding = new Binding(ipAddress, port);
+                IChannel channel;
+                if(_channels.TryGetValue(binding, out channel))
+                    channel.Disconnect();
+            });
         }
 
         public void Send(ILetter letter) {
