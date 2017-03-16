@@ -11,9 +11,7 @@ namespace Hyperletter.Channel {
             _options = options;
         }
 
-        public override Direction Direction {
-            get { return Direction.Outbound; }
-        }
+        public override Direction Direction => Direction.Outbound;
 
         public override event Action<IChannel> ChannelConnecting;
 
@@ -21,8 +19,9 @@ namespace Hyperletter.Channel {
             TryConnect();
         }
 
+#if NET45
         private void TryConnect() {
-            ChannelConnecting(this);
+            ChannelConnecting?.Invoke(this);
 
             Socket = new Socket(Binding.IpAddress.AddressFamily, SocketType.Stream, ProtocolType.IP);
             try {
@@ -45,6 +44,22 @@ namespace Hyperletter.Channel {
 
             Connected();
         }
+#else
+        private async void TryConnect() {
+            ChannelConnecting?.Invoke(this);
+
+            Socket = new Socket(Binding.IpAddress.AddressFamily, SocketType.Stream, ProtocolType.IP);
+            try {
+                await Socket.ConnectAsync(Binding.IpAddress, Binding.Port);
+                Socket.NoDelay = true;
+                Socket.LingerState = new LingerOption(true, 1);
+
+                Connected();
+            } catch(Exception) {
+                TryReconnect();
+            }
+        }
+#endif    
 
         private void TryReconnect() {
             Thread.Sleep(_options.ReconnectInterval);

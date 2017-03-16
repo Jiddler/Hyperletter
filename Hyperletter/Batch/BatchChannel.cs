@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Diagnostics;
-using System.Timers;
+using System.Threading;
 using Hyperletter.Channel;
 using Hyperletter.EventArgs.Letter;
 using Hyperletter.Extension;
@@ -25,42 +25,31 @@ namespace Hyperletter.Batch {
             _options = options.Batch;
             _batchBuilder = batchBuilder;
 
-            _channel.ChannelConnected += abstractChannel => ChannelConnected(this);
+            _channel.ChannelConnected += abstractChannel => ChannelConnected?.Invoke(this);
             _channel.ChannelDisconnected += ChannelOnDisconnected;
             _channel.ChannelQueueEmpty += abstractChannel => {
                                               /* NOOP */
                                           };
             _channel.ChannelInitialized += ChannelOnInitialized;
-            _channel.ChannelConnecting += abstractChannel => ChannelConnecting(this);
-            _channel.ChannelDisconnecting += (abstractChannel, reason) => ChannelDisconnecting(this, reason);
+            _channel.ChannelConnecting += abstractChannel => ChannelConnecting?.Invoke(this);
+            _channel.ChannelDisconnecting += (abstractChannel, reason) => ChannelDisconnecting?.Invoke(this, reason);
 
             _channel.Received += ChannelOnReceived;
             _channel.Sent += ChannelOnSent;
             _channel.FailedToSend += ChannelOnFailedToSend;
 
-            _slidingTimeoutTimer = new Timer(_options.Extend.TotalMilliseconds) {AutoReset = false};
-            _slidingTimeoutTimer.Elapsed += SlidingTimeoutTimerOnElapsed;
+            _slidingTimeoutTimer = new Timer(SlidingTimeoutTimerOnElapsed, null, -1, -1);
         }
 
-        public bool IsConnected {
-            get { return _channel.IsConnected; }
-        }
+        public bool IsConnected => _channel.IsConnected;
 
-        public bool ShutdownRequested {
-            get { return _channel.ShutdownRequested; }
-        }
+        public bool ShutdownRequested => _channel.ShutdownRequested;
 
-        public Guid RemoteNodeId {
-            get { return _channel.RemoteNodeId; }
-        }
+        public Guid RemoteNodeId => _channel.RemoteNodeId;
 
-        public Binding Binding {
-            get { return _channel.Binding; }
-        }
+        public Binding Binding => _channel.Binding;
 
-        public Direction Direction {
-            get { return _channel.Direction; }
-        }
+        public Direction Direction => _channel.Direction;
 
         public event Action<IChannel> ChannelConnected;
         public event Action<IChannel> ChannelConnecting;
@@ -99,24 +88,24 @@ namespace Hyperletter.Batch {
         }
 
         private void ChannelOnInitialized(IChannel channel) {
-            ChannelInitialized(this);
+            ChannelInitialized?.Invoke(this);
         }
 
         private void ChannelOnDisconnected(IChannel channel, ShutdownReason reason) {
             ChangeTimerState(false);
             _sentBatch = false;
             FailedQueuedLetters();
-            ChannelDisconnected(this, reason);
+            ChannelDisconnected?.Invoke(this, reason);
         }
 
-        private void SlidingTimeoutTimerOnElapsed(object sender, ElapsedEventArgs elapsedEventArgs) {
+        private void SlidingTimeoutTimerOnElapsed(object sender) {
             ChangeTimerState(false);
             TrySendBatch(true);
         }
 
         private void ChangeTimerState(bool enabled) {
             lock(_slidingTimeoutTimer) {
-                _slidingTimeoutTimer.Enabled = enabled;
+                _slidingTimeoutTimer.Change(enabled ? _options.Extend : TimeSpan.FromMilliseconds(-1), TimeSpan.FromMilliseconds(-1));
             }
         }
 
@@ -140,17 +129,17 @@ namespace Hyperletter.Batch {
             if(letter.Type == LetterType.Batch) {
                 _sentBatch = false;
 
-                for(int i = 0; i < letter.Parts.Length; i++)
-                    Sent(this, _queue.Dequeue());
+                for(var i = 0; i < letter.Parts.Length; i++)
+                    Sent?.Invoke(this, _queue.Dequeue());
             } else
-                Sent(this, _queue.Dequeue());
+                Sent?.Invoke(this, _queue.Dequeue());
 
-            ChannelQueueEmpty(this);
+            ChannelQueueEmpty?.Invoke(this);
             TrySendBatch(false);
         }
 
         private void ChannelOnReceived(ILetter letter, ReceivedEventArgs receivedEventArgs) {
-            Received(letter, receivedEventArgs);
+            Received?.Invoke(letter, receivedEventArgs);
         }
 
         private void ChannelOnFailedToSend(IChannel channel, ILetter letter) {
@@ -159,14 +148,13 @@ namespace Hyperletter.Batch {
             if(letter.Type == LetterType.Batch)
                 FailedQueuedLetters();
             else
-                FailedToSend(this, letter);
+                FailedToSend?.Invoke(this, letter);
         }
 
         private void FailedQueuedLetters() {
-            ILetter letter;
-            while(_queue.TryDequeue(out letter)) {
-                FailedToSend(this, letter);
-            }
+            while (_queue.TryDequeue(out ILetter letter))
+                FailedToSend?.Invoke(this, letter);
+
             _batchBuilder.Clear();
         }
     }
