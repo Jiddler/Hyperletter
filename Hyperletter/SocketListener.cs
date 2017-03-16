@@ -41,11 +41,12 @@ namespace Hyperletter {
                 return;
 
             try {
-                _socket.Close();
+                _socket.Dispose();
             } catch(SocketException) {
             }
         }
 
+#if NET45
         private void StartListen() {
             if(!_listening)
                 return;
@@ -60,15 +61,31 @@ namespace Hyperletter {
             StartListen();
 
             try {
-                Socket socket = _socket.EndAccept(res);
+                var socket = _socket.EndAccept(res);
                 socket.NoDelay = true;
                 socket.LingerState = new LingerOption(true, 1);
-                Binding binding = GetBinding(socket.RemoteEndPoint);
-                InboundChannel boundChannel = _factory.CreateInboundChannel(socket, binding);
-                IncomingChannel(boundChannel);
+                var binding = GetBinding(socket.RemoteEndPoint);
+                var boundChannel = _factory.CreateInboundChannel(socket, binding);
+                IncomingChannel?.Invoke(boundChannel);
             } catch(SocketException) {
             }
         }
+
+#else
+        private async void StartListen() {
+            while(_listening) {
+                try {
+                    var socket = await _socket.AcceptAsync();
+                    socket.NoDelay = true;
+                    socket.LingerState = new LingerOption(true, 1);
+                    var binding = GetBinding(socket.RemoteEndPoint);
+                    var boundChannel = _factory.CreateInboundChannel(socket, binding);
+                    IncomingChannel?.Invoke(boundChannel);
+                } catch(SocketException) {
+                }
+            }
+        }
+#endif
 
         private Binding GetBinding(EndPoint endPoint) {
             var ipEndpoint = ((IPEndPoint) endPoint);

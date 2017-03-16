@@ -39,18 +39,14 @@ namespace Hyperletter.Channel {
             Binding = binding;
         }
 
-        public bool ShutdownRequested {
-            get { return _shutdownRequested || _remoteShutdownRequested; }
-        }
+        public bool ShutdownRequested => _shutdownRequested || _remoteShutdownRequested;
 
         public bool IsConnected { get; private set; }
 
-        public bool CanSend {
-            get { return IsConnected && _initalizationCount == 2; }
-        }
+        public bool CanSend => IsConnected && _initalizationCount == 2;
 
         public Guid RemoteNodeId { get; private set; }
-        public Binding Binding { get; private set; }
+        public Binding Binding { get; }
         public abstract Direction Direction { get; }
 
         public virtual event Action<IChannel> ChannelConnecting;
@@ -69,7 +65,7 @@ namespace Hyperletter.Channel {
 
         public EnqueueResult Enqueue(ILetter letter) {
             if(!CanSend) {
-                FailedToSend(this, letter);
+                FailedToSend?.Invoke(this, letter);
                 return EnqueueResult.CantEnqueueMore;
             }
 
@@ -88,7 +84,7 @@ namespace Hyperletter.Channel {
         }
 
         private void LockedConnected() {
-            ChannelConnected(this);
+            ChannelConnected?.Invoke(this);
 
             CreateTransmitter();
             CreateReceiver();
@@ -128,17 +124,16 @@ namespace Hyperletter.Channel {
         private void HandleInitialize() {
             Lock(() => {
                 if (Interlocked.Increment(ref _initalizationCount) == 2)
-                    ChannelInitialized(this);                     
+                    ChannelInitialized?.Invoke(this);                     
             });
         }
 
         public void Heartbeat() {
             if(_initalizationCount != 2) {
-                if(IsConnected) {
-                    DateTime now = DateTime.UtcNow;
-                    if((now - _connectedAt) > _options.MaximumInitializeTime)
-                        Shutdown(ShutdownReason.Socket);
-                }
+                if(!IsConnected) return;
+                var now = DateTime.UtcNow;
+                if((now - _connectedAt) > _options.MaximumInitializeTime)
+                    Shutdown(ShutdownReason.Socket);
 
                 return;
             }
@@ -193,17 +188,17 @@ namespace Hyperletter.Channel {
 
                 case LetterType.Shutdown:
                     _remoteShutdownRequested = true;
-                    ChannelDisconnecting(this, ShutdownReason.Remote);
+                    ChannelDisconnecting?.Invoke(this, ShutdownReason.Remote);
                     break;
 
                 case LetterType.User:
-                    Received(receivedLetter, CreateReceivedEventArgs(ackState));
+                    Received?.Invoke(receivedLetter, CreateReceivedEventArgs(ackState));
                     break;
 
                 case LetterType.Batch:
-                    for(int i = 0; i < receivedLetter.Parts.Length; i++) {
-                        ILetter batchedLetter = _letterDeserializer.Deserialize(receivedLetter.Parts[i]);
-                        Received(batchedLetter, CreateReceivedEventArgs(ackState));
+                    for(var i = 0; i < receivedLetter.Parts.Length; i++) {
+                        var batchedLetter = _letterDeserializer.Deserialize(receivedLetter.Parts[i]);
+                        Received?.Invoke(batchedLetter, CreateReceivedEventArgs(ackState));
                     }
                     break;
             }
@@ -225,15 +220,15 @@ namespace Hyperletter.Channel {
 
                 case LetterType.Batch:
                 case LetterType.User:
-                    Sent(this, sentLetter);
+                    Sent?.Invoke(this, sentLetter);
                     NotifyOnEmptyQueue();
                     break;
             }
         }
 
         private void NotifyOnEmptyQueue() {
-            if(_queue.Count == 0 && ChannelQueueEmpty != null) {
-                ChannelQueueEmpty(this);
+            if(_queue.Count == 0) {
+                ChannelQueueEmpty?.Invoke(this);
             }
         }
 
@@ -257,7 +252,7 @@ namespace Hyperletter.Channel {
 
         private void LockedShutdown(ShutdownReason reason) {
             if(!_remoteShutdownRequested)
-                ChannelDisconnecting(this, reason);
+                ChannelDisconnecting?.Invoke(this, reason);
 
             if(reason == ShutdownReason.Requested) {
                 var letter = new Letter.Letter(LetterOptions.Ack) {Type = LetterType.Shutdown};
@@ -274,8 +269,8 @@ namespace Hyperletter.Channel {
             _initalizationCount = 0;
             IsConnected = false;
 
-            if(_transmitter != null) _transmitter.Stop();
-            if(_receiver != null) _receiver.Stop();
+            _transmitter?.Stop();
+            _receiver?.Stop();
 
             DisconnectSocket();
             WaitForTranseiviersToShutDown();
@@ -284,23 +279,21 @@ namespace Hyperletter.Channel {
             FailedReceivedLetters();
 
             if(wasConnected)
-                ChannelDisconnected(this, _remoteShutdownRequested ? ShutdownReason.Remote : reason);
+                ChannelDisconnected?.Invoke(this, _remoteShutdownRequested ? ShutdownReason.Remote : reason);
         }
 
         private void FailedReceivedLetters() {
             if(!_options.Notification.ReceivedNotifyOnAllAckStates)
                 return;
 
-            ReceivedEventArgs eventArgs = CreateReceivedEventArgs(AckState.FailedAck);
+            var eventArgs = CreateReceivedEventArgs(AckState.FailedAck);
 
-            ILetter letter;
-            while(_receivedQueue.TryDequeue(out letter)) {
-                Received(letter, eventArgs);
-            }
+            while (_receivedQueue.TryDequeue(out ILetter letter))
+                Received?.Invoke(letter, eventArgs);
         }
 
         private void WaitForTranseiviersToShutDown() {
-            DateTime startedWaitingAt = DateTime.UtcNow;
+            var startedWaitingAt = DateTime.UtcNow;
             while((_transmitter != null && _transmitter.Sending) || (_receiver != null && _receiver.Receiving)) {
                 if((DateTime.UtcNow - startedWaitingAt) > _options.ShutdownWait)
                     break;
@@ -308,8 +301,8 @@ namespace Hyperletter.Channel {
                 Thread.Sleep(10);
             }
 
-            if(_transmitter != null) _transmitter.Dispose();
-            if(_receiver != null) _receiver.Dispose();
+            _transmitter?.Dispose();
+            _receiver?.Dispose();
         }
 
         protected virtual void AfterDisconnectHook(ShutdownReason reason) {
@@ -317,18 +310,16 @@ namespace Hyperletter.Channel {
 
         private void DisconnectSocket() {
             try {
-                if(Socket != null) {
-                    Socket.Close();
-                }
+                Socket?.Dispose();
             } catch(Exception) {
             }
         }
 
         private void FailQueuedLetters() {
-            ILetter letter;
-            while(_queue.TryDequeue(out letter)) {
-                if(letter.Type == LetterType.User || letter.Type == LetterType.Batch)
-                    FailedToSend(this, letter);
+            while (_queue.TryDequeue(out ILetter letter))
+            {
+                if (letter.Type == LetterType.User || letter.Type == LetterType.Batch)
+                    FailedToSend?.Invoke(this, letter);
             }
         }
 

@@ -31,7 +31,7 @@ namespace Hyperletter.IoC {
                     return;
 
                 _type = typeof(TService);
-                _constructor = _type.GetConstructors().First();
+                _constructor = _type.GetTypeInfo().GetConstructors().First();
                 _parameters = _constructor.GetParameters();
 
                 _prepared = true;
@@ -61,8 +61,7 @@ namespace Hyperletter.IoC {
         private object CreateInstance(IList<object> parameters) {
             object[] arguments = BuildArguments(parameters);
             var service = (TService) _constructor.Invoke(arguments);
-            if(_activatedCallback != null)
-                _activatedCallback(service);
+            _activatedCallback?.Invoke(service);
 
             return service;
         }
@@ -99,15 +98,19 @@ namespace Hyperletter.IoC {
             int constructorParameterIndex = 0;
             var arguments = new object[_parameters.Length];
             foreach(ParameterInfo p in _parameters) {
-                object obj;
-                if(_values.TryGetValue(p.Name, out obj)) {
+                if (_values.TryGetValue(p.Name, out object obj))
+                {
                     arguments[constructorParameterIndex++] = obj;
-                } else if(parameters.Count > parameterIndex && p.ParameterType.IsInstanceOfType(parameters[parameterIndex])) {
+                }
+                else if (parameters.Count > parameterIndex && p.ParameterType.GetTypeInfo().IsInstanceOfType(parameters[parameterIndex]))
+                {
                     arguments[constructorParameterIndex++] = parameters[parameterIndex++];
-                } else {
-                    if(_container.TryResolve(p.ParameterType, out obj))
+                }
+                else
+                {
+                    if (_container.TryResolve(p.ParameterType, out obj))
                         arguments[constructorParameterIndex++] = obj;
-                    else if(IsFunc(p.ParameterType) && _container.IsRegistered(GetReturnType(p.ParameterType)))
+                    else if (IsFunc(p.ParameterType) && _container.IsRegistered(GetReturnType(p.ParameterType)))
                         arguments[constructorParameterIndex++] = GenerateFactory(p.ParameterType);
                     else
                         throw new ResolveException("Cant find parameter " + p.Name + " (" + p.ParameterType + ") in arguments or registerd in container");
@@ -117,14 +120,14 @@ namespace Hyperletter.IoC {
         }
 
         private Type GetReturnType(Type type) {
-            return type.GetMethod("Invoke").ReturnType;
+            return type.GetTypeInfo().GetMethod("Invoke").ReturnType;
         }
 
         private bool IsFunc(Type type) {
             Type generic = null;
-            if(type.IsGenericTypeDefinition)
+            if(type.GetTypeInfo().IsGenericTypeDefinition)
                 generic = type;
-            else if(type.IsGenericType)
+            else if(type.GetTypeInfo().IsGenericType)
                 generic = type.GetGenericTypeDefinition();
 
             if(generic == null)
@@ -153,13 +156,12 @@ namespace Hyperletter.IoC {
         }
 
         private object GenerateFactory(Type type) {
-            object factory;
-            if(_factoryCache.TryGetValue(type, out factory))
+            if (_factoryCache.TryGetValue(type, out object factory))
                 return factory;
 
-            MethodInfo invokeMethod = type.GetMethod("Invoke");
+            MethodInfo invokeMethod = type.GetTypeInfo().GetMethod("Invoke");
 
-            MethodInfo target = _container.GetType().GetMethod("Resolve", new[] {typeof(object[])});
+            MethodInfo target = _container.GetType().GetTypeInfo().GetMethod("Resolve", new[] {typeof(object[])});
             target = target.MakeGenericMethod(invokeMethod.ReturnType);
 
             ConstantExpression t = Expression.Constant(_container);

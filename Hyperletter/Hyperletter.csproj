@@ -1,6 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+<Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
@@ -9,106 +9,22 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>Hyperletter</RootNamespace>
     <AssemblyName>Hyperletter</AssemblyName>
-    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <TargetFrameworks>net45;netstandard1.6</TargetFrameworks>
     <FileAlignment>512</FileAlignment>
     <TargetFrameworkProfile />
+    <Version>1.5.2</Version>
+    <NetStandardImplicitPackageVersion>1.6.1</NetStandardImplicitPackageVersion>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>false</Optimize>
-    <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <Prefer32Bit>false</Prefer32Bit>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <DebugType>pdbonly</DebugType>
-    <Optimize>true</Optimize>
-    <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <Prefer32Bit>false</Prefer32Bit>
-  </PropertyGroup>
-  <ItemGroup>
+
+  <ItemGroup Condition=" '$(TargetFramework)' == 'netstandard1.6' ">
+    <PackageReference Include="System.Collections.Concurrent" Version="4.3.0" />
+    <PackageReference Include="System.Threading.Thread" Version="4.3.0" />
+  </ItemGroup>
+
+  <ItemGroup Condition=" '$(TargetFramework)' == 'net45' ">
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Numerics" />
   </ItemGroup>
-  <ItemGroup>
-    <Compile Include="Batch\BatchLetterBuilder.cs" />
-    <Compile Include="Batch\BatchChannel.cs" />
-    <Compile Include="Batch\BatchOptions.cs" />
-    <Compile Include="Binding.cs" />
-    <Compile Include="Channel\AbstractChannel.cs" />
-    <Compile Include="Channel\ChannelStatus.cs" />
-    <Compile Include="Channel\IChannel.cs" />
-    <Compile Include="Channel\InboundChannel.cs" />
-    <Compile Include="Channel\LetterReceiver.cs" />
-    <Compile Include="Channel\LetterTransmitter.cs" />
-    <Compile Include="Channel\OutboundChannel.cs" />
-    <Compile Include="Direction.cs" />
-    <Compile Include="EventArgs\AbstractChannelEventArgs.cs" />
-    <Compile Include="EventArgs\Channel\ConnectedEventArgs.cs" />
-    <Compile Include="EventArgs\Channel\ConnectingEventArgs.cs" />
-    <Compile Include="EventArgs\Channel\IDisconnectingEventArgs.cs" />
-    <Compile Include="EventArgs\Channel\DisconnectingEventArgs.cs" />
-    <Compile Include="EventArgs\Channel\DisconnectedEventArgs.cs" />
-    <Compile Include="EventArgs\Channel\IConnectedEventArgs.cs" />
-    <Compile Include="EventArgs\Channel\IConnectingEventArgs.cs" />
-    <Compile Include="EventArgs\Channel\IDisconnectedEventArgs.cs" />
-    <Compile Include="EventArgs\Channel\IInitializedEventArgs.cs" />
-    <Compile Include="EventArgs\Channel\InitializedEventArgs.cs" />
-    <Compile Include="EventArgs\IChannelEventArgs.cs" />
-    <Compile Include="EventArgs\ISocketEventArgs.cs" />
-    <Compile Include="EventArgs\Letter\AckState.cs" />
-    <Compile Include="EventArgs\Letter\IQueuingEventArgs.cs" />
-    <Compile Include="EventArgs\Letter\DiscardedEventArgs.cs" />
-    <Compile Include="EventArgs\Letter\IDiscardedEventArgs.cs" />
-    <Compile Include="EventArgs\Letter\IReceivedEventArgs.cs" />
-    <Compile Include="EventArgs\Letter\IRequeuedEventArgs.cs" />
-    <Compile Include="EventArgs\Letter\ISentEventArgs.cs" />
-    <Compile Include="EventArgs\Letter\QueuingEventArgs.cs" />
-    <Compile Include="EventArgs\Letter\ReceivedEventArgs.cs" />
-    <Compile Include="EventArgs\Letter\RequeuedEventArgs.cs" />
-    <Compile Include="EventArgs\Letter\SentEventArgs.cs" />
-    <Compile Include="EventArgs\AbstractSocketEventArgs.cs" />
-    <Compile Include="EventArgs\Socket\DisposedEventArgs.cs" />
-    <Compile Include="EventArgs\Socket\IDisposedEventArgs.cs" />
-    <Compile Include="NotificationOptions.cs" />
-    <Compile Include="ShutdownReason.cs" />
-    <Compile Include="Extension\ConcurrentDictionaryExtensions.cs" />
-    <Compile Include="Extension\ConcurrentQueueExtensions.cs" />
-    <Compile Include="HeartbeatOptions.cs" />
-    <Compile Include="HyperletterFactory.cs" />
-    <Compile Include="HyperSocket.cs" />
-    <Compile Include="IHyperSocket.cs" />
-    <Compile Include="IoC\Container.cs" />
-    <Compile Include="IoC\DependencyResolver.cs" />
-    <Compile Include="IoC\InstanceResolver.cs" />
-    <Compile Include="IoC\NoRegistrationException.cs" />
-    <Compile Include="IoC\ResolveException.cs" />
-    <Compile Include="IoC\Resolver.cs" />
-    <Compile Include="LetterDispatcher.cs" />
-    <Compile Include="Letter\ILetter.cs" />
-    <Compile Include="Letter\Letter.cs" />
-    <Compile Include="Letter\LetterOptions.cs" />
-    <Compile Include="Letter\LetterSerializer.cs" />
-    <Compile Include="Letter\LetterType.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="SocketListener.cs" />
-    <Compile Include="SocketOptions.cs" />
-    <Compile Include="Utility\QueueDictionary.cs" />
-  </ItemGroup>
-  <ItemGroup />
-  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
-       Other similar extension points exist, see Microsoft.Common.targets.
-  <Target Name="BeforeBuild">
-  </Target>
-  <Target Name="AfterBuild">
-  </Target>
-  -->
+
 </Project>

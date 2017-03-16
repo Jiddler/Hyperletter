@@ -33,7 +33,7 @@ namespace Hyperletter {
             _factory = new HyperletterFactory(BuildContainer());
             _letterDispatcher = _factory.CreateLetterDispatcher();
 
-            _heartbeat = new Timer(Heartbeat);
+            _heartbeat = new Timer(Heartbeat, null, -1, -1);
             _heartbeat.Change(Options.Heartbeat.Interval, Options.Heartbeat.Interval);
         }
 
@@ -97,8 +97,7 @@ namespace Hyperletter {
 
         public void Unbind(IPAddress ipAddress, int port) {
             var binding = new Binding(ipAddress, port);
-            SocketListener listener;
-            if(_listeners.TryRemove(binding, out listener))
+            if (_listeners.TryRemove(binding, out SocketListener listener))
                 listener.Stop();
         }
 
@@ -112,28 +111,25 @@ namespace Hyperletter {
         public void Disconnect(IPAddress ipAddress, int port) {
             Task.Factory.StartNew(() => {
                 var binding = new Binding(ipAddress, port);
-                IChannel channel;
-                if(_channels.TryGetValue(binding, out channel))
+                if (_channels.TryGetValue(binding, out IChannel channel))
                     channel.Disconnect();
             });
         }
 
         public void Send(ILetter letter) {
-            Action<ILetter, IQueuingEventArgs> evnt = Queuing;
-            if(evnt != null)
-                evnt(letter, new QueuingEventArgs {Socket = this});
+            Queuing?.Invoke(letter, new QueuingEventArgs { Socket = this });
 
             _letterDispatcher.EnqueueLetter(letter);
         }
 
         public void SendTo(ILetter letter, Guid toNodeId) {
-            IChannel channel;
-            if(_routeChannels.TryGetValue(toNodeId, out channel))
+            if (_routeChannels.TryGetValue(toNodeId, out IChannel channel))
                 channel.Enqueue(letter);
-            else {
+            else
+            {
                 Action<ILetter, IDiscardedEventArgs> evnt = Discarded;
-                if(evnt != null && (letter.Options & LetterOptions.SilentDiscard) != LetterOptions.SilentDiscard)
-                    evnt(letter, new DiscardedEventArgs {Socket = this, RemoteNodeId = toNodeId});
+                if (evnt != null && (letter.Options & LetterOptions.SilentDiscard) != LetterOptions.SilentDiscard)
+                    evnt(letter, new DiscardedEventArgs { Socket = this, RemoteNodeId = toNodeId });
             }
         }
 
@@ -147,8 +143,7 @@ namespace Hyperletter {
 
                 Task.WaitAll(_channels.Values.Select(channel => Task.Factory.StartNew(channel.Disconnect)).ToArray());
 
-                var evnt = Disposed;
-                if(evnt != null) evnt(this, new DisposedEventArgs {Socket = this});
+                Disposed?.Invoke(this, new DisposedEventArgs { Socket = this });
             });
         }
 
@@ -177,9 +172,7 @@ namespace Hyperletter {
 
         private void ChannelDisconnecting(IChannel channel, ShutdownReason shutdownReason) {
             _letterDispatcher.DequeueChannel(channel);
-            Action<IHyperSocket, IDisconnectingEventArgs> evnt = Disconnecting;
-            if(evnt != null)
-                evnt(this, new DisconnectingEventArgs {Binding = channel.Binding, Reason = shutdownReason, RemoteNodeId = channel.RemoteNodeId, Socket = this});
+            Disconnecting?.Invoke(this, new DisconnectingEventArgs { Binding = channel.Binding, Reason = shutdownReason, RemoteNodeId = channel.RemoteNodeId, Socket = this });
         }
 
         private void UnhookChannel(IChannel channel) {
@@ -196,20 +189,17 @@ namespace Hyperletter {
         }
 
         private void ChannelConnecting(IChannel channel) {
-            Action<IHyperSocket, IConnectingEventArgs> evnt = Connecting;
-            if(evnt != null) evnt(this, new ConnectingEventArgs {Binding = channel.Binding, Socket = this});
+            Connecting?.Invoke(this, new ConnectingEventArgs { Binding = channel.Binding, Socket = this });
         }
 
         private void ChannelConnected(IChannel channel) {
-            Action<IHyperSocket, IConnectedEventArgs> evnt = Connected;
-            if(evnt != null) evnt(this, new ConnectedEventArgs {Binding = channel.Binding, Socket = this});
+            Connected?.Invoke(this, new ConnectedEventArgs { Binding = channel.Binding, Socket = this });
         }
 
         private void ChannelInitialized(IChannel channel) {
             _routeChannels.TryAdd(channel.RemoteNodeId, channel);
 
-            Action<IHyperSocket, IInitializedEventArgs> evnt = Initialized;
-            if(evnt != null) evnt(this, new InitializedEventArgs {Binding = channel.Binding, Socket = this, RemoteNodeId = channel.RemoteNodeId});
+            Initialized?.Invoke(this, new InitializedEventArgs { Binding = channel.Binding, Socket = this, RemoteNodeId = channel.RemoteNodeId });
         }
 
         private void ChannelDisconnected(IChannel channel, ShutdownReason reason) {
@@ -222,8 +212,7 @@ namespace Hyperletter {
                 UnhookChannel(channel);
             }
 
-            Action<IHyperSocket, IDisconnectedEventArgs> evnt = Disconnected;
-            if(evnt != null) evnt(this, new DisconnectedEventArgs {Binding = binding, Reason = reason, Socket = this, RemoteNodeId = channel.RemoteNodeId});
+            Disconnected?.Invoke(this, new DisconnectedEventArgs { Binding = binding, Reason = reason, Socket = this, RemoteNodeId = channel.RemoteNodeId });
         }
 
         private void ChannelReceived(ILetter letter, ReceivedEventArgs receivedEventArgs) {
@@ -235,9 +224,7 @@ namespace Hyperletter {
         }
 
         private void ChannelSent(IChannel channel, ILetter letter) {
-            Action<ILetter, ISentEventArgs> evnt = Sent;
-            if(evnt != null)
-                evnt(letter, new SentEventArgs {Binding = channel.Binding, Socket = this, RemoteNodeId = channel.RemoteNodeId});
+            Sent?.Invoke(letter, new SentEventArgs { Binding = channel.Binding, Socket = this, RemoteNodeId = channel.RemoteNodeId });
         }
 
         private void ChannelFailedToSend(IChannel channel, ILetter letter) {
@@ -259,8 +246,7 @@ namespace Hyperletter {
         private void Requeue(IChannel channel, ILetter letter) {
             _letterDispatcher.EnqueueLetter(letter);
 
-            Action<ILetter, IRequeuedEventArgs> evnt = Requeued;
-            if(evnt != null) evnt(letter, new RequeuedEventArgs {Socket = this, RemoteNodeId = channel.RemoteNodeId});
+            Requeued?.Invoke(letter, new RequeuedEventArgs { Socket = this, RemoteNodeId = channel.RemoteNodeId });
         }
 
         private void ChannelAvailable(IChannel channel) {
