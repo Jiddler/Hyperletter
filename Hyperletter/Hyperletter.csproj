@@ -12,8 +12,17 @@
     <TargetFrameworks>net45;netstandard1.6</TargetFrameworks>
     <FileAlignment>512</FileAlignment>
     <TargetFrameworkProfile />
-    <Version>1.5.2</Version>
+    <Version>1.5.3.0</Version>
     <NetStandardImplicitPackageVersion>1.6.1</NetStandardImplicitPackageVersion>
+    <Authors>Lars Stenberg</Authors>
+    <Title>Hyperletter</Title>
+    <Owners>Lars Stenberg</Owners>
+    <Description>A lightweight MQ-solution. Like a mix of WCF and ZeroMQ (ZMQ).</Description>
+    <Copyright>Copyright 2015</Copyright>
+    <PackageLicenseUrl>http://opensource.org/licenses/MIT</PackageLicenseUrl>
+    <PackageProjectUrl>http://github.com/hyperletter/clr</PackageProjectUrl>
+    <PackageTags>MQ WCF ZEROMQ ZMQ 0MQ SERVICEBUS</PackageTags>
+    <PackageReleaseNotes>Add support for netstandard</PackageReleaseNotes>
   </PropertyGroup>
 
   <ItemGroup Condition=" '$(TargetFramework)' == 'netstandard1.6' ">

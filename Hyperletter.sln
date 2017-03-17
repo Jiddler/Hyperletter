@@ -32,6 +32,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Hyperletter.Typed", "Hyperl
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Hyperletter", "Hyperletter\Hyperletter.csproj", "{3CABACB8-0FB8-49F8-B2DE-5C1283C92441}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CoreSendAndReceiveTest", "Samples\CoreSendAndReceiveTest\CoreSendAndReceiveTest.csproj", "{83FBED38-0E22-4819-BB25-F7183131C65D}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -66,6 +68,10 @@ Global
 		{3CABACB8-0FB8-49F8-B2DE-5C1283C92441}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3CABACB8-0FB8-49F8-B2DE-5C1283C92441}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{3CABACB8-0FB8-49F8-B2DE-5C1283C92441}.Release|Any CPU.Build.0 = Release|Any CPU
+		{83FBED38-0E22-4819-BB25-F7183131C65D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{83FBED38-0E22-4819-BB25-F7183131C65D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{83FBED38-0E22-4819-BB25-F7183131C65D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{83FBED38-0E22-4819-BB25-F7183131C65D}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -76,5 +82,6 @@ Global
 		{AE79FF0D-5CC0-489F-8072-EA2500D6DA5F} = {68B04839-3F34-4406-9DDF-74D80B495A8C}
 		{42C8CAA6-3A1D-4EED-961D-449D5139ED7A} = {68B04839-3F34-4406-9DDF-74D80B495A8C}
 		{1A6EE45B-71F0-4907-A9C2-70FD8C10465B} = {68B04839-3F34-4406-9DDF-74D80B495A8C}
+		{83FBED38-0E22-4819-BB25-F7183131C65D} = {68B04839-3F34-4406-9DDF-74D80B495A8C}
 	EndGlobalSection
 EndGlobal
